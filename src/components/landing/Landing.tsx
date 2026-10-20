@@ -107,7 +107,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           </div>
           <div>
             <h1 className="text-[clamp(36px,5.2vw,64px)] leading-[1.04] tracking-[-0.035em]">
-              Applying is harder than ever. <span className="font-light">Your applications don&apos;t have to be.</span>
+              Getting a job is harder than ever. <span className="font-light">Your applications don&apos;t have to be too.</span>
             </h1>
             <p className="mt-5 max-w-[540px] text-[17px] leading-relaxed text-[var(--ink2)]">
               For students and graduates applying to internships and first jobs. Rookie scores every role you find out of

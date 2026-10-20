@@ -28,6 +28,9 @@ export async function POST(request: Request) {
       schema: importSchema,
       file: { data, mimeType: "application/pdf" },
     });
+    if (!result?.profile || !result.contact || !Array.isArray(result.profile.experience)) {
+      throw new AiError("Couldn't read that PDF. Is it a text PDF (not a scan)? You can also fill in your profile by hand.", 422);
+    }
     return Response.json(noLongDashes(result));
   } catch (e) {
     return errorResponse(e);

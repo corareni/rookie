@@ -70,10 +70,10 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
     setImportMsg(null);
     try {
       const r = await importCv(file);
-      const clean = (list: { bullets: string[] }[]) => list.map((e) => ({ ...e, bullets: e.bullets.filter(Boolean) }));
+      const clean = (list?: { bullets?: string[] }[]) => (list ?? []).map((e) => ({ ...e, bullets: (e.bullets ?? []).filter(Boolean) }));
       update({
         cv_text: r.cv_text,
-        contact: { ...d.contact, ...Object.fromEntries(Object.entries(r.contact).filter(([, v]) => v)) },
+        contact: { ...d.contact, ...Object.fromEntries(Object.entries(r.contact ?? {}).filter(([, v]) => v)) },
         profile: {
           ...d.profile,
           ...r.profile,
