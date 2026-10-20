@@ -400,3 +400,48 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .spin { animation: none; }
 }
+
+/* ---- Landing (version B): heavy display type, lime accent, phone mockups ---- */
+:root {
+  --lime: #e4f47c;
+  --dark: #1d1f1f;
+}
+.mega {
+  font-family: var(--font-mega), "Arial Black", sans-serif;
+  text-transform: uppercase;
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+}
+.btn-lime {
+  background: var(--lime);
+  color: var(--ink);
+  border-color: var(--lime);
+}
+.phone {
+  width: 280px;
+  max-width: 100%;
+  aspect-ratio: 9 / 18.5;
+  border-radius: 34px;
+  background: var(--dark);
+  color: #fff;
+  padding: 18px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  overflow: hidden;
+}
+.phone .muted { color: #8e9191; }
+.phone .tile { background: #2a2c2c; border-radius: 14px; padding: 10px 12px; }
+.phone .lime-btn {
+  background: var(--lime);
+  color: var(--ink);
+  border-radius: 12px;
+  padding: 11px;
+  text-align: center;
+  font-weight: 700;
+}
+.step-text { transition: opacity 0.35s ease; }
+@media (prefers-reduced-motion: reduce) {
+  .step-text, .screen-fade { transition: none !important; }
+}

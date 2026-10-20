@@ -1,5 +1,5 @@
 // Name, pitch and links in one place. Switch LANDING to "B" only once the AI features are live.
-export const LANDING: "A" | "B" = "A";
+export const LANDING = "B" as "A" | "B";
 
 export const site = {
   name: "Rookie",
