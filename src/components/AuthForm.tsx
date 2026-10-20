@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 type Mode = "signup" | "login";
 
@@ -33,15 +34,21 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Fields stay disabled until hydration, so nothing typed early gets lost.
+  const ready = useHydrated();
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Read what's actually in the fields, in case they were filled before React took over.
+    const form = new FormData(e.currentTarget);
+    const emailValue = String(form.get("email") ?? email).trim();
+    const passwordValue = String(form.get("password") ?? password);
     setError(null);
     setBusy(true);
     const supabase = createClient();
 
     if (mode === "signup") {
-      const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+      const { data, error } = await supabase.auth.signUp({ email: emailValue, password: passwordValue });
       if (error) {
         setError(error.message);
         setBusy(false);
@@ -53,7 +60,7 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
         return;
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      const { error } = await supabase.auth.signInWithPassword({ email: emailValue, password: passwordValue });
       if (error) {
         setError("Wrong email or password.");
         setBusy(false);
@@ -88,6 +95,8 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
             type="email"
             autoComplete="email"
             required
+            name="email"
+            disabled={!ready}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
@@ -104,6 +113,8 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
             autoComplete={mode === "signup" ? "new-password" : "current-password"}
             minLength={6}
             required
+            name="password"
+            disabled={!ready}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
@@ -116,7 +127,7 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
           </p>
         )}
 
-        <button data-testid={`${mode}-submit`} type="submit" className="btn btn-lg w-full" disabled={busy}>
+        <button data-testid={`${mode}-submit`} type="submit" className="btn btn-lg w-full" disabled={busy || !ready}>
           {busy ? t.busy : t.button}
         </button>
       </form>

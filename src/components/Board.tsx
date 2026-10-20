@@ -15,6 +15,7 @@ import {
   type Application,
 } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
+import { useHydrated } from "@/lib/use-hydrated";
 
 type Sort = "best" | "closing" | "newest";
 
@@ -40,6 +41,8 @@ export default function Board({
   const [comparing, setComparing] = useState(false);
   const [hideNudge, setHideNudge] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Fields stay disabled until hydration, so nothing typed early gets lost.
+  const ready = useHydrated();
 
   const patch = (id: string, p: Partial<Application>) =>
     setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...p } : a)));
@@ -86,7 +89,7 @@ export default function Board({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (await add(text)) {
+    if (await add(inputRef.current?.value ?? text)) {
       setText("");
       inputRef.current?.focus();
     }
@@ -216,8 +219,9 @@ export default function Board({
             value={text}
             maxLength={500}
             onChange={(e) => setText(e.target.value)}
+            disabled={!ready}
           />
-          <button data-testid="core-submit" type="submit" className="btn btn-lg" disabled={saving}>
+          <button data-testid="core-submit" type="submit" className="btn btn-lg" disabled={saving || !ready}>
             {saving ? "Adding…" : "Add"}
           </button>
         </div>
