@@ -29,7 +29,12 @@ export default function Board({
   hasProfile: boolean;
 }) {
   const router = useRouter();
-  const [items, setItems] = useState<Application[]>(initial);
+  // A read that was interrupted (e.g. the page was closed) shows as failed, so it can be retried.
+  const [items, setItems] = useState<Application[]>(() =>
+    initial.map((a) =>
+      a.job_status === "reading" && Date.now() - Date.parse(a.created_at) > 90_000 ? { ...a, job_status: "failed" } : a,
+    ),
+  );
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(loadError);
   const [notice, setNotice] = useState<string | null>(null);

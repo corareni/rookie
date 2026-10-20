@@ -130,26 +130,34 @@ function Toolbar({
   onSave,
   saving,
   dirty,
-  printHref,
+  fileBase,
   copyText,
   msg,
 }: {
-  onSave: () => void;
+  onSave: () => Promise<boolean>;
   saving: boolean;
   dirty: boolean;
-  printHref: string;
+  fileBase: string;
   copyText: string;
   msg: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  // Files are built from the saved version, so save edits first.
+  const download = async (ext: "pdf" | "docx") => {
+    if (dirty && !(await onSave())) return;
+    window.location.href = `${fileBase}.${ext}`;
+  };
   return (
     <div className="mt-4 flex flex-wrap items-center gap-2">
       <button type="button" className="btn" disabled={!dirty || saving} onClick={onSave}>
         {saving ? "Saving…" : "Save edits"}
       </button>
-      <a href={printHref} target="_blank" rel="noopener" className="btn btn-ghost">
-        Download PDF
-      </a>
+      <button type="button" className="btn btn-mint" onClick={() => download("pdf")}>
+        ↓ PDF
+      </button>
+      <button type="button" className="btn btn-lilac" onClick={() => download("docx")}>
+        ↓ Word
+      </button>
       <button
         type="button"
         className="btn btn-ghost"
@@ -185,6 +193,7 @@ function CvEditor({ id, doc }: { id: string; doc: NonNullable<Doc<CvContent>> })
     setSaving(false);
     setMsg(error ? `Couldn't save: ${error.message}` : "Saved.");
     if (!error) setDirty(false);
+    return !error;
   }
 
   return (
@@ -267,7 +276,7 @@ function CvEditor({ id, doc }: { id: string; doc: NonNullable<Doc<CvContent>> })
         onSave={save}
         saving={saving}
         dirty={dirty}
-        printHref={`/app/a/${id}/print/cv`}
+        fileBase={`/api/documents/${id}/cv`}
         copyText={cvAsText(cv)}
         msg={msg}
       />
@@ -294,6 +303,7 @@ function LetterEditor({ id, doc, signature }: { id: string; doc: NonNullable<Doc
     setSaving(false);
     setMsg(error ? `Couldn't save: ${error.message}` : "Saved.");
     if (!error) setDirty(false);
+    return !error;
   }
   const words = body.split(/\s+/).filter(Boolean).length;
 
@@ -338,7 +348,7 @@ function LetterEditor({ id, doc, signature }: { id: string; doc: NonNullable<Doc
         onSave={save}
         saving={saving}
         dirty={dirty}
-        printHref={`/app/a/${id}/print/letter`}
+        fileBase={`/api/documents/${id}/letter`}
         copyText={letterAsText(current(), signature)}
         msg={msg}
       />
