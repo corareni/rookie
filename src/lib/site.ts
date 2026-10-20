@@ -5,7 +5,7 @@ export const site = {
   name: "Rookie",
   oneLiner:
     "Rookie helps students applying to 10+ internships track every application from the job link on one board.",
-  github: "https://github.com/",
+  github: "https://github.com/corareni/rookie",
   author: "Cora Affeld, IE University",
 };
 
