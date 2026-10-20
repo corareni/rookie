@@ -10,7 +10,7 @@ export default function PrivacyPage() {
       <h1 className="mt-2 text-[36px] font-semibold leading-tight tracking-tight">Your data stays yours.</h1>
       <div className="mt-6 grid gap-5 text-[16px] leading-relaxed text-[var(--ink2)]">
         <p>
-          {site.name} is a student project built for a university course at IE University. It stores only what you
+          {site.name} is a student project. It stores only what you
           need to track your applications.
         </p>
         <section>
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc pl-5">
             <li>Your email address and a securely hashed password (handled by Supabase Auth).</li>
             <li>The applications you add: title, job link, company, role, location, dates, status and notes.</li>
-            <li>Your profile, if you add one: your CV text, your story, your hard rules and contact details.</li>
+            <li>Your profile, if you add one: your experience, education, skills and other details, your story points, your barriers, any AI memory you paste in, and contact details. An uploaded CV file is read once and never stored; only the text you keep is saved.</li>
             <li>The AI analyses, comparisons, CVs and cover letters Rookie writes for you.</li>
           </ul>
         </section>

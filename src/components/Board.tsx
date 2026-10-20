@@ -54,7 +54,7 @@ export default function Board({
       setItems((prev) => prev.map((a) => (a.id === id ? updated : a)));
       if (updated.verdict !== "open")
         setNotice(
-          `${updated.company ?? "That role"} went to ${updated.verdict === "barrier" ? "Barriers" : "Ruled out"}: ${updated.verdict_reason ?? ""}`,
+          `${updated.company ?? "That role"} needs your review in Barriers${updated.ai_flag === "deal_breaker" ? " (breaks a deal-breaker)" : ""}: ${updated.verdict_reason ?? ""}`,
         );
     } catch (e) {
       patch(id, { job_status: "failed" });
@@ -150,22 +150,23 @@ export default function Board({
 
   return (
     <main className="pb-24">
-      <section className="hero grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-        <div>
+      <div className="puzzle">
+        <section className="hero span-7 flex flex-col justify-between gap-8">
           <div className="flex items-center justify-between gap-3">
-            <span className="livechip">Live board</span>
-            <span className="rounded-full border border-[var(--line2)] px-3 py-1 text-[13px] text-[var(--ink2)]">{today}</span>
+            <span className="chip-tag">Your board</span>
+            <span className="text-[13px] text-[var(--mute)]">{today}</span>
           </div>
-          <h1 className="display mt-6">
-            Land the <em>right</em> one.
-          </h1>
-          <p className="mt-4 max-w-[520px] text-[16px] text-[var(--ink2)]">
-            Paste any job link. Rookie reads it and gives you an{" "}
-            <strong className="text-[var(--ink)]">honest score out of 10</strong>, then writes a tailored CV and cover
-            letter when you&apos;re ready.
-          </p>
-        </div>
-        <div className="kpis">
+          <div>
+            <h1 className="display">
+              Land the right role. <em>Skip the rest.</em>
+            </h1>
+            <p className="mt-4 max-w-[520px] text-[16px] text-[var(--ink2)]">
+              Paste any job link. Rookie reads it, gives you an <b className="text-[var(--ink)]">honest score out of 10</b>{" "}
+              and writes a tailored CV and cover letter when you&apos;re ready.
+            </p>
+          </div>
+        </section>
+        <section className="span-5 kpis !grid-cols-2" aria-label="Your numbers">
           <div className="kpi">
             <b>{kpi.open}</b>
             <span>Open roles</span>
@@ -182,11 +183,11 @@ export default function Board({
             <b>{kpi.interviews}</b>
             <span>Interviews and tests</span>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
 
       {!hasProfile && !hideNudge && (
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--r)] border border-[var(--line)] px-5 py-4">
+        <div className="tile tile-mint mt-[var(--gap)] flex flex-wrap items-center justify-between gap-3 !py-4">
           <p className="text-[15px]">
             <strong>Add your profile</strong> so scores, &quot;why you&quot; and your CV and letters are about you.
           </p>
@@ -201,7 +202,7 @@ export default function Board({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-4 rounded-[var(--r)] bg-[var(--paper)] p-4 sm:p-6">
+      <form onSubmit={onSubmit} className="tile tile-lilac mt-[var(--gap)] !p-4 sm:!p-6">
         <label htmlFor="core-input" className="mb-3 flex flex-wrap justify-between gap-2 text-[14px] text-[var(--ink2)]">
           <span>
             <span className="text-[var(--mute)]">[01]</span> Add a role
@@ -214,7 +215,7 @@ export default function Board({
             ref={inputRef}
             data-testid="core-input"
             type="text"
-            className="field flex-1 !rounded-full !px-5 !py-4"
+            className="field flex-1 !rounded-full !border-transparent !px-5 !py-4"
             placeholder="https://… or Marketing Intern @ Spotify"
             value={text}
             maxLength={500}
@@ -321,8 +322,8 @@ export default function Board({
         )}
         {items.length > 0 && open.length === 0 && (
           <p className="mt-4 text-[var(--ink2)]">
-            Nothing open right now. Check <Link href="/app/applications">Applications</Link>,{" "}
-            <Link href="/app/barriers">Barriers</Link> or <Link href="/app/ruled-out">Ruled out</Link>.
+            Nothing open right now. Check <Link href="/app/applications">Applications</Link> or{" "}
+            <Link href="/app/barriers">Barriers</Link>.
           </p>
         )}
       </section>

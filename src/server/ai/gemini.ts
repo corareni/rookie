@@ -59,6 +59,8 @@ export async function generateJson<T>(opts: {
   prompt: string;
   schema: object;
   readUrls?: boolean;
+  /** A document to read first, e.g. an uploaded CV (base64). */
+  file?: { data: string; mimeType: string };
 }): Promise<{ data: T; urlFailed: boolean }> {
   const models = [...new Set([opts.model, MODEL_FAST()])];
   let last: unknown;
@@ -66,9 +68,11 @@ export async function generateJson<T>(opts: {
     try {
       const res = await ai().models.generateContent({
         model,
-        contents: opts.readUrls
-          ? `${opts.prompt}\n\nReply with ONLY a JSON object matching this JSON Schema:\n${JSON.stringify(opts.schema)}`
-          : opts.prompt,
+        contents: opts.file
+          ? [{ role: "user", parts: [{ inlineData: opts.file }, { text: opts.prompt }] }]
+          : opts.readUrls
+            ? `${opts.prompt}\n\nReply with ONLY a JSON object matching this JSON Schema:\n${JSON.stringify(opts.schema)}`
+            : opts.prompt,
         config: {
           systemInstruction: opts.system,
           temperature: 0.4,

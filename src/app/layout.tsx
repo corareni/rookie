@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo_Black, Plus_Jakarta_Sans } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import Header from "@/components/Header";
 import { site } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
@@ -8,19 +8,18 @@ import "./globals.css";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
-  style: ["normal", "italic"],
+  weight: ["300", "700"],
 });
 
-const mega = Archivo_Black({ variable: "--font-mega", subsets: ["latin"], weight: "400" });
-
 export const metadata: Metadata = {
-  title: `${site.name}: your internship applications on one board`,
+  title: `${site.name}: ${site.tagline}`,
   description: site.oneLiner,
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#e6e6ea",
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -30,10 +29,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" className={`${jakarta.variable} ${mega.variable} antialiased`}>
+    <html lang="en" className={`${jakarta.variable} antialiased`}>
       <body>
-        <Header email={user?.email ?? null} />
-        <div className="wrap pb-20">{children}</div>
+        <div className="frame print:m-0 print:rounded-none print:p-0">
+          <Header email={user?.email ?? null} />
+          <div className="wrap pt-4 pb-6">{children}</div>
+        </div>
       </body>
     </html>
   );

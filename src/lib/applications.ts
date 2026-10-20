@@ -31,15 +31,16 @@ export type Application = {
   timing: string | null;
   closes_note: string | null;
   verdict: Verdict;
+  ai_flag: "deal_breaker" | "concern" | null;
   verdict_reason: string | null;
   next_step: string | null;
 };
 
-export type Verdict = "open" | "barrier" | "ruled_out";
+export type Verdict = "open" | "barrier" | "ruled_out" | "binned";
 
 export const COLUMNS =
   "id,title,status,deadline,submitted_on,assessment_on,interview_on,offer_on,notes,job_url,company,role,location,created_at," +
-  "job_status,score,track,what,why,risk,timing,closes_note,verdict,verdict_reason,next_step";
+  "job_status,score,track,what,why,risk,timing,closes_note,verdict,verdict_reason,ai_flag,next_step";
 
 export const TRACKS = ["Consulting", "Tech & product", "Finance & banking", "Marketing & creative", "Operations & strategy", "Other"];
 

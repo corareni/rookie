@@ -56,8 +56,10 @@ export async function POST(request: Request) {
         timing: a.timing,
         closes_note: a.closes_note,
         ...(closes ? { deadline: closes } : {}),
-        verdict: ["open", "barrier", "ruled_out"].includes(a.verdict) ? a.verdict : "open",
-        verdict_reason: a.verdict === "open" ? null : a.verdict_reason,
+        // The AI only flags; the user decides on the Barriers page.
+        verdict: a.verdict === "barrier" ? "barrier" : "open",
+        ai_flag: a.verdict === "barrier" ? (a.flag === "deal_breaker" ? "deal_breaker" : "concern") : null,
+        verdict_reason: a.verdict === "barrier" ? a.verdict_reason : null,
         job: { description: a.description },
         job_status: "ready",
         analyzed_at: new Date().toISOString(),

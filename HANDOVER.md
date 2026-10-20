@@ -21,6 +21,16 @@ You (Claude Code) are building this app from an empty folder. This document is t
 
 ---
 
+## 0b. v4 amendments (21 Oct 2026). These override section 0 and below.
+
+- **Audience:** students and graduates applying to internships and first jobs. Professional tone.
+- **Design:** grey canvas `#e6e6ea`, one white rounded frame, black pill header (same before and after login; active tab lilac `#dcd6fb`, Sign up mint `#e2f6ea`), grey tiles `#f4f4f5` in uneven 12-column splits ("puzzle"), pastels lilac/mint/peach/sky/butter. Plus Jakarta Sans 300 and 700 only. Tokens in `src/app/globals.css`.
+- **Profile v2** (`supabase/schema-phase3.sql`): CV upload (PDF, Gemini reads it, file not stored), structured profile (`profiles.profile` jsonb), story points, AI memory import, personal barriers (deal-breaker or concern). Types and text rendering in `src/lib/profile.ts`.
+- **Barriers:** the AI only flags (`verdict='barrier'` + `ai_flag`); one page `/app/barriers` with To review → Ruled out → Bin (manual delete only). `/app/ruled-out` redirects.
+- **Tailored CV:** classic one-page layout copied from Cora's CV (ruled headings, org/role lines with right-aligned location and dates, "Label: text" lines). Schema in `prompts.ts`, template in `app/a/[id]/print/cv`.
+
+---
+
 ## 1. What this is and how it is graded
 
 Cora is submitting this for a university course (IE University, EdTech Challenge, "Async #1"). The task: build a small SaaS that solves a weekly problem in university life, put it online, and get real classmates using it.
