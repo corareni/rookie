@@ -5,30 +5,38 @@ import { Phone, SCREENS } from "@/components/landing/Screens";
 
 const STEPS = [
   {
-    t: "Find a role",
-    d: "Paste any job link, from a company careers page, Greenhouse, Lever or Workday. Rookie reads the listing and fills in the company, role, location, timing and deadline. Blocked page? Paste the description instead.",
+    t: "Find",
+    k: "a role.",
+    d: "Paste any job link: a company careers page, Greenhouse, Lever, Workday and more. Rookie reads the listing and fills in company, role, location, timing and deadline. If a site blocks reading, paste the description instead.",
   },
   {
-    t: "Be interested",
-    d: "Every role gets an honest score out of 10 for you: what they do, why you fit and the catch. Roles that break your own rules, like visa or start date, are sorted out for you.",
+    t: "Decide",
+    k: "if it's worth it.",
+    d: "Every role gets an honest score out of 10 based on your profile: what the company does, why you fit and the catch. Roles that clash with your own barriers wait in review, so your board stays focused.",
   },
   {
     t: "Apply",
-    d: "One click writes a CV and cover letter tailored to that company, using only facts from your real CV. Edit them, then download a one-page PDF.",
+    k: "with a tailored CV.",
+    d: "One click writes a CV and cover letter for that company, using only facts from your own profile. Edit them, then download clean one-page PDFs.",
   },
   {
-    t: "Assessment",
-    d: "Mark a role as applied and it moves to your applications. Online tests, case studies and deadlines sit next to each one, with what's next.",
+    t: "Prepare",
+    k: "for the assessment.",
+    d: "Mark a role as applied and it moves to your applications, with online tests, case studies, deadlines and next steps next to each one.",
   },
   {
     t: "Interview",
-    d: "Torn between offers or interviews? Compare 2 to 4 roles side by side: best pick, pros, cons and how you fit each one.",
+    k: "with clarity.",
+    d: "Comparing offers or interviews? Put two to four roles side by side: the best pick for you, pros, cons and how you fit each one.",
   },
   {
-    t: "Internship",
-    d: "Track every role from interested to offer on one board. No spreadsheet, no lost tabs, no missed deadlines.",
+    t: "Start",
+    k: "the right job.",
+    d: "Follow every application from interested to offer on one board. No spreadsheets, no lost tabs, no missed deadlines.",
   },
 ];
+
+const TONES = ["tile-lilac", "tile-mint", "tile-peach", "tile-sky", "tile-butter", "tile-lilac"];
 
 export default function StepScroller() {
   const [active, setActive] = useState(0);
@@ -48,10 +56,12 @@ export default function StepScroller() {
   }, []);
 
   return (
-    <div className="grid gap-10 lg:grid-cols-[1fr_320px] lg:gap-16">
-      <ol>
+    <div className="grid gap-[var(--gap)] lg:grid-cols-[1fr_340px]">
+      <ol className="grid gap-[var(--gap)] lg:gap-0">
         {STEPS.map((s, i) => {
           const Screen = SCREENS[i];
+          const on = i === active;
+          const tilt = i % 2 ? "lg:rotate-[1.5deg]" : "lg:-rotate-[1.5deg]";
           return (
             <li
               key={s.t}
@@ -59,27 +69,38 @@ export default function StepScroller() {
                 refs.current[i] = el;
               }}
               data-i={i}
-              className={`step-text flex min-h-0 flex-col justify-center py-8 lg:min-h-[78vh] lg:py-0 ${i === active ? "opacity-100" : "lg:opacity-30"}`}
+              className="flex lg:min-h-[72vh] lg:items-center"
             >
-              <p className="text-[13px] font-semibold text-[var(--mute)]">{String(i + 1).padStart(2, "0")}</p>
-              <h3 className="mt-2 text-[clamp(32px,5vw,56px)] font-semibold uppercase leading-none tracking-[-0.03em]">{s.t}</h3>
-              <p className="mt-4 max-w-[480px] text-[17px] leading-relaxed text-[var(--ink2)]">{s.d}</p>
-              <div className="mt-8 lg:hidden">
-                <Phone label={`Example screen: ${s.t}`}>
-                  <Screen />
-                </Phone>
+              <div
+                className={`step-card tile ${TONES[i]} w-full ${on ? "" : `lg:translate-y-6 lg:opacity-40 ${tilt}`}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <span className="chip-tag !bg-white">Step {String(i + 1).padStart(2, "0")}</span>
+                  <span className="arrow-btn !h-11 !w-11 !text-[18px]" aria-hidden="true">
+                    ↗
+                  </span>
+                </div>
+                <h3 className="mt-6 text-[clamp(30px,4.4vw,52px)] leading-none tracking-[-0.03em]">
+                  {s.t} <span className="font-light">{s.k}</span>
+                </h3>
+                <p className="mt-4 max-w-[520px] text-[16px] leading-relaxed text-[var(--ink2)]">{s.d}</p>
+                <div className="mt-8 lg:hidden">
+                  <Phone label={`Example screen: ${s.t}`}>
+                    <Screen />
+                  </Phone>
+                </div>
               </div>
             </li>
           );
         })}
       </ol>
       <div className="hidden lg:block">
-        <div className="sticky top-[12vh] grid">
+        <div className="tile sticky top-[10vh] grid place-items-center !py-10">
           {SCREENS.map((Screen, i) => (
             <div
               key={i}
               aria-hidden={i !== active}
-              className={`screen-fade [grid-area:1/1] transition-opacity duration-500 ${i === active ? "opacity-100" : "pointer-events-none opacity-0"}`}
+              className={`screen-fade [grid-area:1/1] transition-all duration-500 ${i === active ? "opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
             >
               <Phone label={`Example screen: ${STEPS[i].t}`}>
                 <Screen />
