@@ -163,7 +163,7 @@ export default function Board({
           </div>
           <div>
             <h1 className="display">
-              Land the right role. <em>Skip the rest.</em>
+              Your applications. <em>One clear board.</em>
             </h1>
             <p className="mt-4 max-w-[520px] text-[16px] text-[var(--ink2)]">
               Paste any job link. Rookie reads it, gives you an <b className="text-[var(--ink)]">honest score out of 10</b>{" "}
@@ -192,7 +192,7 @@ export default function Board({
       </div>
 
       {!hasProfile && !hideNudge && (
-        <div className="tile tile-mint mt-[var(--gap)] flex flex-wrap items-center justify-between gap-3 !py-4">
+        <div className="mt-[var(--gap)] flex flex-wrap items-center justify-between gap-3 rounded-[var(--r)] border border-[var(--line)] px-6 py-4">
           <p className="text-[15px]">
             <strong>Add your profile</strong> so scores, &quot;why you&quot; and your CV and letters are about you.
           </p>
@@ -207,7 +207,7 @@ export default function Board({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="tile tile-lilac mt-[var(--gap)] !p-4 sm:!p-6">
+      <form onSubmit={onSubmit} className="tile mt-[var(--gap)] !p-4 sm:!p-6">
         <label htmlFor="core-input" className="mb-3 flex flex-wrap justify-between gap-2 text-[14px] text-[var(--ink2)]">
           <span>
             <span className="text-[var(--mute)]">[01]</span> Add a role
@@ -220,7 +220,7 @@ export default function Board({
             ref={inputRef}
             data-testid="core-input"
             type="text"
-            className="field flex-1 !rounded-full !border-transparent !px-5 !py-4"
+            className="field flex-1 !rounded-full !border-transparent !px-5 !py-4 shadow-[0_0_0_1px_var(--line)]"
             placeholder="https://… or Marketing Intern @ Spotify"
             value={text}
             maxLength={500}
@@ -303,6 +303,11 @@ export default function Board({
               onApply={() => update(a.id, { status: "submitted" }, `${a.company ?? "Role"} moved to Applications.`)}
               onRemove={() => remove(a.id)}
               onRetry={a.job_url ? () => runAnalysis(a.id) : undefined}
+              onSaveNotes={async (notes) => {
+                const { error } = await createClient().from("applications").update({ notes }).eq("id", a.id);
+                if (!error) patch(a.id, { notes });
+                return !error;
+              }}
             />
           ))}
         </div>

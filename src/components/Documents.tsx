@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { generateDocs } from "@/lib/ai-client";
+import WritingAnimation from "@/components/WritingAnimation";
+import { generateDocs, type GenerateOptions } from "@/lib/ai-client";
 import { cvAsText, letterAsText, type CvContent, type Doc, type LetterContent } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 
@@ -15,13 +16,29 @@ type Props = {
   canGenerate: boolean;
   left: number;
   signature: string;
+  /** Every fact in the user's profile, so they can pick what to feature. */
+  facts: string[];
 };
 
-export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature }: Props) {
+const STYLES: { v: GenerateOptions["style"]; label: string; hint: string }[] = [
+  { v: "concise", label: "To the point", hint: "Short, factual, no warm-up" },
+  { v: "story", label: "Storytelling", hint: "Opens with a real moment" },
+  { v: "elaborate", label: "Elaborate", hint: "Fuller, more descriptive" },
+];
+const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
+  { v: "short", label: "Short · ~200 words" },
+  { v: "standard", label: "Standard · ~300" },
+  { v: "long", label: "Long · ~400" },
+];
+
+export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature, facts }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
+  const [style, setStyle] = useState<GenerateOptions["style"]>("story");
+  const [length, setLength] = useState<GenerateOptions["length"]>("standard");
+  const [picked, setPicked] = useState<string[]>([]);
   const has = !!(cvDoc && letterDoc);
 
   async function generate() {
@@ -29,7 +46,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     setError(null);
     setConfirmRegen(false);
     try {
-      await generateDocs(applicationId);
+      await generateDocs(applicationId, { style, length, facts: picked });
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't write your documents.");
@@ -46,7 +63,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
       disabled={busy || !hasCv || !canGenerate || left <= 0}
       onClick={() => (has && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
     >
-      {busy ? "Writing… (about 20 seconds)" : has ? "Regenerate both" : "Write my CV and cover letter"}
+      {busy ? "Writing…" : has ? "Regenerate both" : "Write my CV and cover letter"}
     </button>
   );
 
@@ -56,7 +73,54 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         <small>[02]</small> Your tailored CV and cover letter
       </h2>
 
-      <div className="card mt-3 flex flex-wrap items-center gap-4">
+      <div className="card mt-3 grid gap-5">
+        <fieldset>
+          <legend className="label">Cover letter style</legend>
+          <div className="mt-1 grid gap-2 sm:grid-cols-3">
+            {STYLES.map((o) => (
+              <button key={o.v} type="button" className="act !h-auto !justify-start !py-2.5 !text-left" aria-pressed={style === o.v} onClick={() => setStyle(o.v)}>
+                <span>
+                  <span className="block">{o.label}</span>
+                  <span className="block text-[12px] font-light text-[var(--ink2)]">{o.hint}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="label">Length</legend>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {LENGTHS.map((o) => (
+              <button key={o.v} type="button" className="act" aria-pressed={length === o.v} onClick={() => setLength(o.v)}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {facts.length > 0 && (
+          <details className="rounded-2xl bg-white p-4">
+            <summary className="cursor-pointer text-[14px] font-bold">
+              Choose what to include <span className="font-light text-[var(--ink2)]">(optional: otherwise Rookie picks the best facts)</span>
+              {picked.length > 0 && <span className="chip chip-good ml-2">{picked.length} picked</span>}
+            </summary>
+            <ul className="mt-3 grid max-h-[320px] gap-1.5 overflow-y-auto pr-1">
+              {facts.map((f) => (
+                <li key={f}>
+                  <label className="flex cursor-pointer items-start gap-2.5 rounded-xl px-2 py-1.5 text-[13.5px] hover:bg-[var(--tile)]">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 flex-none accent-[var(--ink)]"
+                      checked={picked.includes(f)}
+                      onChange={(e) => setPicked((p) => (e.target.checked ? [...p, f] : p.filter((x) => x !== f)))}
+                    />
+                    <span>{f}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <div className="flex flex-wrap items-center gap-4">
         {button}
         <p className="text-sm text-[var(--ink2)]">
           {!hasCv ? (
@@ -66,7 +130,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
           ) : !canGenerate ? (
             "Rookie needs the job details first: analyse the role above."
           ) : (
-            `${left} of 6 left today. Uses only facts from your CV and story.`
+            `${left} of 6 left today. Only facts from your profile, and the CV always fits one page.`
           )}
         </p>
         {confirmRegen && (
@@ -82,6 +146,8 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
             {error}
           </p>
         )}
+        </div>
+        {busy && <WritingAnimation />}
       </div>
 
       {cvDoc &&

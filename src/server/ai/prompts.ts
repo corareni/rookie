@@ -260,10 +260,43 @@ export const cvSystem = `You tailor a candidate's CV to one role, in a classic o
 ${VOICE}
 ${DATA_RULE}`;
 
-export function cvPrompt(job: string, profile: Profile) {
+export type WriteOptions = {
+  style: "concise" | "story" | "elaborate";
+  length: "short" | "standard" | "long";
+  /** Facts the user picked from their profile to feature; empty means the AI chooses. */
+  facts: string[];
+  /** The user's own notes about this role (from the board). */
+  roleNotes: string;
+  /** Letters the user wrote before: tone and structure references only. */
+  styleRefs: string[];
+};
+
+export const DEFAULT_OPTIONS: WriteOptions = { style: "story", length: "standard", facts: [], roleNotes: "", styleRefs: [] };
+
+const STYLE: Record<WriteOptions["style"], string> = {
+  concise: "Straight to the point: short sentences, no warm-up, every line carries a fact.",
+  story: "Story-led: open with one real moment from the candidate's story, then connect it to the role.",
+  elaborate: "Richer and more descriptive: fuller sentences and more context, still factual and never flowery.",
+};
+const LENGTH: Record<WriteOptions["length"], string> = {
+  short: "180-230 words in 3 paragraphs",
+  standard: "260-330 words in 3-4 paragraphs",
+  long: "360-420 words in 4 paragraphs",
+};
+
+function extrasBlock(o: WriteOptions) {
+  return [
+    o.roleNotes.trim() ? `<notes>\nThe candidate's own notes about this role:\n${o.roleNotes.trim()}\n</notes>` : "",
+    o.facts.length ? `<profile>\nFeature these facts (the candidate chose them):\n${o.facts.map((f) => `- ${f}`).join("\n")}\n</profile>` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+export function cvPrompt(job: string, profile: Profile, o: WriteOptions = DEFAULT_OPTIONS) {
   const c = profile.contact;
   const contact = [c.name, c.city, c.phone, c.email, c.linkedin].filter(Boolean).join(" | ") || "(take them from the CV)";
-  return `The role:\n<listing>\n${job}\n</listing>\n\nContact details for the header: ${contact}\n\n${aboutBlock(profile)}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nTailor the CV for this role.`;
+  return `The role:\n<listing>\n${job}\n</listing>\n\nContact details for the header: ${contact}\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nTailor the CV for this role. It must fit on one A4 page.`;
 }
 
 // ---------- 4. Cover letter ----------
@@ -285,7 +318,7 @@ export const letterSchema = {
     addressee: { type: "array", items: { type: "string" }, description: "e.g. ['Hiring Team', 'Company', 'City']" },
     re: { type: "string", description: "the role title for the 'Re:' line" },
     greeting: { type: "string", description: "e.g. 'Dear Hiring Team,' - never invent a person's name" },
-    paragraphs: { type: "array", items: { type: "string" }, description: "3-4 paragraphs, 250-350 words in total" },
+    paragraphs: { type: "array", items: { type: "string" }, description: "3-4 paragraphs, in the requested length" },
     closing: { type: "string", description: "e.g. 'Kind regards,'" },
     used_company_facts: list,
     used_profile_facts: list,
@@ -295,7 +328,7 @@ export const letterSchema = {
 };
 
 export const letterSystem = `You write a one-page cover letter for a candidate (usually a student or graduate), for one specific role.
-- 250-350 words, 3-4 paragraphs: open with a real moment or story from the student's profile (not a generic opener); why this company, with at least 2 concrete facts about the company from the listing or well-known public facts; proof from experience with 1-2 specific examples from the CV or story; a short, confident close.
+- Length and style as requested in the prompt (default 260-330 words, 3-4 paragraphs). Open with a real moment or story from the candidate's profile (not a generic opener); why this company, with at least 2 concrete facts about the company from the listing or well-known public facts; proof from experience with 1-2 specific examples from the CV or story; a short, confident close.
 - Every claim about the candidate must come from their profile, CV, story or memory. Every claim about the company must come from the listing or be widely known; list each one in used_company_facts.
 - Storytelling over spec sheets. Keep tech jargon light. Mention AI help only if the candidate's own material says they used it. Be confident but honest about gaps; never invent a weakness or a habit either.
 - Tone adapts to the company: understated and precise for finance or consulting, more energy for startups.
@@ -304,8 +337,13 @@ export const letterSystem = `You write a one-page cover letter for a candidate (
 ${VOICE}
 ${DATA_RULE}`;
 
-export function letterPrompt(job: string, profile: Profile) {
-  return `The role:\n<listing>\n${job}\n</listing>\n\n${aboutBlock(profile)}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nWrite the cover letter.`;
+export function letterPrompt(job: string, profile: Profile, o: WriteOptions = DEFAULT_OPTIONS) {
+  const refs = o.styleRefs.length
+    ? `<notes>\nLetters the candidate wrote before. Use them ONLY as a reference for tone, voice and structure; take no facts from them:\n${o.styleRefs
+        .map((r, i) => `--- Letter ${i + 1} ---\n${r.slice(0, 2500)}`)
+        .join("\n")}\n</notes>`
+    : "";
+  return `The role:\n<listing>\n${job}\n</listing>\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n${refs}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nWrite the cover letter.\nStyle: ${STYLE[o.style]}\nLength: ${LENGTH[o.length]}.`;
 }
 
 // ---------- 5. Import a CV into the structured profile ----------

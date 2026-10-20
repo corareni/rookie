@@ -12,12 +12,17 @@ type Props = {
   onRemove?: () => void;
   onRetry?: () => void;
   onMoveToBoard?: () => void;
+  /** Saves the user's notes for this role; they're used when writing the CV and letter. */
+  onSaveNotes?: (notes: string) => Promise<boolean>;
   /** Extra buttons shown first in the actions column (used on the Barriers page). */
   actions?: React.ReactNode;
 };
 
-export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemove, onRetry, onMoveToBoard, actions }: Props) {
+export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemove, onRetry, onMoveToBoard, onSaveNotes, actions }: Props) {
   const [confirm, setConfirm] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [notes, setNotes] = useState(a.notes ?? "");
+  const [notesMsg, setNotesMsg] = useState<string | null>(null);
   const analysed = !!(a.company && a.role);
   const days = a.deadline ? daysUntil(a.deadline) : null;
 
@@ -48,7 +53,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[14px] text-[var(--ink2)]">
-          {a.track && <span className="pill !cursor-default">{a.track}</span>}
+          {a.track && <span className="chip chip-mute">{a.track}</span>}
           {a.location && <span>{a.location}</span>}
           {a.deadline && days !== null ? (
             <span className={`chip ${days < 0 ? "chip-bad" : days <= 14 ? "chip-warn" : "chip-mute"}`}>
@@ -85,12 +90,12 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
         )}
 
         {a.verdict !== "open" && a.verdict_reason && (
-          <p className="mt-3 rounded-2xl bg-white px-4 py-2.5 text-sm">
-            <span className={`chip mr-2 ${a.ai_flag === "deal_breaker" ? "chip-bad" : "chip-warn"}`}>
+          <div className="mt-3 grid justify-items-start gap-1.5 rounded-2xl bg-white px-4 py-3 text-sm">
+            <span className={`chip ${a.ai_flag === "deal_breaker" ? "chip-bad" : "chip-warn"}`}>
               {a.ai_flag === "deal_breaker" ? "Breaks a deal-breaker" : "Concern"}
             </span>
-            {a.verdict_reason}
-          </p>
+            <span>{a.verdict_reason}</span>
+          </div>
         )}
 
         {(a.what || a.why || a.risk) && (
@@ -120,40 +125,77 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             </dl>
           </details>
         )}
+
+        {notesOpen && onSaveNotes && (
+          <div className="mt-3 grid gap-2 rounded-2xl bg-white p-3">
+            <label htmlFor={`notes-${a.id}`} className="text-[13px] font-bold">
+              Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and letter</span>
+            </label>
+            <textarea
+              id={`notes-${a.id}`}
+              rows={3}
+              className="field !text-[14px]"
+              placeholder="e.g. Met their recruiter at the IE career fair. Mention my n8n automation project."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="btn !py-2"
+                onClick={async () => setNotesMsg((await onSaveNotes(notes)) ? "Saved." : "Couldn't save.")}
+              >
+                Save notes
+              </button>
+              {notesMsg && (
+                <span role="status" className="text-[13px] text-[var(--ink2)]">
+                  {notesMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 md:max-w-[300px] md:justify-end md:self-start">
-        {actions}
+      <div className="grid content-start gap-2 md:w-[244px]">
+        {actions && <div className="grid gap-2">{actions}</div>}
         {onApply && (
-          <button type="button" className="btn !py-2" onClick={onApply}>
+          <button type="button" className="btn w-full !py-2.5" onClick={onApply}>
             Mark as applied
           </button>
         )}
         {onMoveToBoard && (
-          <button type="button" className="btn btn-ghost !py-2" onClick={onMoveToBoard}>
+          <button type="button" className="btn btn-ghost w-full !py-2.5" onClick={onMoveToBoard}>
             Move to board
           </button>
         )}
-        <Link href={`/app/a/${a.id}#documents`} className="pill">
-          CV + letter
-        </Link>
-        {onToggleCompare && (
-          <button type="button" className="pill" aria-pressed={!!selected} onClick={onToggleCompare}>
-            {selected ? "✓ Comparing" : "+ Compare"}
-          </button>
-        )}
-        {a.job_url && (
-          <a href={a.job_url} target="_blank" rel="noopener noreferrer" className="px-1 text-[14px] font-semibold">
-            Listing ↗
-          </a>
-        )}
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/app/a/${a.id}#documents`} className="act">
+            CV + letter
+          </Link>
+          {onToggleCompare && (
+            <button type="button" className="act" aria-pressed={!!selected} onClick={onToggleCompare}>
+              {selected ? "✓ Comparing" : "+ Compare"}
+            </button>
+          )}
+          {onSaveNotes && (
+            <button type="button" className="act" aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)}>
+              {notes.trim() ? "✎ Notes" : "+ Notes"}
+            </button>
+          )}
+          {a.job_url && (
+            <a href={a.job_url} target="_blank" rel="noopener noreferrer" className="act">
+              Listing ↗
+            </a>
+          )}
+        </div>
         {onRemove &&
           (confirm ? (
-            <span className="flex items-center gap-1 text-sm">
-              <button type="button" className="btn btn-danger !px-3 !py-1.5 !text-sm" onClick={onRemove}>
+            <span className="grid grid-cols-2 gap-2">
+              <button type="button" className="btn btn-danger !py-2 !text-[13px]" onClick={onRemove}>
                 Remove
               </button>
-              <button type="button" className="btn btn-ghost !px-3 !py-1.5 !text-sm" onClick={() => setConfirm(false)}>
+              <button type="button" className="btn btn-ghost !py-2 !text-[13px]" onClick={() => setConfirm(false)}>
                 Keep
               </button>
             </span>
@@ -161,10 +203,10 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             <button
               type="button"
               aria-label={`Remove ${a.company ?? a.title}`}
-              className="grid h-9 w-9 place-items-center rounded-full border border-[var(--line2)] text-[var(--ink2)]"
+              className="justify-self-end px-1 text-[12.5px] text-[var(--mute)] hover:text-[var(--bad)]"
               onClick={() => setConfirm(true)}
             >
-              ×
+              Remove
             </button>
           ))}
       </div>

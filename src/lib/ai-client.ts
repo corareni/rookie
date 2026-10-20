@@ -18,7 +18,9 @@ export const analyzeRole = (id: string, text?: string) =>
 
 export const compareRoles = (ids: string[]) => post<{ id: string }>("/api/compare", { ids }).then((d) => d.id);
 
-export const generateDocs = (id: string) => post<{ ok: true }>("/api/generate", { id });
+export type GenerateOptions = { style: "concise" | "story" | "elaborate"; length: "short" | "standard" | "long"; facts: string[] };
+
+export const generateDocs = (id: string, options?: GenerateOptions) => post<{ ok: true }>("/api/generate", { id, ...options });
 
 export async function importCv(file: File) {
   const body = new FormData();

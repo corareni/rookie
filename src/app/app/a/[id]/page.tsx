@@ -5,7 +5,7 @@ import ApplicationEditor from "@/components/ApplicationEditor";
 import Documents from "@/components/Documents";
 import { COLUMNS, type Application } from "@/lib/applications";
 import type { CvContent, Doc, LetterContent } from "@/lib/documents";
-import { PROFILE_COLUMNS, hasProfileContent, toProfileData } from "@/lib/profile";
+import { PROFILE_COLUMNS, hasProfileContent, profileAsText, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Role · Rookie" };
@@ -40,6 +40,13 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
     );
   }
   const a = data as unknown as Application;
+  const pd = profile ? toProfileData(profile) : null;
+  // Each line of the profile becomes a pickable fact ("- Automated…", "Skills: …"), minus headings.
+  const facts = pd
+    ? [...profileAsText(pd).split("\n"), ...pd.story_points.map((s) => `Story: ${s}`)]
+        .map((l) => l.replace(/^- /, "").trim())
+        .filter((l) => l.length > 12 && l !== l.toUpperCase())
+    : [];
   const doc = <T,>(kind: string) => (docs?.find((d) => d.kind === kind) as Doc<T>) ?? null;
 
   return (
@@ -53,6 +60,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
         canGenerate={a.job_status === "ready"}
         left={Math.max(0, DAILY_GENERATE - (count ?? 0))}
         signature={(profile?.contact as { name?: string } | null)?.name ?? ""}
+        facts={[...new Set(facts)].slice(0, 80)}
       />
     </ApplicationEditor>
   );
