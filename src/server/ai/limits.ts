@@ -22,7 +22,7 @@ export async function usedToday(supabase: SupabaseClient, kind: Kind) {
 }
 
 /** Throws if the user or the whole app is over today's limit, otherwise logs the run. */
-export async function useRun(supabase: SupabaseClient, kind: Kind, cost = 1) {
+export async function consumeRun(supabase: SupabaseClient, kind: Kind, cost = 1) {
   if ((await usedToday(supabase, kind)) + cost > DAILY[kind]) {
     throw new AiError(`You've used today's ${kind === "generate" ? "document" : kind} limit. Back tomorrow.`, 429);
   }

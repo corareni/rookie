@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
-import { errorResponse, getProfile, getUser, useRun } from "@/server/ai/limits";
+import { errorResponse, getProfile, getUser, consumeRun } from "@/server/ai/limits";
 import { comparePrompt, compareSchema, compareSystem, noLongDashes, type Comparison } from "@/server/ai/prompts";
 
 export const maxDuration = 60;
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
       .in("id", unique);
     if (!rows || rows.length !== unique.length) throw new AiError("Some of those roles weren't found.", 404);
 
-    await useRun(supabase, "compare");
+    await consumeRun(supabase, "compare");
     const profile = await getProfile(supabase);
     const roles = rows.map((r) => ({
       id: r.id,

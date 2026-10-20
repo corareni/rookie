@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
-import { errorResponse, getProfile, getUser, useRun } from "@/server/ai/limits";
+import { errorResponse, getProfile, getUser, consumeRun } from "@/server/ai/limits";
 import {
   cvPrompt,
   cvSchema,
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
       `Listing:\n${description.slice(0, 6000)}`,
     ].join("\n");
 
-    await useRun(supabase, "generate");
+    await consumeRun(supabase, "generate");
     const [cv, letter] = await Promise.all([
       generateJson<TailoredCV>({ model: MODEL_WRITE(), system: cvSystem, prompt: cvPrompt(job, profile), schema: cvSchema }),
       generateJson<Letter>({ model: MODEL_WRITE(), system: letterSystem, prompt: letterPrompt(job, profile), schema: letterSchema }),

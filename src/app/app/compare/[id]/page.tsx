@@ -27,6 +27,48 @@ const BASICS: [string, string][] = [
   ["languages", "Languages"],
 ];
 
+function Section({
+  n,
+  title,
+  k,
+  tone,
+  ordered,
+  cols,
+  company,
+}: {
+  n: string;
+  title: string;
+  k: keyof Role;
+  tone?: string;
+  ordered: Role[];
+  cols: string;
+  company: (id: string) => string | undefined;
+}) {
+  return (
+    <section className="mt-8">
+      <h2 className="sec">
+        <small>[{n}]</small> {title}
+      </h2>
+      <div className={`mt-3 grid gap-3 ${cols}`}>
+        {ordered.map((role) => (
+          <div key={role.id} className="card">
+            <p className="mb-1 text-[13px] font-semibold text-[var(--mute)] lg:hidden">{company(role.id)}</p>
+            {k === "verdict" ? (
+              <p className="text-[14px] leading-relaxed">{role.verdict}</p>
+            ) : (
+              <ul className={`dot-list ${tone ?? ""} text-[14px] leading-snug`}>
+                {(role[k] as string[]).map((x) => (
+                  <li key={x}>{x}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default async function ComparisonPage({ params }: PageProps<"/app/compare/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
@@ -45,30 +87,8 @@ export default async function ComparisonPage({ params }: PageProps<"/app/compare
   const ordered = r.ranking.map((rid) => r.roles.find((x) => x.id === rid)).filter((x): x is Role => !!x);
   const best = info(r.bestPick);
   const cols = ordered.length >= 3 ? "lg:grid-cols-3" : "lg:grid-cols-2";
+  const shared = { ordered, cols, company: (rid: string) => info(rid)?.company ?? undefined };
 
-  const Section = ({ n, title, k, tone }: { n: string; title: string; k: keyof Role; tone?: string }) => (
-    <section className="mt-8">
-      <h2 className="sec">
-        <small>[{n}]</small> {title}
-      </h2>
-      <div className={`mt-3 grid gap-3 ${cols}`}>
-        {ordered.map((role) => (
-          <div key={role.id} className="card">
-            <p className="mb-1 text-[13px] font-semibold text-[var(--mute)] lg:hidden">{info(role.id)?.company}</p>
-            {k === "verdict" ? (
-              <p className="text-[14px] leading-relaxed">{role.verdict}</p>
-            ) : (
-              <ul className={`dot-list ${tone ?? ""} text-[14px] leading-snug`}>
-                {(role[k] as string[]).map((x) => (
-                  <li key={x}>{x}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ))}
-      </div>
-    </section>
-  );
 
   return (
     <main className="pb-16">
@@ -138,12 +158,12 @@ export default async function ComparisonPage({ params }: PageProps<"/app/compare
         </div>
       </section>
 
-      <Section n="02" title="What they look for" k="lookFor" />
-      <Section n="03" title="What the role is" k="roleIs" />
-      <Section n="04" title="How you fit" k="fit" />
-      <Section n="05" title="Pros" k="pros" tone="good" />
-      <Section n="06" title="Cons" k="cons" tone="bad" />
-      <Section n="07" title="Verdict" k="verdict" />
+      <Section {...shared} n="02" title="What they look for" k="lookFor" />
+      <Section {...shared} n="03" title="What the role is" k="roleIs" />
+      <Section {...shared} n="04" title="How you fit" k="fit" />
+      <Section {...shared} n="05" title="Pros" k="pros" tone="good" />
+      <Section {...shared} n="06" title="Cons" k="cons" tone="bad" />
+      <Section {...shared} n="07" title="Verdict" k="verdict" />
 
       {r.questions.length > 0 && (
         <section className="mt-8">

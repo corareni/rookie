@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODEL_FAST, generateJson } from "@/server/ai/gemini";
-import { errorResponse, getProfile, getUser, useRun } from "@/server/ai/limits";
+import { errorResponse, getProfile, getUser, consumeRun } from "@/server/ai/limits";
 import { TRACKS, analysisPrompt, analysisSchema, analysisSystem, noLongDashes, type Analysis } from "@/server/ai/prompts";
 
 export const maxDuration = 60;
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const text = (body.text ?? "").trim() || row.job_text || "";
     if (!row.job_url && !text) throw new AiError("Add a job link or paste the description first.", 400);
 
-    await useRun(supabase, "analyze");
+    await consumeRun(supabase, "analyze");
     await supabase.from("applications").update({ job_status: "reading", job_text: text || null }).eq("id", id);
 
     const profile = await getProfile(supabase);
