@@ -1,5 +1,5 @@
 import "server-only";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 export class AiError extends Error {
   constructor(
@@ -18,7 +18,9 @@ function ai() {
 }
 
 export const MODEL_FAST = () => process.env.AI_MODEL_FAST || "gemini-3.5-flash-lite";
-export const MODEL_WRITE = () => process.env.AI_MODEL_WRITE || "gemini-3.8-flash";
+export const MODEL_WRITE = () => process.env.AI_MODEL_WRITE || "gemini-3.6-flash";
+
+const ATTEMPT_MS = 25_000;
 
 /** Pulls the first JSON object out of a model reply (tolerates code fences or stray text). */
 function parseJson<T>(text: string): T {
@@ -35,7 +37,8 @@ function parseJson<T>(text: string): T {
 function mapError(e: unknown): never {
   if (e instanceof AiError) throw e;
   const msg = e instanceof Error ? e.message : String(e);
-  if (/429|RESOURCE_EXHAUSTED|quota|rate/i.test(msg)) throw new AiError("Rookie is busy, try again in a minute.", 429);
+  if (/429|503|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|overloaded|quota|rate|abort/i.test(msg))
+    throw new AiError("Rookie is busy, try again in a minute.", 429);
   console.error("Gemini error:", msg);
   throw new AiError("The AI couldn't finish this one. Try again.", 502);
 }
@@ -44,6 +47,12 @@ function mapError(e: unknown): never {
  * Asks Gemini for JSON. With `readUrls`, Gemini's URL context tool reads the listing first;
  * tools and schema-enforced output don't always combine, so in that case the schema goes in the prompt.
  */
+/** Overloaded, rate-limited or too slow: worth one more try on the fast model. */
+const retryable = (e: unknown) =>
+  /429|500|503|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|overloaded|abort|timed? ?out/i.test(
+    e instanceof Error ? e.message : String(e),
+  );
+
 export async function generateJson<T>(opts: {
   model: string;
   system: string;
@@ -51,26 +60,35 @@ export async function generateJson<T>(opts: {
   schema: object;
   readUrls?: boolean;
 }): Promise<{ data: T; urlFailed: boolean }> {
-  try {
-    const res = await ai().models.generateContent({
-      model: opts.model,
-      contents: opts.readUrls
-        ? `${opts.prompt}\n\nReply with ONLY a JSON object matching this JSON Schema:\n${JSON.stringify(opts.schema)}`
-        : opts.prompt,
-      config: {
-        systemInstruction: opts.system,
-        temperature: 0.4,
-        ...(opts.readUrls
-          ? { tools: [{ urlContext: {} }] }
-          : { responseMimeType: "application/json", responseJsonSchema: opts.schema }),
-      },
-    });
-    const meta = res.candidates?.[0]?.urlContextMetadata?.urlMetadata ?? [];
-    const urlFailed =
-      !!opts.readUrls &&
-      (meta.length === 0 || meta.every((m) => !String(m.urlRetrievalStatus ?? "").includes("SUCCESS")));
-    return { data: parseJson<T>(res.text ?? ""), urlFailed };
-  } catch (e) {
-    mapError(e);
+  const models = [...new Set([opts.model, MODEL_FAST()])];
+  let last: unknown;
+  for (const model of models) {
+    try {
+      const res = await ai().models.generateContent({
+        model,
+        contents: opts.readUrls
+          ? `${opts.prompt}\n\nReply with ONLY a JSON object matching this JSON Schema:\n${JSON.stringify(opts.schema)}`
+          : opts.prompt,
+        config: {
+          systemInstruction: opts.system,
+          temperature: 0.4,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          abortSignal: AbortSignal.timeout(ATTEMPT_MS),
+          ...(opts.readUrls
+            ? { tools: [{ urlContext: {} }] }
+            : { responseMimeType: "application/json", responseJsonSchema: opts.schema }),
+        },
+      });
+      const meta = res.candidates?.[0]?.urlContextMetadata?.urlMetadata ?? [];
+      const urlFailed =
+        !!opts.readUrls &&
+        (meta.length === 0 || meta.every((m) => !String(m.urlRetrievalStatus ?? "").includes("SUCCESS")));
+      return { data: parseJson<T>(res.text ?? ""), urlFailed };
+    } catch (e) {
+      last = e;
+      if (!retryable(e)) break;
+      console.warn(`Gemini ${model} failed, trying the next model:`, e instanceof Error ? e.message.slice(0, 160) : e);
+    }
   }
+  mapError(last);
 }

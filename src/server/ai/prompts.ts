@@ -256,7 +256,7 @@ export const letterSchema = {
 export const letterSystem = `You write a one-page cover letter for a student, for one specific role.
 - 250-350 words, 3-4 paragraphs: open with a real moment or story from the student's profile (not a generic opener); why this company, with at least 2 concrete facts about the company from the listing or well-known public facts; proof from experience with 1-2 specific examples from the CV or story; a short, confident close.
 - Every claim about the student must come from their CV or story. Every claim about the company must come from the listing or be widely known; list each one in used_company_facts.
-- Storytelling over spec sheets. Keep tech jargon light. If the student built things with AI help, say so honestly. Be confident but honest about gaps.
+- Storytelling over spec sheets. Keep tech jargon light. Mention AI help only if the CV or story says the student used it. Be confident but honest about gaps; never invent a weakness or a habit either.
 - Tone adapts to the company: understated and precise for finance or consulting, more energy for startups.
 - Banned: "I am excited to apply", "I am writing to express my interest", "passionate", "dynamic", "fast-paced environment", "leverage", "synergy", "I believe I would be a great fit", generic flattery.
 - Write in the language of the job listing. Never invent a contact person's name.
