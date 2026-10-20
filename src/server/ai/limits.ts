@@ -4,8 +4,8 @@ import { AiError } from "./gemini";
 import { PROFILE_COLUMNS, toProfileData } from "@/lib/profile";
 import type { Profile } from "./prompts";
 
-export type Kind = "analyze" | "compare" | "generate" | "import";
-export const DAILY: Record<Kind, number> = { analyze: 20, compare: 5, generate: 6, import: 5 };
+export type Kind = "analyze" | "compare" | "generate" | "import" | "interview" | "library";
+export const DAILY: Record<Kind, number> = { analyze: 20, compare: 5, generate: 6, import: 5, interview: 6, library: 10 };
 
 const startOfDay = () => {
   const d = new Date();
@@ -25,7 +25,7 @@ export async function usedToday(supabase: SupabaseClient, kind: Kind) {
 /** Throws if the user or the whole app is over today's limit, otherwise logs the run. */
 export async function consumeRun(supabase: SupabaseClient, kind: Kind, cost = 1) {
   if ((await usedToday(supabase, kind)) + cost > DAILY[kind]) {
-    throw new AiError(`You've used today's ${kind === "generate" ? "document" : kind === "import" ? "CV import" : kind} limit. Back tomorrow.`, 429);
+    throw new AiError(`You've used today's ${kind === "generate" ? "document" : kind === "import" ? "CV import" : kind === "interview" ? "interview practice" : kind} limit. Back tomorrow.`, 429);
   }
   const globalCap = Number(process.env.AI_GLOBAL_DAILY_LIMIT || 400);
   const { data: total } = await supabase.rpc("ai_runs_today_global");

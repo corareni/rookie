@@ -110,6 +110,15 @@ export default function Board({
     } else if (done) setNotice(done);
   }
 
+  /** Keeps a copy of the CV and letter that were sent, so later regenerations never lose them. */
+  async function snapshot(a: Application) {
+    const supabase = createClient();
+    const { data: docs } = await supabase.from("documents").select("kind,content").eq("application_id", a.id);
+    if (!docs?.length) return;
+    const label = [a.company ?? a.title, a.role].filter(Boolean).join(" · ");
+    await supabase.from("saved_documents").insert(docs.map((d) => ({ application_id: a.id, label, kind: d.kind, content: d.content })));
+  }
+
   async function remove(id: string) {
     const { error } = await createClient().from("applications").delete().eq("id", id);
     if (error) return setError(`Couldn't remove: ${error.message}`);
@@ -300,7 +309,10 @@ export default function Board({
               onToggleCompare={() =>
                 setSelected((s) => (s.includes(a.id) ? s.filter((x) => x !== a.id) : s.length >= 4 ? s : [...s, a.id]))
               }
-              onApply={() => update(a.id, { status: "submitted" }, `${a.company ?? "Role"} moved to Applications.`)}
+              onApply={async () => {
+                await update(a.id, { status: "submitted" }, `${a.company ?? "Role"} moved to Applications. Its CV and letter are saved in your Library.`);
+                await snapshot(a);
+              }}
               onRemove={() => remove(a.id)}
               onRetry={a.job_url ? () => runAnalysis(a.id) : undefined}
               onSaveNotes={async (notes) => {

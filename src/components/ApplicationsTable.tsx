@@ -100,6 +100,11 @@ function Row({ a, onSave }: { a: Application; onSave: (p: Partial<Application>) 
           {a.company ?? a.title}
         </Link>
         {a.company && <p className="text-[14px] text-[var(--ink2)]">{a.role ?? a.title}</p>}
+        {(a.status === "interview" || a.status === "assessment") && (
+          <Link href={`/app/a/${a.id}#interview`} className="act mt-2 !min-h-[32px] !text-[12.5px]">
+            Practise questions
+          </Link>
+        )}
         {a.deadline && days !== null && days >= -1 && (
           <p className={`mt-1 text-[13px] font-semibold ${days <= 3 ? "text-[var(--warn)]" : "text-[var(--good)]"}`}>
             {deadlineText(a.deadline)}
