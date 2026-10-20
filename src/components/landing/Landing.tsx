@@ -112,7 +112,7 @@ function CompetitionChart() {
   );
 }
 
-export default function LandingB({ signedIn }: { signedIn: boolean }) {
+export default function Landing({ signedIn }: { signedIn: boolean }) {
   return (
     <main className="overflow-x-clip">
       {/* Hero */}

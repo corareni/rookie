@@ -6,9 +6,38 @@ import { useState } from "react";
 import { site } from "@/lib/site";
 import { createClient } from "@/lib/supabase/client";
 
+const APP_NAV = [
+  { href: "/app", label: "Board" },
+  { href: "/app/applications", label: "Applications" },
+  { href: "/app/compare", label: "Compare" },
+  { href: "/app/barriers", label: "Barriers" },
+  { href: "/profile", label: "Profile" },
+];
+
+const SITE_NAV = [
+  { href: "/#how", label: "How it works" },
+  { href: "/#numbers", label: "The numbers" },
+  { href: "/privacy", label: "Privacy" },
+];
+
+function Mark() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="15" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <circle cx="16" cy="16" r="5" fill="none" stroke="currentColor" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export default function Header({ email }: { email: string | null }) {
-  const pathname = usePathname();
+  const path = usePathname();
   const [busy, setBusy] = useState(false);
+  const nav = email ? APP_NAV : SITE_NAV;
+  const active = (href: string) =>
+    href === "/app"
+      ? path === "/app" || path.startsWith("/app/a/")
+      : !href.includes("#") && (path === href || path.startsWith(href + "/"));
 
   async function logout() {
     setBusy(true);
@@ -17,37 +46,39 @@ export default function Header({ email }: { email: string | null }) {
   }
 
   return (
-    <header className="wrap relative z-10 flex items-center justify-between gap-3 py-4 print:hidden">
-      <Link href={email ? "/app" : "/"} className="text-[17px] font-bold tracking-tight no-underline">
-        {site.name}
-        <span aria-hidden="true">.</span>
+    <header className="topbar print:hidden">
+      <Link href={email ? "/app" : "/"} className="flex flex-none items-center gap-2 no-underline">
+        <Mark />
+        <span className="text-[19px] font-bold tracking-tight max-[420px]:sr-only">{site.name}</span>
       </Link>
 
-      {email ? (
-        <nav className="flex min-w-0 items-center gap-1 sm:gap-3">
-          <Link href="/app" className="rounded-full px-2 py-1 text-sm font-medium no-underline hover:bg-[var(--card2)]">
-            Board
+      <nav aria-label="Main" className="topnav mx-auto">
+        {nav.map((n) => (
+          <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined}>
+            {n.label}
           </Link>
-          <Link href="/profile" className="rounded-full px-2 py-1 text-sm font-medium no-underline hover:bg-[var(--card2)]">
-            Profile
-          </Link>
-          <span className="hidden max-w-[180px] truncate text-sm text-[var(--mute)] md:inline">{email}</span>
-          <button data-testid="logout" onClick={logout} disabled={busy} className="btn btn-ghost !px-3 !py-1.5 !text-sm">
-            Log out
-          </button>
-        </nav>
-      ) : (
-        <nav className="flex items-center gap-3">
-          <Link href="/login" className="text-sm font-semibold">
-            Log in
-          </Link>
-          {pathname !== "/" && (
-            <Link href="/signup" className="btn !px-4 !py-2 !text-sm">
+        ))}
+      </nav>
+
+      <div className="flex flex-none items-center gap-2">
+        {email ? (
+          <>
+            <span className="hidden max-w-[180px] truncate text-[13px] text-[var(--onblack2)] xl:inline">{email}</span>
+            <button data-testid="logout" onClick={logout} disabled={busy} className="pillbtn pillbtn-dark">
+              Log out
+            </button>
+          </>
+        ) : (
+          <>
+            <Link href="/login" className="pillbtn pillbtn-dark max-sm:hidden">
+              Log in
+            </Link>
+            <Link href="/signup" className="pillbtn pillbtn-mint">
               Sign up
             </Link>
-          )}
-        </nav>
-      )}
+          </>
+        )}
+      </div>
     </header>
   );
 }
