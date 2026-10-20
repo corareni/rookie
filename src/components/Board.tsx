@@ -54,7 +54,7 @@ export default function Board({
       setItems((prev) => prev.map((a) => (a.id === id ? updated : a)));
       if (updated.verdict !== "open")
         setNotice(
-          `${updated.company ?? "That role"} went to ${updated.verdict === "barrier" ? "Barriers" : "Ruled out"}: ${updated.verdict_reason ?? ""}`,
+          `${updated.company ?? "That role"} needs your review in Barriers${updated.ai_flag === "deal_breaker" ? " (breaks a deal-breaker)" : ""}: ${updated.verdict_reason ?? ""}`,
         );
     } catch (e) {
       patch(id, { job_status: "failed" });
@@ -321,8 +321,8 @@ export default function Board({
         )}
         {items.length > 0 && open.length === 0 && (
           <p className="mt-4 text-[var(--ink2)]">
-            Nothing open right now. Check <Link href="/app/applications">Applications</Link>,{" "}
-            <Link href="/app/barriers">Barriers</Link> or <Link href="/app/ruled-out">Ruled out</Link>.
+            Nothing open right now. Check <Link href="/app/applications">Applications</Link> or{" "}
+            <Link href="/app/barriers">Barriers</Link>.
           </p>
         )}
       </section>

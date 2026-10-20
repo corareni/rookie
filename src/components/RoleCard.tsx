@@ -12,9 +12,11 @@ type Props = {
   onRemove?: () => void;
   onRetry?: () => void;
   onMoveToBoard?: () => void;
+  /** Extra buttons shown first in the actions column (used on the Barriers page). */
+  actions?: React.ReactNode;
 };
 
-export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemove, onRetry, onMoveToBoard }: Props) {
+export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemove, onRetry, onMoveToBoard, actions }: Props) {
   const [confirm, setConfirm] = useState(false);
   const analysed = !!(a.company && a.role);
   const days = a.deadline ? daysUntil(a.deadline) : null;
@@ -83,7 +85,10 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
         )}
 
         {a.verdict !== "open" && a.verdict_reason && (
-          <p className={`mt-3 rounded-2xl px-3 py-2 text-sm ${a.verdict === "ruled_out" ? "chip-bad" : "chip-warn"}`}>
+          <p className="mt-3 rounded-2xl bg-white px-4 py-2.5 text-sm">
+            <span className={`chip mr-2 ${a.ai_flag === "deal_breaker" ? "chip-bad" : "chip-warn"}`}>
+              {a.ai_flag === "deal_breaker" ? "Breaks a deal-breaker" : "Concern"}
+            </span>
             {a.verdict_reason}
           </p>
         )}
@@ -118,6 +123,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
       </div>
 
       <div className="flex flex-wrap items-center gap-2 md:max-w-[300px] md:justify-end md:self-start">
+        {actions}
         {onApply && (
           <button type="button" className="btn !py-2" onClick={onApply}>
             Mark as applied
