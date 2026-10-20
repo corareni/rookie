@@ -49,7 +49,7 @@ export default function StepScroller() {
           if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.i));
         });
       },
-      { rootMargin: "-45% 0px -45% 0px" },
+      { rootMargin: "-42% 0px -42% 0px" },
     );
     refs.current.forEach((el) => el && io.observe(el));
     return () => io.disconnect();
@@ -61,7 +61,6 @@ export default function StepScroller() {
         {STEPS.map((s, i) => {
           const Screen = SCREENS[i];
           const on = i === active;
-          const tilt = i % 2 ? "lg:rotate-[1.5deg]" : "lg:-rotate-[1.5deg]";
           return (
             <li
               key={s.t}
@@ -69,10 +68,10 @@ export default function StepScroller() {
                 refs.current[i] = el;
               }}
               data-i={i}
-              className="flex lg:min-h-[72vh] lg:items-center"
+              className="flex lg:min-h-[40vh] lg:items-center lg:py-[var(--gap)]"
             >
               <div
-                className={`step-card tile ${TONES[i]} w-full ${on ? "" : `lg:translate-y-6 lg:opacity-40 ${tilt}`}`}
+                className={`step-card tile ${TONES[i]} w-full ${on ? "lg:opacity-100" : "lg:opacity-35"}`}
               >
                 <div className="flex items-start justify-between gap-4">
                   <span className="chip-tag !bg-white">Step {String(i + 1).padStart(2, "0")}</span>
@@ -95,12 +94,12 @@ export default function StepScroller() {
         })}
       </ol>
       <div className="hidden lg:block">
-        <div className="tile sticky top-[10vh] grid place-items-center !py-10">
+        <div className="tile sticky top-[14vh] grid place-items-center !py-10">
           {SCREENS.map((Screen, i) => (
             <div
               key={i}
               aria-hidden={i !== active}
-              className={`screen-fade [grid-area:1/1] transition-all duration-500 ${i === active ? "opacity-100" : "pointer-events-none translate-y-4 opacity-0"}`}
+              className={`screen-fade [grid-area:1/1] transition-opacity duration-700 ${i === active ? "opacity-100" : "pointer-events-none opacity-0"}`}
             >
               <Phone label={`Example screen: ${STEPS[i].t}`}>
                 <Screen />
