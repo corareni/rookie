@@ -261,11 +261,11 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
           <ul className="mt-4 grid gap-2">
             {d.barriers.map((b, i) => (
               <li key={i} className="flex items-start justify-between gap-2 rounded-2xl bg-white px-4 py-2.5 text-[14px]">
-                <span>
-                  <span className={`chip mr-2 ${b.kind === "deal_breaker" ? "chip-bad" : "chip-warn"}`}>
+                <span className="grid justify-items-start gap-1.5">
+                  <span className={`chip ${b.kind === "deal_breaker" ? "chip-bad" : "chip-warn"}`}>
                     {b.kind === "deal_breaker" ? "Deal-breaker" : "Concern"}
                   </span>
-                  {b.text}
+                  <span>{b.text}</span>
                 </span>
                 <button
                   type="button"
@@ -279,7 +279,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             ))}
           </ul>
           <form
-            className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto] sm:items-center"
+            className="mt-3 grid gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               if (barrierDraft.text.trim()) {
@@ -303,15 +303,15 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             </label>
             <select
               id="barrier-kind"
-              className="pill !py-2"
+              className="field !py-2 !text-[14px]"
               value={barrierDraft.kind}
               onChange={(e) => setBarrierDraft({ ...barrierDraft, kind: e.target.value as BarrierRule["kind"] })}
             >
               <option value="deal_breaker">Deal-breaker</option>
               <option value="concern">Concern</option>
             </select>
-            <button type="submit" className="btn !py-2" disabled={!barrierDraft.text.trim() || saving}>
-              + Add
+            <button type="submit" className="btn justify-self-start !py-2" disabled={!barrierDraft.text.trim() || saving}>
+              + Add barrier
             </button>
           </form>
         </section>

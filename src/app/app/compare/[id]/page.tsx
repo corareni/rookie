@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DeleteComparison from "@/components/DeleteComparison";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Comparison · Rookie" };
@@ -51,7 +52,7 @@ function Section({
       </h2>
       <div className={`mt-3 grid gap-3 ${cols}`}>
         {ordered.map((role) => (
-          <div key={role.id} className="card">
+          <div key={role.id} className={`card ${tone === "good" ? "!bg-[var(--mint)]" : tone === "bad" ? "!bg-[var(--peach)]" : ""}`}>
             <p className="mb-1 text-[13px] font-semibold text-[var(--mute)] lg:hidden">{company(role.id)}</p>
             {k === "verdict" ? (
               <p className="text-[14px] leading-relaxed">{role.verdict}</p>
@@ -92,6 +93,12 @@ export default async function ComparisonPage({ params }: PageProps<"/app/compare
 
   return (
     <main className="pb-16">
+      <div className="mb-[var(--gap)] flex flex-wrap items-center justify-between gap-3">
+        <Link href="/app/compare" className="act !justify-start no-underline">
+          ← All comparisons
+        </Link>
+        <DeleteComparison id={id} goBack />
+      </div>
       <section className="hero">
         <div className="flex items-center justify-between gap-3">
           <span className="livechip">Compare</span>

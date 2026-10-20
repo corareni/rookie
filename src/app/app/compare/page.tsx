@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import DeleteComparison from "@/components/DeleteComparison";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Compare · Rookie" };
@@ -35,13 +36,21 @@ export default async function ComparePage() {
       </h2>
       <div className="mt-4 grid gap-3">
         {((comps ?? []) as Row[]).map((c) => (
-          <Link key={c.id} href={`/app/compare/${c.id}`} className="role !grid-cols-1 no-underline hover:border-[var(--ink)]">
-            <span className="cap">
-              {new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+          <div key={c.id} className="role !grid-cols-1 md:!grid-cols-[1fr_auto] md:items-center">
+            <Link href={`/app/compare/${c.id}`} className="grid gap-1 no-underline">
+              <span className="cap">
+                {new Date(c.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+              </span>
+              <span className="text-[20px] font-bold tracking-tight hover:underline">Best pick: {name(c.result.bestPick)}</span>
+              <span className="text-[14px] text-[var(--ink2)]">{c.result.ranking.map(name).join(" · ")}</span>
+            </Link>
+            <span className="flex flex-wrap items-center gap-2">
+              <Link href={`/app/compare/${c.id}`} className="act">
+                Open
+              </Link>
+              <DeleteComparison id={c.id} />
             </span>
-            <span className="text-[20px] font-bold tracking-tight">Best pick: {name(c.result.bestPick)}</span>
-            <span className="text-[14px] text-[var(--ink2)]">{c.result.ranking.map(name).join(" · ")}</span>
-          </Link>
+          </div>
         ))}
         {(comps ?? []).length === 0 && <p className="text-[var(--ink2)]">No comparisons yet.</p>}
       </div>
