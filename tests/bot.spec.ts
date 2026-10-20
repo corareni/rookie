@@ -4,7 +4,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const DOMAIN = process.env.TEST_EMAIL_DOMAIN ?? "example.com";
-const TABLES = ["applications"];
+const TABLES = ["applications", "profiles", "documents", "comparisons", "ai_runs"];
 
 const rand = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const user1 = { email: `bot-${rand().toLowerCase()}@${DOMAIN}`, password: `Test-${rand()}` };
@@ -58,7 +58,7 @@ test("sign up, add an item without AI calls, log out", async ({ page }) => {
   await expect(page.getByTestId("core-item").filter({ hasText: itemText })).toBeVisible();
   expect(apiCalls, "adding an item must not call AI routes").toEqual([]);
 
-  for (const path of ["/", "/app", "/profile", "/login", "/signup", "/privacy"]) {
+  for (const path of ["/", "/app", "/app/applications", "/app/compare", "/profile", "/login", "/signup", "/privacy"]) {
     await page.goto(path);
     await expect(page.getByTestId("logout"), `logout on ${path}`).toBeVisible();
   }
@@ -113,7 +113,11 @@ test("no data readable without logging in", async ({ request, page }) => {
     });
     if (res.ok()) expect(await res.json(), `anon read of ${table}`).toEqual([]);
   }
-  for (const path of ["/app", "/profile"]) {
+  for (const api of ["/api/analyze", "/api/compare", "/api/generate"]) {
+    const res = await request.post(api, { data: {} });
+    expect(res.status(), `${api} rejects logged-out users`).toBe(401);
+  }
+  for (const path of ["/app", "/app/applications", "/profile"]) {
     await page.goto(path);
     await expect(page, `${path} redirects when logged out`).toHaveURL(/\/login$/);
   }

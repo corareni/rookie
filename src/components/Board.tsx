@@ -1,29 +1,63 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import RoleCard from "@/components/RoleCard";
+import { analyzeRole, compareRoles } from "@/lib/ai-client";
 import {
-  CLOSED_STATUSES,
+  APPLIED_STATUSES,
   COLUMNS,
-  OPEN_STATUSES,
-  STATUSES,
+  TRACKS,
   daysUntil,
-  deadlineText,
-  formatDate,
   isUrl,
   isoInDays,
-  statusLabel,
   type Application,
-  type Status,
 } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 
-export default function Board({ initial, loadError }: { initial: Application[]; loadError: string | null }) {
+type Sort = "best" | "closing" | "newest";
+
+export default function Board({
+  initial,
+  loadError,
+  hasProfile,
+}: {
+  initial: Application[];
+  loadError: string | null;
+  hasProfile: boolean;
+}) {
+  const router = useRouter();
   const [items, setItems] = useState<Application[]>(initial);
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(loadError);
+  const [notice, setNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState("");
+  const [track, setTrack] = useState<string | null>(null);
+  const [sort, setSort] = useState<Sort>("best");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [comparing, setComparing] = useState(false);
+  const [hideNudge, setHideNudge] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const patch = (id: string, p: Partial<Application>) =>
+    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...p } : a)));
+
+  async function runAnalysis(id: string) {
+    patch(id, { job_status: "reading" });
+    try {
+      const updated = await analyzeRole(id);
+      setItems((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      if (updated.verdict !== "open")
+        setNotice(
+          `${updated.company ?? "That role"} went to ${updated.verdict === "barrier" ? "Barriers" : "Ruled out"}: ${updated.verdict_reason ?? ""}`,
+        );
+    } catch (e) {
+      patch(id, { job_status: "failed" });
+      setNotice(e instanceof Error ? e.message : "Couldn't read that page.");
+    }
+  }
 
   async function add(title: string, extra: Partial<Application> = {}) {
     const clean = title.trim();
@@ -31,12 +65,9 @@ export default function Board({ initial, loadError }: { initial: Application[]; 
       setError("Type a role or paste a job link first.");
       return false;
     }
-    if (clean.length > 500) {
-      setError("That's a bit long. Keep it under 500 characters.");
-      return false;
-    }
     setSaving(true);
     setError(null);
+    // Saved straight away; reading the listing happens afterwards and never blocks this.
     const { data, error } = await createClient()
       .from("applications")
       .insert({ title: clean, job_url: isUrl(clean) ? clean : null, ...extra })
@@ -47,7 +78,9 @@ export default function Board({ initial, loadError }: { initial: Application[]; 
       setError(`Couldn't save: ${error.message}`);
       return false;
     }
-    setItems((prev) => [data as Application, ...prev]);
+    const row = data as unknown as Application;
+    setItems((prev) => [row, ...prev]);
+    if (row.job_url) void runAnalysis(row.id);
     return true;
   }
 
@@ -59,45 +92,118 @@ export default function Board({ initial, loadError }: { initial: Application[]; 
     }
   }
 
-  async function changeStatus(id: string, status: Status) {
+  async function update(id: string, p: Partial<Application>, done?: string) {
     const before = items;
-    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)));
-    const { data, error } = await createClient()
-      .from("applications")
-      .update({ status })
-      .eq("id", id)
-      .select(COLUMNS)
-      .single();
+    patch(id, p);
+    const { error } = await createClient().from("applications").update(p).eq("id", id);
     if (error) {
       setItems(before);
       setError(`Couldn't update: ${error.message}`);
-      return;
-    }
-    setItems((prev) => prev.map((a) => (a.id === id ? (data as Application) : a)));
+    } else if (done) setNotice(done);
   }
 
-  const stats = useMemo(() => {
-    const reached = (s: Status) => items.filter((a) => a.status === s).length;
-    const sent: Status[] = ["submitted", "assessment", "interview", "offer"];
-    const submitted = items.filter((a) => a.submitted_on || sent.includes(a.status)).length;
-    const dueThisWeek = items.filter(
-      (a) => a.deadline && a.status === "interested" && daysUntil(a.deadline) >= 0 && daysUntil(a.deadline) <= 7,
-    ).length;
-    return { total: items.length, submitted, interviews: reached("interview"), dueThisWeek };
-  }, [items]);
+  async function remove(id: string) {
+    const { error } = await createClient().from("applications").delete().eq("id", id);
+    if (error) return setError(`Couldn't remove: ${error.message}`);
+    setItems((prev) => prev.filter((a) => a.id !== id));
+    setSelected((s) => s.filter((x) => x !== id));
+  }
 
-  const closed = items.filter((a) => CLOSED_STATUSES.includes(a.status));
+  async function compare() {
+    setComparing(true);
+    setNotice(null);
+    try {
+      const id = await compareRoles(selected);
+      router.push(`/app/compare/${id}`);
+    } catch (e) {
+      setNotice(e instanceof Error ? e.message : "Couldn't compare these roles.");
+      setComparing(false);
+    }
+  }
+
+  const open = useMemo(() => items.filter((a) => a.status === "interested" && a.verdict === "open"), [items]);
+  const kpi = {
+    open: open.length,
+    closing: open.filter((a) => a.deadline && daysUntil(a.deadline) >= 0 && daysUntil(a.deadline) <= 14).length,
+    applied: items.filter((a) => APPLIED_STATUSES.includes(a.status) && a.status !== "withdrawn").length,
+    interviews: items.filter((a) => a.status === "interview" || a.status === "assessment").length,
+  };
+
+  const shown = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const list = open.filter(
+      (a) =>
+        (!track || a.track === track) &&
+        (!q || [a.title, a.company, a.role, a.location, a.notes, a.what].some((v) => v?.toLowerCase().includes(q))),
+    );
+    const byNewest = (x: Application, y: Application) => y.created_at.localeCompare(x.created_at);
+    if (sort === "best") return list.sort((x, y) => (y.score ?? 0) - (x.score ?? 0) || byNewest(x, y));
+    if (sort === "closing")
+      return list.sort((x, y) => (x.deadline ?? "9999").localeCompare(y.deadline ?? "9999") || byNewest(x, y));
+    return list.sort(byNewest);
+  }, [open, query, track, sort]);
+
+  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
-    <main className="pt-4">
-      <p className="cap">Your board</p>
-      <h1 className="mt-2 text-[clamp(32px,6vw,52px)] font-medium leading-none tracking-[-0.04em]">
-        Every application, <em>one place.</em>
-      </h1>
+    <main className="pb-24">
+      <section className="hero grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="livechip">Live board</span>
+            <span className="rounded-full border border-[var(--line2)] px-3 py-1 text-[13px] text-[var(--ink2)]">{today}</span>
+          </div>
+          <h1 className="display mt-6">
+            Land the <em>right</em> one.
+          </h1>
+          <p className="mt-4 max-w-[520px] text-[16px] text-[var(--ink2)]">
+            Paste any job link. Rookie reads it and gives you an{" "}
+            <strong className="text-[var(--ink)]">honest score out of 10</strong>, then writes a tailored CV and cover
+            letter when you&apos;re ready.
+          </p>
+        </div>
+        <div className="kpis">
+          <div className="kpi">
+            <b>{kpi.open}</b>
+            <span>Open roles</span>
+          </div>
+          <div className="kpi">
+            <b>{kpi.closing}</b>
+            <span>Close in 14 days</span>
+          </div>
+          <div className="kpi">
+            <b>{kpi.applied}</b>
+            <span>Applied</span>
+          </div>
+          <div className="kpi">
+            <b>{kpi.interviews}</b>
+            <span>Interviews and tests</span>
+          </div>
+        </div>
+      </section>
 
-      <form onSubmit={onSubmit} className="card mt-6 !bg-[var(--paper)] !border-transparent">
-        <label htmlFor="core-input" className="label">
-          Paste a job link, or type the role
+      {!hasProfile && !hideNudge && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[var(--r)] border border-[var(--line)] px-5 py-4">
+          <p className="text-[15px]">
+            <strong>Add your profile</strong> so scores, &quot;why you&quot; and your CV and letters are about you.
+          </p>
+          <span className="flex gap-2">
+            <Link href="/profile" className="btn !py-2">
+              Set up profile
+            </Link>
+            <button type="button" className="btn btn-ghost !py-2" onClick={() => setHideNudge(true)}>
+              Later
+            </button>
+          </span>
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="mt-4 rounded-[var(--r)] bg-[var(--paper)] p-4 sm:p-6">
+        <label htmlFor="core-input" className="mb-3 flex flex-wrap justify-between gap-2 text-[14px] text-[var(--ink2)]">
+          <span>
+            <span className="text-[var(--mute)]">[01]</span> Add a role
+          </span>
+          <span className="text-[var(--mute)]">Paste a job link, or type the role</span>
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
@@ -105,7 +211,7 @@ export default function Board({ initial, loadError }: { initial: Application[]; 
             ref={inputRef}
             data-testid="core-input"
             type="text"
-            className="field flex-1"
+            className="field flex-1 !rounded-full !px-5 !py-4"
             placeholder="https://… or Marketing Intern @ Spotify"
             value={text}
             maxLength={500}
@@ -122,127 +228,124 @@ export default function Board({ initial, loadError }: { initial: Application[]; 
         )}
       </form>
 
-      <p className="mt-4 text-sm text-[var(--ink2)]" aria-live="polite">
-        {stats.total} tracked · {stats.submitted} submitted · {stats.interviews} in interviews ·{" "}
-        {stats.dueThisWeek} {stats.dueThisWeek === 1 ? "deadline" : "deadlines"} this week
-      </p>
-
-      {items.length === 0 ? (
-        <div className="card mt-6 text-center">
-          <p className="text-lg font-semibold">No applications yet.</p>
-          <p className="mt-1 text-[var(--ink2)]">Paste a job link or type a role you&apos;re interested in above.</p>
-          <button
-            type="button"
-            className="btn btn-ghost mt-4"
-            onClick={() =>
-              add("Summer Analyst Intern @ Example Bank", {
-                deadline: isoInDays(10),
-                notes: "Example role. Change the status, add a deadline, or delete it when you're ready.",
-              })
-            }
-          >
-            Add an example role
+      {notice && (
+        <p role="status" className="mt-4 flex items-start justify-between gap-3 rounded-2xl bg-[var(--card2)] px-4 py-3 text-sm">
+          <span>{notice}</span>
+          <button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}>
+            ×
           </button>
-        </div>
-      ) : (
-        <div className="mt-6 grid gap-4 lg:grid-cols-5 lg:gap-3">
-          {OPEN_STATUSES.map((s) => {
-            const col = items.filter((a) => a.status === s);
-            return (
-              <section key={s} aria-labelledby={`col-${s}`} className="min-w-0">
-                <h2 id={`col-${s}`} className="mb-2 flex items-baseline gap-2 text-[13px] font-semibold text-[var(--ink2)]">
-                  {statusLabel(s)} <span className="text-[var(--mute)]">· {col.length}</span>
-                </h2>
-                <div className="grid gap-2">
-                  {col.map((a) => (
-                    <Card key={a.id} a={a} onStatus={changeStatus} />
-                  ))}
-                  {col.length === 0 && (
-                    <p className="hidden rounded-2xl border border-dashed border-[var(--line2)] p-3 text-xs text-[var(--mute)] lg:block">
-                      Nothing here yet
-                    </p>
-                  )}
-                </div>
-              </section>
-            );
-          })}
-        </div>
+        </p>
       )}
 
-      {closed.length > 0 && (
-        <details className="mt-8">
-          <summary className="cursor-pointer text-[13px] font-semibold text-[var(--ink2)]">
-            Rejected or withdrawn · {closed.length}
-          </summary>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {closed.map((a) => (
-              <Card key={a.id} a={a} onStatus={changeStatus} />
-            ))}
+      <section aria-labelledby="open-roles" className="mt-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="open-roles" className="sec">
+            <small>[02]</small> Open roles
+          </h2>
+          <span className="text-[13px] text-[var(--mute)]">{shown.length} shown</span>
+        </div>
+
+        {open.length > 0 && (
+          <div className="mt-4 grid gap-3">
+            <label className="sr-only" htmlFor="search">
+              Search roles
+            </label>
+            <input
+              id="search"
+              type="search"
+              className="field !rounded-full !px-5"
+              placeholder="Search roles, companies, places, notes…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="pill" aria-pressed={!track} onClick={() => setTrack(null)}>
+                  All
+                </button>
+                {TRACKS.filter((t) => open.some((a) => a.track === t)).map((t) => (
+                  <button key={t} type="button" className="pill" aria-pressed={track === t} onClick={() => setTrack(t)}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-[13px] text-[var(--mute)]">
+                Sort
+                <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="pill !py-2">
+                  <option value="best">Best chance</option>
+                  <option value="closing">Closing soon</option>
+                  <option value="newest">Newest</option>
+                </select>
+              </label>
+            </div>
           </div>
-        </details>
+        )}
+
+        <div className="mt-4 grid gap-3">
+          {shown.map((a) => (
+            <RoleCard
+              key={a.id}
+              a={a}
+              selected={selected.includes(a.id)}
+              onToggleCompare={() =>
+                setSelected((s) => (s.includes(a.id) ? s.filter((x) => x !== a.id) : s.length >= 4 ? s : [...s, a.id]))
+              }
+              onApply={() => update(a.id, { status: "submitted" }, `${a.company ?? "Role"} moved to Applications.`)}
+              onRemove={() => remove(a.id)}
+              onRetry={a.job_url ? () => runAnalysis(a.id) : undefined}
+            />
+          ))}
+        </div>
+
+        {items.length === 0 && (
+          <div className="card mt-4 text-center">
+            <p className="text-lg font-semibold">No roles yet.</p>
+            <p className="mt-1 text-[var(--ink2)]">Paste a job link or type a role you&apos;re interested in above.</p>
+            <button
+              type="button"
+              className="btn btn-ghost mt-4"
+              onClick={() =>
+                add("Summer Analyst Intern @ Example Bank", {
+                  deadline: isoInDays(10),
+                  notes: "Example role. Mark it as applied, compare it, or remove it when you're ready.",
+                })
+              }
+            >
+              Add an example role
+            </button>
+          </div>
+        )}
+        {items.length > 0 && open.length === 0 && (
+          <p className="mt-4 text-[var(--ink2)]">
+            Nothing open right now. Check <Link href="/app/applications">Applications</Link>,{" "}
+            <Link href="/app/barriers">Barriers</Link> or <Link href="/app/ruled-out">Ruled out</Link>.
+          </p>
+        )}
+      </section>
+
+      {selected.length > 0 && (
+        <div className="fixed inset-x-0 bottom-4 z-20 px-4">
+          <div className="screen mx-auto flex max-w-[640px] flex-wrap items-center justify-between gap-3 !py-3 shadow-xl">
+            <span className="text-sm">
+              {selected.length} selected{selected.length < 2 ? ", pick one more" : ""}
+              {selected.length >= 4 ? " (max 4)" : ""}
+            </span>
+            <span className="flex gap-2">
+              <button type="button" className="btn btn-ghost !py-2" onClick={() => setSelected([])}>
+                Clear
+              </button>
+              <button
+                type="button"
+                className="btn !border-white !bg-white !py-2 !text-[var(--ink)]"
+                disabled={selected.length < 2 || comparing}
+                onClick={compare}
+              >
+                {comparing ? "Comparing…" : `Compare ${selected.length}`}
+              </button>
+            </span>
+          </div>
+        </div>
       )}
     </main>
-  );
-}
-
-function Card({ a, onStatus }: { a: Application; onStatus: (id: string, s: Status) => void }) {
-  const headline = a.role && a.company ? `${a.role} @ ${a.company}` : null;
-  const urgent = a.status === "interested" || a.status === "submitted";
-  const days = a.deadline ? daysUntil(a.deadline) : null;
-  const deadlineChip =
-    a.deadline && days !== null
-      ? days < 0 && urgent
-        ? "chip-bad"
-        : days <= 7 && urgent
-          ? "chip-warn"
-          : "chip-mute"
-      : null;
-
-  return (
-    <article data-testid="core-item" className="card !p-4">
-      {headline && <p className="font-semibold leading-snug">{headline}</p>}
-      <Link
-        href={`/app/a/${a.id}`}
-        className={
-          headline
-            ? "mt-0.5 block text-xs text-[var(--mute)] break-anywhere line-clamp-2"
-            : "block font-semibold leading-snug break-anywhere line-clamp-3 no-underline hover:underline"
-        }
-      >
-        {a.title}
-      </Link>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {a.deadline && deadlineChip && (
-          <span className={`chip ${deadlineChip}`} title={`Deadline ${formatDate(a.deadline)}`}>
-            {deadlineText(a.deadline)}
-          </span>
-        )}
-        {a.submitted_on && a.status !== "interested" && (
-          <span className="text-xs text-[var(--mute)]">Sent {formatDate(a.submitted_on)}</span>
-        )}
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <label className="sr-only" htmlFor={`status-${a.id}`}>
-          Status
-        </label>
-        <select
-          id={`status-${a.id}`}
-          value={a.status}
-          onChange={(e) => onStatus(a.id, e.target.value as Status)}
-          className="rounded-full border border-[var(--line2)] bg-[var(--bg)] px-3 py-1.5 text-[13px] font-medium"
-        >
-          {STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        <Link href={`/app/a/${a.id}`} className="text-[13px] font-semibold">
-          Open
-        </Link>
-      </div>
-    </article>
   );
 }

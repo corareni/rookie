@@ -18,7 +18,21 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc pl-5">
             <li>Your email address and a securely hashed password (handled by Supabase Auth).</li>
             <li>The applications you add: title, job link, company, role, location, dates, status and notes.</li>
+            <li>Your profile, if you add one: your CV text, your story, your hard rules and contact details.</li>
+            <li>The AI analyses, comparisons, CVs and cover letters Rookie writes for you.</li>
           </ul>
+        </section>
+        <section>
+          <h2 className="text-lg font-semibold text-[var(--ink)]">AI (Google Gemini)</h2>
+          <p className="mt-2">
+            When you add a job link, compare roles or ask for a CV and cover letter, Rookie sends the job link or text and
+            your profile to Google&apos;s Gemini API to do the work. This only happens when you use those features. Under
+            Google&apos;s Gemini API terms, for users in the EU, EEA, Switzerland and the UK, Google doesn&apos;t use this
+            content to improve its products. The AI key stays on our server and never reaches your browser.
+          </p>
+          <p className="mt-2">
+            AI can be wrong. Rookie only uses facts from your CV, but always read your documents before you send them.
+          </p>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-[var(--ink)]">Who can see it</h2>

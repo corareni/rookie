@@ -35,7 +35,7 @@ const toForm = (a: Application): Form => ({
 
 const orNull = (v: string) => (v.trim() === "" ? null : v.trim());
 
-export default function ApplicationEditor({ initial }: { initial: Application }) {
+export default function ApplicationEditor({ initial, children }: { initial: Application; children?: React.ReactNode }) {
   const [app, setApp] = useState(initial);
   const [form, setForm] = useState<Form>(toForm(initial));
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
@@ -76,8 +76,8 @@ export default function ApplicationEditor({ initial }: { initial: Application })
       setMsg({ kind: "err", text: `Couldn't save: ${error.message}` });
       return;
     }
-    setApp(data as Application);
-    setForm(toForm(data as Application));
+    setApp(data as unknown as Application);
+    setForm(toForm(data as unknown as Application));
     setMsg({ kind: "ok", text: "Saved." });
   }
 
@@ -93,7 +93,7 @@ export default function ApplicationEditor({ initial }: { initial: Application })
   const headline = app.role && app.company ? `${app.role} @ ${app.company}` : app.title;
 
   return (
-    <main className="mx-auto max-w-[760px] pt-4">
+    <main className="mx-auto max-w-[860px] pb-16">
       <Link href="/app" className="text-sm font-semibold">
         ← Board
       </Link>
@@ -110,7 +110,12 @@ export default function ApplicationEditor({ initial }: { initial: Application })
         )}
       </div>
 
-      <form onSubmit={save} className="card mt-6 grid gap-5">
+      {children}
+
+      <h2 className="sec mt-8">
+        <small>[03]</small> Tracking details
+      </h2>
+      <form onSubmit={save} className="card mt-3 grid gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Status" id="status">
             <select id="status" className="field" value={form.status} onChange={set("status")}>

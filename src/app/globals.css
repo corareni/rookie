@@ -189,3 +189,214 @@ a {
 .break-anywhere {
   overflow-wrap: anywhere;
 }
+
+/* ---- Board look: tabs, KPI tiles, role cards ---- */
+.navpill {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--card2);
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.navpill a {
+  flex: 1 0 auto;
+  text-align: center;
+  padding: 9px 14px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.navpill a[aria-current="page"] {
+  background: var(--black);
+  color: var(--onblack);
+}
+.hero {
+  background: var(--paper);
+  border-radius: var(--r);
+  padding: 20px;
+}
+@media (min-width: 900px) {
+  .hero {
+    padding: 32px;
+  }
+}
+.livechip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--black);
+  color: var(--onblack);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.livechip::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #33c27f;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+@media (min-width: 900px) {
+  .kpis {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.kpi {
+  background: var(--black);
+  color: var(--onblack);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+.kpi b {
+  display: block;
+  font-size: 38px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.kpi span {
+  display: block;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--onblack2);
+}
+.sec {
+  font-size: 15px;
+  font-weight: 600;
+}
+.sec small {
+  font-weight: 500;
+  color: var(--mute);
+  margin-right: 4px;
+}
+.role {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+.role.selected {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 1px var(--ink);
+}
+@media (min-width: 900px) {
+  .role {
+    grid-template-columns: 56px 1fr auto;
+    padding: 22px 24px;
+    gap: 20px;
+  }
+}
+.logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--card2);
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink2);
+}
+@media (min-width: 900px) {
+  .logo {
+    width: 56px;
+    height: 56px;
+  }
+}
+.score {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.score::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.score-good::before { background: var(--good); }
+.score-warn::before { background: #c58a0a; }
+.score-bad::before { background: var(--bad); }
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+}
+.pill[aria-pressed="true"] {
+  background: var(--black);
+  color: var(--onblack);
+  border-color: var(--black);
+}
+.screen {
+  background: var(--black);
+  color: var(--onblack);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.dot-list li {
+  position: relative;
+  padding-left: 16px;
+  margin-top: 6px;
+}
+.dot-list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.dot-list.good li::before { background: var(--good); }
+.dot-list.bad li::before { background: var(--bad); }
+.spin {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--line2);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}

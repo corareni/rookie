@@ -17,9 +17,9 @@ export const landing = {
     sub: "For students applying to 10+ internships. Track deadlines, statuses and replies in one place, so nothing slips through.",
   },
   B: {
-    headlineStart: "Paste a job link. Get a",
-    headlineEm: "tailored",
-    headlineEnd: "CV and cover letter, and track every application on one board.",
-    sub: "For students applying to 10+ internships. Rookie reads the job, researches the company and writes both from your real experience.",
+    headlineStart: "Paste a job link. Get an",
+    headlineEm: "honest",
+    headlineEnd: "score, a tailored CV and cover letter.",
+    sub: "For students applying to 10+ internships. Rookie reads the job, scores your chances out of 10, writes your application from your real experience, and tracks every application on one board.",
   },
 }[LANDING];

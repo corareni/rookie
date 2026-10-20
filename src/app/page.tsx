@@ -10,9 +10,9 @@ const steps =
         { n: "03", t: "Never miss a deadline", d: "See what's due this week and what's overdue at a glance." },
       ]
     : [
-        { n: "01", t: "Paste the job link", d: "Rookie reads the role, company and deadline for you." },
-        { n: "02", t: "We research the company", d: "What they do, recent news and what they care about." },
-        { n: "03", t: "Get your CV and letter", d: "Tailored from your real experience, ready to edit." },
+        { n: "01", t: "Paste the job link", d: "Rookie reads the role, company, location and deadline for you." },
+        { n: "02", t: "Get an honest score", d: "Out of 10, with why you fit and the catch. Compare roles side by side." },
+        { n: "03", t: "Get your CV and letter", d: "Tailored from your real experience, ready to edit and download." },
       ];
 
 const benefits =
@@ -23,9 +23,9 @@ const benefits =
         { t: "Private to you", d: "Only you can see your board. Nothing is shared." },
       ]
     : [
-        { t: "Hours of tailoring, done in a minute", d: "One click per application." },
-        { t: "Only your real experience", d: "Nothing made up. Every claim comes from your CV." },
-        { t: "Every application tracked", d: "Deadlines, statuses and replies on one board." },
+        { t: "Know where to spend your time", d: "Brutally honest scores, and roles that break your rules sorted out for you." },
+        { t: "Hours of tailoring, done in a minute", d: "Only your real experience. Nothing made up." },
+        { t: "Every application tracked", d: "Mark it as applied and follow it to the offer." },
       ];
 
 const preview = [

@@ -22,10 +22,34 @@ export type Application = {
   role: string | null;
   location: string | null;
   created_at: string;
+  job_status: "none" | "reading" | "ready" | "failed";
+  score: number | null;
+  track: string | null;
+  what: string | null;
+  why: string | null;
+  risk: string | null;
+  timing: string | null;
+  closes_note: string | null;
+  verdict: Verdict;
+  verdict_reason: string | null;
+  next_step: string | null;
 };
 
+export type Verdict = "open" | "barrier" | "ruled_out";
+
 export const COLUMNS =
-  "id,title,status,deadline,submitted_on,assessment_on,interview_on,offer_on,notes,job_url,company,role,location,created_at";
+  "id,title,status,deadline,submitted_on,assessment_on,interview_on,offer_on,notes,job_url,company,role,location,created_at," +
+  "job_status,score,track,what,why,risk,timing,closes_note,verdict,verdict_reason,next_step";
+
+export const TRACKS = ["Consulting", "Tech & product", "Finance & banking", "Marketing & creative", "Operations & strategy", "Other"];
+
+export const APPLIED_STATUSES: Status[] = ["submitted", "assessment", "interview", "offer", "rejected", "withdrawn"];
+
+/** Score chip colour, as on the board: green 6+, amber 4-5, red 3 or less. */
+export const scoreTone = (n: number) => (n >= 6 ? "good" : n >= 4 ? "warn" : "bad");
+
+export const initials = (a: { company: string | null; title: string }) =>
+  (a.company || a.title).replace(/^https?:\/\/(www\.)?/, "").trim().charAt(0).toUpperCase() || "?";
 
 export const STATUSES: { value: Status; label: string }[] = [
   { value: "interested", label: "Interested" },
