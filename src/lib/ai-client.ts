@@ -1,3 +1,4 @@
+import type { Contact, StructuredProfile } from "@/lib/profile";
 import type { Application } from "@/lib/applications";
 
 /** Calls Rookie's own server routes; the AI key never reaches the browser. */
@@ -18,3 +19,12 @@ export const analyzeRole = (id: string, text?: string) =>
 export const compareRoles = (ids: string[]) => post<{ id: string }>("/api/compare", { ids }).then((d) => d.id);
 
 export const generateDocs = (id: string) => post<{ ok: true }>("/api/generate", { id });
+
+export async function importCv(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch("/api/profile/import", { method: "POST", body });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error ?? "Couldn't read your CV. Try again.");
+  return data as { contact: Contact; cv_text: string; profile: StructuredProfile };
+}

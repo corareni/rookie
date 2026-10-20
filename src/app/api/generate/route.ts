@@ -1,3 +1,4 @@
+import { hasProfileContent } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
 import { errorResponse, getProfile, getUser, consumeRun } from "@/server/ai/limits";
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     if (!row) throw new AiError("Role not found.", 404);
 
     const profile = await getProfile(supabase);
-    if (!profile?.cv_text.trim()) throw new AiError("Add your CV in Profile first.", 400);
+    if (!profile || !hasProfileContent(profile)) throw new AiError("Add your CV or profile first.", 400);
 
     const description = (row.job as { description?: string } | null)?.description || row.job_text || "";
     if (!description && !row.what) throw new AiError("Analyse the role first, or paste the job description.", 400);

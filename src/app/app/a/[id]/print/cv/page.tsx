@@ -5,70 +5,82 @@ import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "CV · Rookie" };
 
+// Classic one-page layout: centred name, ruled bold headings, org and role lines with right-aligned
+// location and dates, round bullets, "Label: text" lines.
 const heading: React.CSSProperties = {
-  fontSize: "10.5pt",
+  fontSize: "11pt",
   fontWeight: 700,
-  letterSpacing: "0.05em",
   textTransform: "uppercase",
-  borderBottom: "0.6pt solid #000",
+  borderBottom: "0.8pt solid #000",
   marginTop: "9pt",
   paddingBottom: "1pt",
 };
+const row: React.CSSProperties = { display: "flex", justifyContent: "space-between", gap: "8pt" };
+const bullets: React.CSSProperties = { margin: "1pt 0 0 14pt", listStyle: "disc" };
 
 export default async function CvPrint({ params }: PageProps<"/app/a/[id]/print/cv">) {
   const { id } = await params;
   const supabase = await createClient();
   const { data: doc } = await supabase.from("documents").select("content").eq("application_id", id).eq("kind", "cv").maybeSingle();
-  if (!doc) return <p className="pt-6">No CV yet. Generate one on the role page first.</p>;
-  const cv = doc.content as CvContent;
+  const cv = doc?.content as CvContent | undefined;
+  if (!cv?.header) return <p className="pt-6">No CV yet, or it was made with an older version. Generate it again on the role page.</p>;
 
   return (
     <PrintShell>
-      <div style={{ fontSize: "9.8pt", lineHeight: "12.2pt" }}>
-        <p style={{ textAlign: "center", fontWeight: 700, fontSize: "17pt", letterSpacing: "0.04em", lineHeight: 1.2 }}>
-          {cv.name.toUpperCase()}
-        </p>
-        <p style={{ textAlign: "center", fontSize: "9.3pt", marginTop: "2pt" }}>{cv.contact.join(" | ")}</p>
+      <div style={{ fontSize: "9.8pt", lineHeight: "12.1pt" }}>
+        <p style={{ textAlign: "center", fontWeight: 700, fontSize: "15pt", lineHeight: 1.2 }}>{cv.header.name.toUpperCase()}</p>
+        <p style={{ textAlign: "center", marginTop: "2pt" }}>{cv.header.contact.join(" | ")}</p>
+        {cv.header.note && <p style={{ textAlign: "center", fontStyle: "italic" }}>{cv.header.note}</p>}
 
         <p style={heading}>Summary</p>
-        <p style={{ marginTop: "3pt", textAlign: "justify" }}>{cv.summary}</p>
+        <p style={{ marginTop: "2pt", textAlign: "justify" }}>{cv.summary}</p>
 
         {cv.sections.map((s) => (
           <section key={s.heading}>
             <p style={heading}>{s.heading}</p>
-            {s.items.map((it, i) => (
-              <div key={i} style={{ marginTop: "4pt", breakInside: "avoid" }}>
-                <p style={{ display: "flex", justifyContent: "space-between", gap: "8pt" }}>
-                  <span>
-                    <b>{it.title}</b>
-                    {it.subtitle && <i> | {it.subtitle}</i>}
-                  </span>
-                  <span style={{ whiteSpace: "nowrap" }}>{it.dates}</span>
-                </p>
-                {it.bullets.filter((b) => b.trim()).length > 0 && (
-                  <ul style={{ margin: "1pt 0 0 12pt", listStyle: "disc" }}>
-                    {it.bullets
-                      .filter((b) => b.trim())
-                      .map((b, j) => (
-                        <li key={j}>{b}</li>
-                      ))}
+            {s.kind === "entries"
+              ? s.entries.map((e, i) => (
+                  <div key={i} style={{ marginTop: "4pt", breakInside: "avoid" }}>
+                    <p style={row}>
+                      <span>
+                        <b>{e.org.toUpperCase()}</b>
+                        {e.org_note && (
+                          <b>
+                            <i> - {e.org_note}</i>
+                          </b>
+                        )}
+                      </span>
+                      <b style={{ whiteSpace: "nowrap" }}>{e.location}</b>
+                    </p>
+                    <p style={row}>
+                      <span>
+                        <b>{e.role}</b>
+                        {e.role_note && <i> ({e.role_note})</i>}
+                      </span>
+                      <b style={{ whiteSpace: "nowrap" }}>{e.dates}</b>
+                    </p>
+                    {e.bullets.some((b) => b.trim()) && (
+                      <ul style={bullets}>
+                        {e.bullets
+                          .filter((b) => b.trim())
+                          .map((b, j) => (
+                            <li key={j}>{b}</li>
+                          ))}
+                      </ul>
+                    )}
+                  </div>
+                ))
+              : s.lines.length > 0 && (
+                  <ul style={{ ...bullets, marginTop: "3pt" }}>
+                    {s.lines.map((l, i) => (
+                      <li key={i}>
+                        <b>{l.label}:</b> {l.text}
+                      </li>
+                    ))}
                   </ul>
                 )}
-              </div>
-            ))}
           </section>
         ))}
-
-        {cv.skills.length > 0 && (
-          <section>
-            <p style={heading}>Skills and languages</p>
-            {cv.skills.map((s) => (
-              <p key={s.group} style={{ marginTop: "2pt" }}>
-                <b>{s.group}:</b> {s.items}
-              </p>
-            ))}
-          </section>
-        )}
       </div>
     </PrintShell>
   );

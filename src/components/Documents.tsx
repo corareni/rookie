@@ -84,7 +84,12 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         )}
       </div>
 
-      {cvDoc && <CvEditor key={JSON.stringify(cvDoc.content)} id={applicationId} doc={cvDoc} />}
+      {cvDoc &&
+        (cvDoc.content?.header ? (
+          <CvEditor key={JSON.stringify(cvDoc.content)} id={applicationId} doc={cvDoc} />
+        ) : (
+          <p className="card mt-4 text-[14px]">This CV was made with an older version of Rookie. Press Regenerate to get the new layout.</p>
+        ))}
       {letterDoc && (
         <LetterEditor key={JSON.stringify(letterDoc.content)} id={applicationId} doc={letterDoc} signature={signature} />
       )}
@@ -185,58 +190,77 @@ function CvEditor({ id, doc }: { id: string; doc: NonNullable<Doc<CvContent>> })
   return (
     <article className="card mt-4" aria-label="Tailored CV">
       <h3 className="text-lg font-semibold">Tailored CV</h3>
-      <div className="mt-4 rounded-2xl border border-[var(--line)] p-5 font-serif">
-        <p className="text-center text-[20px] font-bold uppercase tracking-wide">{cv.name}</p>
-        <p className="text-center text-[13px] text-[var(--ink2)]">{cv.contact.join(" | ")}</p>
-        <label className="mt-4 block text-[12px] font-bold uppercase tracking-wide" htmlFor="cv-summary">
+      <div className="mt-4 rounded-2xl bg-white p-5 font-serif">
+        <p className="text-center text-[20px] font-bold uppercase tracking-wide">{cv.header.name}</p>
+        <p className="text-center text-[13px] text-[var(--ink2)]">{cv.header.contact.join(" | ")}</p>
+        {cv.header.note && <p className="text-center text-[13px] italic text-[var(--ink2)]">{cv.header.note}</p>}
+        <label className="mt-4 block border-b border-[var(--ink)] pb-0.5 text-[12px] font-bold uppercase tracking-wide" htmlFor="cv-summary">
           Summary
         </label>
         <textarea
           id="cv-summary"
           rows={3}
-          className="field mt-1 !font-serif !text-[14px]"
+          className="field mt-2 !font-serif !text-[14px]"
           value={cv.summary}
           onChange={(e) => change({ ...cv, summary: e.target.value })}
         />
         {cv.sections.map((s, si) => (
           <div key={si} className="mt-4">
             <p className="border-b border-[var(--ink)] pb-0.5 text-[12px] font-bold uppercase tracking-wide">{s.heading}</p>
-            {s.items.map((it, ii) => (
-              <div key={ii} className="mt-2">
-                <p className="flex flex-wrap justify-between gap-2 text-[14px]">
-                  <span>
-                    <strong>{it.title}</strong>
-                    {it.subtitle && ` | ${it.subtitle}`}
-                  </span>
-                  <span className="text-[var(--ink2)]">{it.dates}</span>
-                </p>
-                <label className="sr-only" htmlFor={`b-${si}-${ii}`}>
-                  Bullets for {it.title}, one per line
-                </label>
-                <textarea
-                  id={`b-${si}-${ii}`}
-                  rows={Math.max(2, it.bullets.length + 1)}
-                  className="field mt-1 !font-serif !text-[13.5px]"
-                  value={it.bullets.join("\n")}
-                  onChange={(e) => {
-                    const sections = structuredClone(cv.sections);
-                    sections[si].items[ii].bullets = e.target.value.split("\n");
-                    change({ ...cv, sections });
-                  }}
-                />
-              </div>
-            ))}
+            {s.kind === "entries"
+              ? s.entries.map((e, ei) => (
+                  <div key={ei} className="mt-2">
+                    <p className="flex flex-wrap justify-between gap-2 text-[14px]">
+                      <span>
+                        <b className="uppercase">{e.org}</b>
+                        {e.org_note && <i> - {e.org_note}</i>}
+                      </span>
+                      <b>{e.location}</b>
+                    </p>
+                    <p className="flex flex-wrap justify-between gap-2 text-[14px]">
+                      <span>
+                        <b>{e.role}</b>
+                        {e.role_note && <i> ({e.role_note})</i>}
+                      </span>
+                      <b>{e.dates}</b>
+                    </p>
+                    <label className="sr-only" htmlFor={`b-${si}-${ei}`}>
+                      Bullets for {e.org}, one per line
+                    </label>
+                    <textarea
+                      id={`b-${si}-${ei}`}
+                      rows={Math.max(2, e.bullets.length + 1)}
+                      className="field mt-1 !font-serif !text-[13.5px]"
+                      value={e.bullets.join("\n")}
+                      onChange={(ev) => {
+                        const sections = structuredClone(cv.sections);
+                        sections[si].entries[ei].bullets = ev.target.value.split("\n");
+                        change({ ...cv, sections });
+                      }}
+                    />
+                  </div>
+                ))
+              : s.lines.map((l, li) => (
+                  <div key={li} className="mt-2 grid gap-1 sm:grid-cols-[160px_1fr] sm:items-start">
+                    <b className="pt-2 text-[13.5px]">{l.label}:</b>
+                    <label className="sr-only" htmlFor={`l-${si}-${li}`}>
+                      {l.label}
+                    </label>
+                    <textarea
+                      id={`l-${si}-${li}`}
+                      rows={2}
+                      className="field !font-serif !text-[13.5px]"
+                      value={l.text}
+                      onChange={(ev) => {
+                        const sections = structuredClone(cv.sections);
+                        sections[si].lines[li].text = ev.target.value;
+                        change({ ...cv, sections });
+                      }}
+                    />
+                  </div>
+                ))}
           </div>
         ))}
-        {cv.skills.length > 0 && (
-          <div className="mt-4 text-[14px]">
-            {cv.skills.map((s) => (
-              <p key={s.group}>
-                <strong>{s.group}:</strong> {s.items}
-              </p>
-            ))}
-          </div>
-        )}
       </div>
       <Notes meta={doc.meta} />
       <Toolbar
