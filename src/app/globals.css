@@ -1,0 +1,191 @@
+@import "tailwindcss";
+
+/* Editorial white page on a faint 4-column grid, black type: same look as Cora's board. */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --ink: #0b0b0c;
+  --ink2: #55565b;
+  --mute: #6b6c71;
+  --line: rgba(11, 11, 12, 0.1);
+  --line2: rgba(11, 11, 12, 0.22);
+  --card: #ffffff;
+  --card2: #f4f4f2;
+  --paper: #f1f1ef;
+  --black: #0b0b0c;
+  --onblack: #ffffff;
+  --onblack2: #a9a9ae;
+  --good: #17955c;
+  --goodbg: #e6f4ec;
+  --warn: #8a5c00;
+  --warnbg: #fbf1dc;
+  --bad: #c9302c;
+  --badbg: #fbeaea;
+  --grid: rgba(11, 11, 12, 0.045);
+  --r: 22px;
+}
+
+@theme inline {
+  --font-sans: var(--font-jakarta), Helvetica, Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-jakarta), Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 0.5px), var(--grid) calc(50% - 0.5px), var(--grid) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px) 16px 0 / calc(100% - 32px) 100% no-repeat,
+    linear-gradient(270deg, var(--grid) 1px, transparent 1px) -16px 0 / calc(100% - 32px) 100% no-repeat;
+}
+@media (min-width: 900px) {
+  body::before {
+    background: repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 25%);
+  }
+}
+em {
+  font-style: italic;
+  font-weight: 700;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-inline: 16px;
+}
+.cap {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.display {
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+  font-size: clamp(40px, 10vw, 92px);
+  text-wrap: balance;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 20px;
+}
+.btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-weight: 600;
+  font-size: 14px;
+  background: var(--black);
+  color: var(--onblack);
+  border: 1px solid var(--black);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.btn-lg {
+  padding: 15px 26px;
+  font-size: 16px;
+}
+.btn-ghost {
+  background: var(--bg);
+  color: var(--ink);
+  border: 1px solid var(--line2);
+}
+.btn-danger {
+  background: var(--bad);
+  border-color: var(--bad);
+}
+.field {
+  width: 100%;
+  border: 1px solid var(--line2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 16px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.field:focus {
+  outline: 2px solid var(--ink);
+  outline-offset: 0;
+  border-color: var(--ink);
+}
+.label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.chip-warn {
+  background: var(--warnbg);
+  color: var(--warn);
+}
+.chip-bad {
+  background: var(--badbg);
+  color: var(--bad);
+}
+.chip-good {
+  background: var(--goodbg);
+  color: var(--good);
+}
+.chip-mute {
+  background: var(--card2);
+  color: var(--ink2);
+}
+.alert {
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  background: var(--badbg);
+  color: var(--bad);
+}
+.break-anywhere {
+  overflow-wrap: anywhere;
+}
