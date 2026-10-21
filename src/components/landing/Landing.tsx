@@ -219,7 +219,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             </ul>
           </Reveal>
           <Reveal delay={120} className="tile relative overflow-hidden !p-8 lg:!p-12" aria-label="Example chat with rookie">
-            <div className="meet-bot mx-auto grid size-24 place-items-center rounded-full bg-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.35)]">
+            <div className="meet-bot mx-auto grid size-24 place-items-center rounded-full bg-[var(--black)] shadow-[0_18px_40px_-18px_rgba(0,0,0,0.45)]">
               <RookieBot size={72} />
             </div>
             <div className="mx-auto mt-8 grid max-w-[420px] gap-3 text-[14px]">

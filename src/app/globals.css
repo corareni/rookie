@@ -253,9 +253,14 @@ a {
     padding 0.6s ease;
 }
 .is-compact .menu-btn {
-  max-width: 140px;
+  /* Just the "=" in a circle, the same size as the bell next to it. */
+  max-width: 40px;
+  width: 40px;
+  height: 40px;
+  justify-content: center;
+  border-radius: 50%;
   opacity: 1;
-  padding-inline: 16px;
+  padding-inline: 0;
   transition:
     max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
     opacity 0.35s ease 0.2s,
@@ -333,9 +338,9 @@ a {
 .menu-icon {
   position: relative;
   display: inline-block;
-  width: 13px;
+  flex: none;
+  width: 14px;
   height: 9px;
-  margin-left: 2px;
 }
 .menu-icon span {
   position: absolute;
@@ -1126,10 +1131,10 @@ body:has(.chat-dock:not(.is-placed)) .rk-toasts { bottom: 86px; }
 }
 .chat-fab:active { cursor: grabbing; }
 .chat-fab:hover { transform: scale(1.05); }
-/* Closed: rookie on a white circle. Open: a black circle with a centred close icon. */
+/* rookie: white lines on a black circle; open, the same circle shows a centred close icon. */
 .chat-fab:not(.is-open) {
-  background: var(--frame);
-  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -12px rgba(0, 0, 0, 0.35);
+  background: var(--black);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 14px 30px -12px rgba(0, 0, 0, 0.45);
 }
 /* rookie only moves when the cursor is on him; at rest he just blinks now and then. */
 .bot { overflow: visible; }
@@ -1393,4 +1398,40 @@ body:has(.chat-dock:not(.is-placed)) .rk-toasts { bottom: 86px; }
 .meet-bot .bot-antenna { animation: bot-antenna 2.4s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
   .meet-bot, .meet-bot .bot-antenna { animation: none; }
+}
+
+/* Ask rookie: black header with "rookie" in lilac */
+.chat-card { position: relative; }
+.chat-head {
+  background: var(--black);
+  color: var(--onblack);
+}
+.chat-head .chat-tool { background: var(--black2); color: var(--onblack); }
+.chat-head .chat-tool:hover,
+.chat-head .chat-tool[aria-pressed="true"] { background: var(--lilac); color: var(--ink); }
+/* Resize corner: on the side away from rookie; drag to resize, double-click to reset. */
+.chat-resize {
+  position: absolute;
+  z-index: 3;
+  width: 18px;
+  height: 18px;
+  top: 3px;
+  left: 3px;
+  cursor: nwse-resize;
+  touch-action: none;
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, transparent 44%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 255, 255, 0.55) 52%, transparent 53%),
+    linear-gradient(135deg, transparent 62%, rgba(255, 255, 255, 0.55) 63%, rgba(255, 255, 255, 0.55) 70%, transparent 71%);
+  transform: rotate(180deg);
+  opacity: 0.7;
+}
+.chat-resize:hover { opacity: 1; background-color: rgba(255, 255, 255, 0.08); }
+.chat-dock[data-x="right"] .chat-resize { left: auto; right: 3px; cursor: nesw-resize; transform: rotate(270deg); }
+.chat-dock[data-y="down"] .chat-resize { top: auto; bottom: 3px; cursor: nesw-resize; transform: rotate(90deg); }
+.chat-dock[data-y="down"] .chat-resize { filter: invert(1); }
+.chat-dock[data-x="right"][data-y="down"] .chat-resize { cursor: nwse-resize; transform: none; }
+@media (max-width: 639px) {
+  .chat-resize { display: none; }
+  .chat-panel.is-sized { width: auto !important; height: calc(100dvh - 180px) !important; }
 }

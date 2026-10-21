@@ -11,7 +11,22 @@ const STARTERS = ["Which role should I focus on this week?", "How do I prepare f
 /** Chat history lives in this browser only, per signed-in user, and is cleared on log out. */
 export const CHAT_STORE = "rookie-chats";
 const MAX_CHATS = 20;
+
+/** A different line each time you hover over rookie. */
+const QUIPS = [
+  "Questions or doubts about a role, your CV or an interview? Ask me, I know your board.",
+  "Recruiters spend about 7 seconds on a CV. I spend longer than that on yours.",
+  "I've read more job ads today than most people read all year. Ask me anything.",
+  "Fun fact: 109 people apply to the average internship. Let's make you the one they remember.",
+  "I never get tired of deadlines. Want me to check which one is next?",
+  "Cover letter blank page? I eat those for breakfast. Figuratively, I'm a bot.",
+  "Not sure which role to go for? I'll give you a straight answer, no small talk.",
+  "Practising interview questions beats practising in the shower. Mostly.",
+  "I don't drink coffee, so I'm always ready to talk about your applications.",
+  "Applied to 10 roles? I can tell you which 3 are worth your evening.",
+];
 const BOT_POS = "rookie-bot-position";
+const CHAT_SIZE = "rookie-chat-size";
 const storedPos = (): { right: number; bottom: number } | null => {
   try {
     return JSON.parse(localStorage.getItem(BOT_POS) ?? "null");
@@ -87,6 +102,9 @@ export default function ChatBubble({ userId }: { userId: string }) {
   const [open, setOpen] = useState(false);
   // The panel stays mounted while it shrinks back into the bubble.
   const [shown, setShown] = useState(false);
+  const [quiet, setQuiet] = useState(false);
+  const [greeted, setGreeted] = useState(false);
+  const [quip, setQuip] = useState(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openChat = () => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -95,6 +113,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
   };
   const closeChat = () => {
     setOpen(false);
+    // No hello bubble right after closing; it comes back the next time you hover.
+    setQuiet(true);
     closeTimer.current = setTimeout(() => setShown(false), 380);
   };
 
@@ -114,6 +134,17 @@ export default function ChatBubble({ userId }: { userId: string }) {
     window.addEventListener("resize", fit);
     return () => window.removeEventListener("resize", fit);
   }, []);
+  // The chat's size: drag its far corner to make it bigger or smaller.
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const resizing = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const savedSize = (): { w: number; h: number } | null => {
+    try {
+      return JSON.parse(localStorage.getItem(CHAT_SIZE) ?? "null");
+    } catch {
+      return null;
+    }
+  };
+  const chatSize = size ?? (hydrated ? savedSize() : null);
   const [chats, setChats] = useState<Chat[]>(() => readChats(key));
   // The chat on screen; null is a fresh one that's saved once you ask something.
   const [current, setCurrent] = useState<string | null>(() => readChats(key)[0]?.id ?? null);
@@ -218,12 +249,12 @@ export default function ChatBubble({ userId }: { userId: string }) {
       data-y={side.y}
       style={pos ? { right: pos.right, bottom: pos.bottom, ["--room" as string]: `${side.room}px` } : undefined}
     >
-      {!open && (
-        <span className="chat-name" aria-hidden="true">
+      {!open && !quiet && (
+        <span className={`chat-name ${greeted ? "is-hover" : ""}`} aria-hidden="true">
           <b>
             Hi, I&apos;m rookie<span className="text-[var(--lilac)]">.</span>
           </b>
-          <span>Questions or doubts about a role, your CV or an interview? Ask me, I know your board.</span>
+          <span>{QUIPS[quip]}</span>
         </span>
       )}
       <button
@@ -232,6 +263,12 @@ export default function ChatBubble({ userId }: { userId: string }) {
         aria-label={open ? "Close the chat with rookie" : "Chat with rookie, your application helper. Drag to move."}
         aria-expanded={open}
         aria-controls="chat-panel"
+        onPointerEnter={() => {
+          if (quiet) return;
+          setGreeted(true);
+          setQuip((q) => (q + 1 + Math.floor(Math.random() * (QUIPS.length - 1))) % QUIPS.length);
+        }}
+        onPointerLeave={() => setQuiet(false)}
         // A tap opens or closes; a drag moves rookie (keyboard still opens with Enter or Space).
         onPointerDown={(e) => {
           const r = dock.current!.getBoundingClientRect();
@@ -267,16 +304,61 @@ export default function ChatBubble({ userId }: { userId: string }) {
       </button>
 
       {shown && (
-        <section id="chat-panel" className={`chat-panel ${open ? "" : "is-closing"}`} role="dialog" aria-label="Ask rookie">
+        <section
+          id="chat-panel"
+          className={`chat-panel ${open ? "" : "is-closing"} ${chatSize ? "is-sized" : ""}`}
+          role="dialog"
+          aria-label="Ask rookie"
+          style={chatSize ? { width: chatSize.w, height: chatSize.h } : undefined}
+        >
           <div className="chat-card">
-          <header className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
+          <span
+            className="chat-resize"
+            role="separator"
+            aria-label="Drag to resize the chat"
+            onPointerDown={(e) => {
+              const r = e.currentTarget.closest(".chat-panel")!.getBoundingClientRect();
+              resizing.current = { x: e.clientX, y: e.clientY, w: r.width, h: r.height };
+              e.currentTarget.setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              const r = resizing.current;
+              if (!r) return;
+              // The handle sits on the corner away from rookie, so dragging away from him makes it bigger.
+              const dx = (side.x === "left" ? -1 : 1) * (e.clientX - r.x);
+              const dy = (side.y === "up" ? -1 : 1) * (e.clientY - r.y);
+              setSize({
+                w: Math.round(Math.min(Math.max(300, r.w + dx), window.innerWidth - 32)),
+                h: Math.round(Math.min(Math.max(360, r.h + dy), window.innerHeight - 120)),
+              });
+            }}
+            onPointerUp={() => {
+              resizing.current = null;
+              try {
+                if (size) localStorage.setItem(CHAT_SIZE, JSON.stringify(size));
+              } catch {
+                // ignore
+              }
+            }}
+            onDoubleClick={() => {
+              setSize(null);
+              try {
+                localStorage.removeItem(CHAT_SIZE);
+              } catch {
+                // ignore
+              }
+            }}
+          />
+          <header className="chat-head flex items-center justify-between gap-2 px-4 py-3">
             <span className="flex min-w-0 items-center gap-2.5">
-              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-white ring-1 ring-[var(--line)]" aria-hidden="true">
+              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-[var(--black2)]" aria-hidden="true">
                 <RookieBot size={30} />
               </span>
               <span className="min-w-0">
-                <b className="text-[16px]">rookie</b>
-                <span className="block truncate text-[12px] text-[var(--mute)]">
+                <b className="text-[17px] tracking-[-0.02em] text-[var(--lilac)]">
+                  rookie<span className="text-white">.</span>
+                </b>
+                <span className="block truncate text-[12px] text-[var(--onblack2)]">
                   {showHistory ? "Your earlier chats" : "Your application helper"}
                 </span>
               </span>
@@ -411,20 +493,22 @@ export default function ChatBubble({ userId }: { userId: string }) {
 }
 
 /** rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
-export function RookieBot({ size = 46 }: { size?: number }) {
+export function RookieBot({ size = 46, dark = true }: { size?: number; dark?: boolean }) {
+  const line = dark ? "#ffffff" : "#0b0b0c";
   return (
     <svg className="bot" viewBox="0 0 48 48" width={size} height={size} aria-hidden="true">
-      <g fill="none" stroke="#0b0b0c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <g fill="none" stroke={line} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <g className="bot-antenna">
           <path d="M24 11V7" />
           <circle cx="24" cy="5.4" r="1.7" fill="#bfeccf" />
         </g>
         <path d="M9.2 19.5v6M38.8 19.5v6" />
-        <rect x="11.5" y="11" width="25" height="21.5" rx="8.5" fill="#ffffff" />
+        <rect x="11.5" y="11" width="25" height="21.5" rx="8.5" fill={dark ? "#0b0b0c" : "#ffffff"} />
         <rect x="15.5" y="15.2" width="17" height="12.4" rx="5.2" fill="#dcd6fb" />
-        <path className="bot-smile" d="M21.7 24q2.3 1.5 4.6 0" />
         <path d="M15.8 40.8c0-3 3.7-5.1 8.2-5.1s8.2 2.1 8.2 5.1" />
       </g>
+      {/* Face on the lilac visor stays dark either way. */}
+      <path className="bot-smile" d="M21.7 24q2.3 1.5 4.6 0" fill="none" stroke="#0b0b0c" strokeWidth="1.6" strokeLinecap="round" />
       <g className="bot-eyes" fill="#0b0b0c">
         <rect x="19.4" y="18.6" width="2.2" height="3.6" rx="1.1" />
         <rect x="26.4" y="18.6" width="2.2" height="3.6" rx="1.1" />

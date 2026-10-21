@@ -201,8 +201,7 @@ export default function Header({
           inert={!compact}
           onClick={() => setOpen((o) => !o)}
         >
-          {/* On phones the pill is tight, so the menu button is just the icon. */}
-          <span className="max-sm:sr-only">Menu</span>
+          <span className="sr-only">Menu</span>
           {/* Two lines that swing from "=" into "×" and back. */}
           <span className={`menu-icon ${open ? "is-open" : ""}`} aria-hidden="true">
             <span />
