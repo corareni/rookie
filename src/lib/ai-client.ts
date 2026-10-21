@@ -1,6 +1,7 @@
 import type { Contact, StructuredProfile } from "@/lib/profile";
 import type { Application } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
+import { showLimit } from "@/lib/plans";
 
 /** Calls rookie's own server routes; the AI key never reaches the browser. */
 async function post<T>(path: string, body: object, signal?: AbortSignal): Promise<T> {
@@ -11,6 +12,8 @@ async function post<T>(path: string, body: object, signal?: AbortSignal): Promis
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(() => ({}));
+  // A plan limit: say so in a pop-up too, with a link to the plans.
+  if (data.limit) showLimit({ title: data.limit.title, message: data.error, upgrade: data.limit.upgrade });
   if (!res.ok) throw new Error(data.error ?? "Something went wrong. Try again.");
   return data as T;
 }

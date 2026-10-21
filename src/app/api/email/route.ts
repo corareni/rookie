@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AiError } from "@/server/ai/gemini";
 import { readEmailUpdate } from "@/server/ai/email";
-import { consumeRun, errorResponse, getUser } from "@/server/ai/limits";
+import { consumeRun, errorResponse, getPlan, getUser, requirePlan } from "@/server/ai/limits";
 
 export const maxDuration = 60;
 
@@ -10,6 +10,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   try {
     await getUser(supabase);
+    // Email updates are part of Premium.
+    const plan = await getPlan(supabase);
+    requirePlan(plan, "email");
     const { data: prefs } = await supabase.from("profiles").select("profile").maybeSingle();
     if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
       throw new AiError("Email reading is switched off on your Profile.", 403);
@@ -20,7 +23,7 @@ export async function POST(request: Request) {
     const { data: row } = await supabase.from("applications").select("id,title,company,role,status").eq("id", id).maybeSingle();
     if (!row) throw new AiError("Role not found.", 404);
 
-    await consumeRun(supabase, "email");
+    await consumeRun(supabase, "email", 1, plan);
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
     return Response.json(await readEmailUpdate(row, day, email));
   } catch (e) {

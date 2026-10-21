@@ -4,7 +4,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const DOMAIN = process.env.TEST_EMAIL_DOMAIN ?? "example.com";
-const TABLES = ["applications", "profiles", "documents", "comparisons", "ai_runs", "notifications", "gmail_connections"];
+const TABLES = ["applications", "profiles", "documents", "comparisons", "ai_runs", "notifications", "gmail_connections", "user_plans"];
 
 const rand = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const user1 = { email: `bot-${rand().toLowerCase()}@${DOMAIN}`, password: `Test-${rand()}` };

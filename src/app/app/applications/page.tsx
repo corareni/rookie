@@ -5,12 +5,14 @@ import { APPLIED_STATUSES, COLUMNS, gmailLink, type Application } from "@/lib/ap
 import { withEventNote } from "@/lib/event-columns";
 import { PROFILE_COLUMNS, readsEmails, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
+import { LIMITS } from "@/lib/plans";
+import { getPlan } from "@/server/ai/limits";
 
 export const metadata: Metadata = { title: "Applications · rookie" };
 
 export default async function ApplicationsPage({ searchParams }: PageProps<"/app/applications">) {
   const supabase = await createClient();
-  const { data: prof } = await supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle();
+  const [{ data: prof }, plan] = await Promise.all([supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle(), getPlan(supabase)]);
   const { data } = await supabase
     .from("applications")
     .select(COLUMNS)
@@ -45,6 +47,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
       initial={(data ?? []) as unknown as Application[]}
       events={Object.fromEntries((events ?? []).map(({ id, ...e }) => [id, e as EventFields]))}
       readEmails={readsEmails(prof ? toProfileData(prof) : null)}
+      emailPlan={LIMITS[plan].email.month > 0}
       gmail={typeof (await searchParams).gmail === "string" ? ((await searchParams).gmail as string) : null}
     />
   );

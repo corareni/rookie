@@ -9,6 +9,7 @@ import { eventLabel } from "@/lib/calendar";
 import Arrow from "@/components/Arrow";
 import Dialog from "@/components/Dialog";
 import EmailUpdate from "@/components/EmailUpdate";
+import UpgradeNote from "@/components/UpgradeNote";
 import { useTasks } from "@/components/Tasks";
 import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
@@ -55,6 +56,7 @@ export default function ApplicationsTable({
   events: initialEvents = {},
   gmail = null,
   readEmails = true,
+  emailPlan = true,
   fromEmail = {},
 }: {
   initial: Application[];
@@ -63,6 +65,8 @@ export default function ApplicationsTable({
   gmail?: string | null;
   /** Off when the user switched off email reading on their Profile: no email buttons. */
   readEmails?: boolean;
+  /** Off when the user's plan doesn't include email updates (Premium only): an upgrade note instead of the buttons. */
+  emailPlan?: boolean;
   /** Roles whose current stage was set automatically from an email. */
   fromEmail?: Record<string, { at: string; summary: string; status: string; link: string | null }>;
 }) {
@@ -143,7 +147,8 @@ export default function ApplicationsTable({
           Everything you&apos;ve applied to, where it stands and what&apos;s next. Mark a role as applied on the Board and it
           shows up here.
         </p>
-        {items.length > 0 && readEmails && (
+        {items.length > 0 && readEmails && !emailPlan && <UpgradeNote className="mt-5 max-w-[560px]" />}
+        {items.length > 0 && readEmails && emailPlan && (
           <span className="mt-5 flex flex-wrap gap-2">
             <button type="button" className="btn !py-2.5" disabled={checking} onClick={() => checkEmails()}>
               {checking ? "Checking your emails…" : "Check emails"}

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useHydrated } from "@/lib/use-hydrated";
 import CloseIcon from "@/components/CloseIcon";
+import { showLimit } from "@/lib/plans";
 
-type Msg = { role: "user" | "assistant"; text: string; links?: { label: string; href: string }[] };
+type Msg = { role: "user" | "assistant"; text: string; links?: { label: string; href: string }[]; note?: string };
 
 const STARTERS = ["Which role should I focus on this week?", "How do I prepare for my next interview?", "What's missing from my profile?"];
 /** Chat history lives in this browser only, per signed-in user, and is cleared on log out. */
@@ -153,6 +154,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // A deep answer uses the smarter model (Basic and Premium); without one left it falls back to a quick answer.
+  const [deep, setDeep] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
   const msgs = chats.find((c) => c.id === current)?.msgs ?? [];
@@ -219,11 +222,12 @@ export default function ChatBubble({ userId }: { userId: string }) {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: next.map(({ role, text }) => ({ role, text })), today: localToday() }),
+        body: JSON.stringify({ messages: next.map(({ role, text }) => ({ role, text })), today: localToday(), deep }),
       });
       const d = await res.json().catch(() => ({}));
+      if (d.limit) showLimit({ title: d.limit.title, message: d.error, upgrade: d.limit.upgrade });
       if (!res.ok) throw new Error(d.error ?? "Couldn't answer just now. Try again.");
-      save(id, [...next, { role: "assistant", text: d.answer, links: d.links }]);
+      save(id, [...next, { role: "assistant", text: d.answer, links: d.links, ...(d.note ? { note: d.note } : {}) }]);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't answer just now. Try again.");
     } finally {
@@ -459,6 +463,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
                       ))}
                     </span>
                   )}
+                  {m.note && <span className="mt-2 block text-[11.5px] text-[var(--mute)]">{m.note}</span>}
                 </div>
               ),
             )}
@@ -509,6 +514,10 @@ export default function ChatBubble({ userId }: { userId: string }) {
               Send
             </button>
           </form>
+          <label className="flex items-center gap-2 px-4 pb-1.5 text-[12.5px] font-semibold text-[var(--ink2)]">
+            <input type="checkbox" checked={deep} onChange={(e) => setDeep(e.target.checked)} className="size-4 accent-[var(--ink)]" />
+            Deep answer <span className="font-normal text-[var(--mute)]">· smarter model, Basic and Premium</span>
+          </label>
           <p className="px-4 pb-3 text-[11.5px] text-[var(--mute)]">
             Answered by Google Gemini. Your chats stay in this browser and are deleted when you log out. AI can be wrong.
           </p>

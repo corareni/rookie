@@ -2,7 +2,7 @@ import { gmailLink } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
 import { hasChanges, readEmailUpdate } from "@/server/ai/email";
 import { AiError, MODEL_FAST, generateJson } from "@/server/ai/gemini";
-import { consumeRun, errorResponse, getUser } from "@/server/ai/limits";
+import { consumeRun, errorResponse, getPlan, getUser, requirePlan } from "@/server/ai/limits";
 import { forAccount, gmailConfigured, listAccounts, readMessage, refreshAccess, searchApplications, searchCompany } from "@/server/gmail";
 import { discoverPrompt, discoverSchema, discoverSystem, noLongDashes, type FoundApplication } from "@/server/ai/prompts";
 import { notify } from "@/server/notify";
@@ -47,6 +47,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   try {
     await getUser(supabase);
+    // Email updates are part of Premium.
+    const plan = await getPlan(supabase);
+    requirePlan(plan, "email");
     const { data: prefs } = await supabase.from("profiles").select("profile").maybeSingle();
     if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
       throw new AiError("Email reading is switched off on your Profile.", 403);
@@ -72,6 +75,8 @@ export async function POST(request: Request) {
       live.push({ a, access: t.access_token, seen: new Set(a.seen ?? []) });
     }
     if (!live.length) return Response.json({ state: "connect", expired: expired > 0 });
+    // One check of every picked inbox counts as one email check.
+    await consumeRun(supabase, "email", 1, plan);
     const tzOffset = Number.isFinite(tz) ? Math.max(-840, Math.min(840, Number(tz))) : 0;
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
     const last = live.map((l) => l.a.last_checked_at).filter(Boolean).sort()[0] ?? null;
@@ -99,7 +104,6 @@ export async function POST(request: Request) {
     let emails = 0;
     let updates = 0;
     let applied = 0;
-    let limited = false;
 
     // A few roles at a time keeps the check inside the time limit.
     const list = roles ?? [];
@@ -118,12 +122,6 @@ export async function POST(request: Request) {
           const found = perAccount.flat();
           if (!found.length) return;
           emails += found.length;
-          try {
-            await consumeRun(supabase, "email");
-          } catch (e) {
-            if (e instanceof AiError && e.status === 429) limited = true;
-            return;
-          }
           // Oldest first, so the latest email decides the stage.
           const text = found
             .sort((a, b) => a.date.localeCompare(b.date))
@@ -175,99 +173,88 @@ export async function POST(request: Request) {
     // Other application emails: roles that aren't on the board yet (or are, under a slightly different name).
     let added = 0;
     let needsInfo = 0;
-    if (!limited) {
-      const fresh: { id: string; date: string; text: string; account: string | null; subject: string }[] = [];
-      for (const l of live) {
-        const ids = (await searchApplications(l.access, days).catch(() => [])).filter((id) => !l.seen.has(id));
-        ids.forEach((id) => l.seen.add(id));
-        const msgs = await Promise.all(ids.map((id) => readMessage(l.access, id).catch(() => null)));
-        for (const m of msgs) if (m) fresh.push({ ...m, text: m.text.slice(0, 1800), account: l.a.email, subject: /Subject: (.*)/.exec(m.text)?.[1] ?? "" });
-      }
-      if (fresh.length) {
-        emails += fresh.length;
-        let ok = true;
-        try {
-          await consumeRun(supabase, "email");
-        } catch {
-          ok = false;
-          limited = true;
-        }
-        const found = ok
-          ? await generateJson<{ items: FoundApplication[] }>({
-              model: MODEL_FAST(),
-              system: discoverSystem,
-              prompt: discoverPrompt(day, fresh.slice(0, 12).map((m) => m.text)),
-              schema: discoverSchema,
-            })
-              .then((r) => noLongDashes(r.data).items ?? [])
-              .catch(() => [])
-          : [];
-        const { data: board } = await supabase.from("applications").select("id,title,company,role,status").neq("verdict", "binned");
-        const norm = (x: string | null | undefined) => (x ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
-        const byCompany = new Map((board ?? []).filter((b) => b.company).map((b) => [norm(b.company), b]));
-        // Several emails about the same company in one go: handle the newest one.
-        const seenCompany = new Set<string>();
-        const items = found
-          .filter((f) => f.job_related && fresh[f.index])
-          .sort((a, b) => fresh[b.index].date.localeCompare(fresh[a.index].date));
-        for (const f of items) {
-          const m = fresh[f.index];
-          const key = norm(f.company) || `subject:${norm(m.subject)}`;
-          if (seenCompany.has(key)) continue;
-          seenCompany.add(key);
-          const ref = { id: m.id, account: m.account };
-          const status = f.status === "none" ? "submitted" : f.status;
-          const known = f.company ? byCompany.get(norm(f.company)) : undefined;
-          if (known) {
-            // Already on the board: same rule as above, only clear progress is applied.
-            if (!(TERMINAL.includes(status) || rank(status) > rank(known.status))) continue;
-            const patch = updatePatch(status, f, tzOffset);
-            const { error } = await supabase.from("applications").update(patch).eq("id", known.id);
-            updates++;
-            if (!error) {
-              applied++;
-              change(known.id, known.company, status, (patch as { next_step?: string }).next_step, ref);
-            }
-            await notify(supabase, {
-              key: `email:${known.id}:${m.id}`,
-              kind: "email",
-              title: `${known.company}: moved to ${LABEL[status] ?? status}`,
-              body: `From an email. ${f.summary}`,
-              href: `/app/a/${known.id}`,
-              application_id: known.id,
-              data: { applied: !error, from: known.status, suggestion: { status, summary: f.summary }, mail: ref },
-            });
-            continue;
+    const fresh: { id: string; date: string; text: string; account: string | null; subject: string }[] = [];
+    for (const l of live) {
+      const ids = (await searchApplications(l.access, days).catch(() => [])).filter((id) => !l.seen.has(id));
+      ids.forEach((id) => l.seen.add(id));
+      const msgs = await Promise.all(ids.map((id) => readMessage(l.access, id).catch(() => null)));
+      for (const m of msgs) if (m) fresh.push({ ...m, text: m.text.slice(0, 1800), account: l.a.email, subject: /Subject: (.*)/.exec(m.text)?.[1] ?? "" });
+    }
+    if (fresh.length) {
+      emails += fresh.length;
+      const found = await generateJson<{ items: FoundApplication[] }>({
+        model: MODEL_FAST(),
+        system: discoverSystem,
+        prompt: discoverPrompt(day, fresh.slice(0, 12).map((m) => m.text)),
+        schema: discoverSchema,
+      })
+        .then((r) => noLongDashes(r.data).items ?? [])
+        .catch(() => []);
+      const { data: board } = await supabase.from("applications").select("id,title,company,role,status").neq("verdict", "binned");
+      const norm = (x: string | null | undefined) => (x ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const byCompany = new Map((board ?? []).filter((b) => b.company).map((b) => [norm(b.company), b]));
+      // Several emails about the same company in one go: handle the newest one.
+      const seenCompany = new Set<string>();
+      const items = found
+        .filter((f) => f.job_related && fresh[f.index])
+        .sort((a, b) => fresh[b.index].date.localeCompare(fresh[a.index].date));
+      for (const f of items) {
+        const m = fresh[f.index];
+        const key = norm(f.company) || `subject:${norm(m.subject)}`;
+        if (seenCompany.has(key)) continue;
+        seenCompany.add(key);
+        const ref = { id: m.id, account: m.account };
+        const status = f.status === "none" ? "submitted" : f.status;
+        const known = f.company ? byCompany.get(norm(f.company)) : undefined;
+        if (known) {
+          // Already on the board: same rule as above, only clear progress is applied.
+          if (!(TERMINAL.includes(status) || rank(status) > rank(known.status))) continue;
+          const patch = updatePatch(status, f, tzOffset);
+          const { error } = await supabase.from("applications").update(patch).eq("id", known.id);
+          updates++;
+          if (!error) {
+            applied++;
+            change(known.id, known.company, status, (patch as { next_step?: string }).next_step, ref);
           }
-          // Not on the board yet: add it to Applications at that stage; ask for anything the email didn't say.
-          const missing = [!f.company && "company", !f.role && "role"].filter(Boolean) as string[];
-          const row = {
-            title: (f.role && f.company ? `${f.role} at ${f.company}` : f.role || f.company || m.subject || "Application from an email").slice(0, 300),
-            company: f.company?.slice(0, 200) || null,
-            role: f.role?.slice(0, 300) || null,
-            job_url: /^https?:\/\//.test(f.job_url) ? f.job_url.slice(0, 2000) : null,
-            submitted_on: m.date.slice(0, 10),
-            ...updatePatch(status, f, tzOffset),
-          };
-          const { data: created, error } = await supabase.from("applications").insert(row).select("id").single();
-          if (error || !created) continue;
-          added++;
-          if (missing.length) needsInfo++;
-          change(created.id, row.company, status, (row as { next_step?: string }).next_step, ref);
           await notify(supabase, {
-            key: `email:new:${m.id}`,
+            key: `email:${known.id}:${m.id}`,
             kind: "email",
-            title: missing.length
-              ? `New application from an email: add the ${missing.join(" and ")}`
-              : `Added to Applications: ${f.company} · ${f.role}`,
-            body: missing.length
-              ? `${f.summary} The email didn't say the ${missing.join(" or ")}. Open it and fill in what's missing.`
-              : `From an email. ${f.summary}`,
-            href: `/app/a/${created.id}`,
-            application_id: created.id,
-            data: { applied: true, from: null, suggestion: { status, summary: f.summary }, mail: ref, missing },
+            title: `${known.company}: moved to ${LABEL[status] ?? status}`,
+            body: `From an email. ${f.summary}`,
+            href: `/app/a/${known.id}`,
+            application_id: known.id,
+            data: { applied: !error, from: known.status, suggestion: { status, summary: f.summary }, mail: ref },
           });
+          continue;
         }
+        // Not on the board yet: add it to Applications at that stage; ask for anything the email didn't say.
+        const missing = [!f.company && "company", !f.role && "role"].filter(Boolean) as string[];
+        const row = {
+          title: (f.role && f.company ? `${f.role} at ${f.company}` : f.role || f.company || m.subject || "Application from an email").slice(0, 300),
+          company: f.company?.slice(0, 200) || null,
+          role: f.role?.slice(0, 300) || null,
+          job_url: /^https?:\/\//.test(f.job_url) ? f.job_url.slice(0, 2000) : null,
+          submitted_on: m.date.slice(0, 10),
+          ...updatePatch(status, f, tzOffset),
+        };
+        const { data: created, error } = await supabase.from("applications").insert(row).select("id").single();
+        if (error || !created) continue;
+        added++;
+        if (missing.length) needsInfo++;
+        change(created.id, row.company, status, (row as { next_step?: string }).next_step, ref);
+        await notify(supabase, {
+          key: `email:new:${m.id}`,
+          kind: "email",
+          title: missing.length
+            ? `New application from an email: add the ${missing.join(" and ")}`
+            : `Added to Applications: ${f.company} · ${f.role}`,
+          body: missing.length
+            ? `${f.summary} The email didn't say the ${missing.join(" or ")}. Open it and fill in what's missing.`
+            : `From an email. ${f.summary}`,
+          href: `/app/a/${created.id}`,
+          application_id: created.id,
+          data: { applied: true, from: null, suggestion: { status, summary: f.summary }, mail: ref, missing },
+        });
       }
     }
 
@@ -277,7 +264,7 @@ export async function POST(request: Request) {
         l.a,
       );
     }
-    return Response.json({ state: "done", roles: list.length, emails, updates, applied, added, needsInfo, limited, accounts: live.length, expired, changes });
+    return Response.json({ state: "done", roles: list.length, emails, updates, applied, added, needsInfo, accounts: live.length, expired, changes });
   } catch (e) {
     return errorResponse(e);
   }

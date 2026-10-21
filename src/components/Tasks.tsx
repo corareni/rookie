@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import CompareToast, { type CompareState } from "@/components/CompareToast";
 import Dialog from "@/components/Dialog";
 import { compareRoles } from "@/lib/ai-client";
+import { LIMIT_EVENT, showLimit, type LimitNotice } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/client";
 import CloseIcon from "@/components/CloseIcon";
 
@@ -102,6 +103,16 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, [showing]);
   const [gmailHelp, setGmailHelp] = useState<null | "connect" | "expired" | "unavailable">(null);
 
+  // A plan limit or a Premium feature, from any AI call: one pop-up with what ran out and a link to the plans.
+  useEffect(() => {
+    const onLimit = (e: Event) => {
+      const n = (e as CustomEvent<LimitNotice>).detail;
+      setProgress({ title: n.title, detail: n.message, done: true, ...(n.upgrade ? { href: "/profile#plan", link: "See plans" } : {}) });
+    };
+    window.addEventListener(LIMIT_EVENT, onLimit);
+    return () => window.removeEventListener(LIMIT_EVENT, onLimit);
+  }, []);
+
   async function compare(ids: string[], names: string[]) {
     setCompareToast({ state: "working", names });
     try {
@@ -162,7 +173,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify({ id: r.id, rescore: true }),
           });
           const body = await res.json().catch(() => ({}));
-          if (res.status === 429) stopped = body.error ?? "Today's limit is reached.";
+          if (res.status === 429 || res.status === 403) stopped = body.error ?? "Today's limit is reached.";
           else if (res.ok && body.changed) changed++;
           done++;
           setProgress({ title: "Updating your scores…", detail: `With your new profile. ${done} of ${roles.length} roles.`, done: false });
@@ -178,8 +189,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
           ? `${changed} of ${roles.length} roles changed. See the bell for what moved.`
           : `All ${roles.length} roles re-checked. No score changed.`,
       done: true,
-      href: "/app",
-      link: "Open your board",
+      href: stopped ? "/profile#plan" : "/app",
+      link: stopped ? "See plans" : "Open your board",
     });
     refreshNotifications();
     router.refresh();
@@ -197,6 +208,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ today: localToday(), tz: new Date().getTimezoneOffset(), account: typeof account === "string" ? account : "all" }),
       });
       const r = await res.json().catch(() => ({}));
+      if (r.limit) return showLimit({ title: r.limit.title, message: r.error, upgrade: r.limit.upgrade });
       if (!res.ok) throw new Error(r.error ?? "Couldn't check your emails.");
       if (r.state !== "done") {
         setProgress(null);

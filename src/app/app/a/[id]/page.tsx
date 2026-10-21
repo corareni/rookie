@@ -4,6 +4,7 @@ import AnalysisPanel from "@/components/AnalysisPanel";
 import ApplicationEditor from "@/components/ApplicationEditor";
 import Documents from "@/components/Documents";
 import EmailUpdate from "@/components/EmailUpdate";
+import UpgradeNote from "@/components/UpgradeNote";
 import EventPanel, { type EventFields } from "@/components/EventPanel";
 import InterviewPrep from "@/components/InterviewPrep";
 import { COLUMNS, type Application } from "@/lib/applications";
@@ -11,26 +12,21 @@ import type { CvContent, Doc, LetterContent } from "@/lib/documents";
 import { PROFILE_COLUMNS, profileAsText, profileComplete, readsEmails, toProfileData } from "@/lib/profile";
 import { withEventNote, type EventRow } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
+import { LIMITS, PLAN_LABEL } from "@/lib/plans";
+import { getPlan, usage } from "@/server/ai/limits";
 
 export const metadata: Metadata = { title: "Role · rookie" };
-
-const DAILY_GENERATE = 6;
 
 export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
 
-  const [{ data }, { data: docs }, { data: profile }, { count }, { data: prep }, evq] = await Promise.all([
+  const [{ data }, { data: docs }, { data: profile }, plan, used, { data: prep }, evq] = await Promise.all([
     supabase.from("applications").select(COLUMNS).eq("id", id).maybeSingle(),
     supabase.from("documents").select("kind,content,meta,edited").eq("application_id", id),
     supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
-    supabase
-      .from("ai_runs")
-      .select("id", { count: "exact", head: true })
-      .eq("kind", "generate")
-      .gte("created_at", today.toISOString()),
+    getPlan(supabase),
+    usage(supabase, "generate"),
     // Needs the Phase 4 column; if it's missing this is simply empty.
     supabase.from("applications").select("interview_prep").eq("id", id).maybeSingle(),
     // Needs the Phase 5 columns; if they're missing the panel says so.
@@ -55,6 +51,12 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
         .map((l) => l.replace(/^- /, "").trim())
         .filter((l) => l.length > 12 && l !== l.toUpperCase())
     : [];
+  // CV + letter packs left: whichever runs out first, today's or this month's.
+  const limit = LIMITS[plan].generate;
+  const byMonth = limit.month - used.month <= limit.day - used.day;
+  const quota = byMonth
+    ? { left: Math.max(0, limit.month - used.month), note: `of ${limit.month} left this month on ${PLAN_LABEL[plan]}` }
+    : { left: Math.max(0, limit.day - used.day), note: `of ${limit.day} left today` };
   const doc = <T,>(kind: string) => (docs?.find((d) => d.kind === kind) as Doc<T>) ?? null;
 
   return (
@@ -74,7 +76,8 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
         letter={doc<LetterContent>("cover_letter")}
         hasCv={!!pd && profileComplete(pd)}
         canGenerate={a.job_status === "ready"}
-        left={Math.max(0, DAILY_GENERATE - (count ?? 0))}
+        left={quota.left}
+        leftNote={quota.note}
         signature={(profile?.contact as { name?: string } | null)?.name ?? ""}
         facts={[...new Set(facts)].slice(0, 80)}
         notes={a.notes ?? ""}
@@ -92,10 +95,14 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
             <small>[ ]</small> Got an email? <span className="font-light text-[var(--mute)]">· rookie updates the status for you</span>
           </h2>
           <div className="tile tile-butter mt-3">
-            <EmailUpdate
-              fixed
-              roles={[{ ...a, event_at: evq.data?.event_at ?? null, event_kind: (evq.data?.event_kind as EventFields["event_kind"]) ?? null }]}
-            />
+            {LIMITS[plan].email.month > 0 ? (
+              <EmailUpdate
+                fixed
+                roles={[{ ...a, event_at: evq.data?.event_at ?? null, event_kind: (evq.data?.event_kind as EventFields["event_kind"]) ?? null }]}
+              />
+            ) : (
+              <UpgradeNote />
+            )}
           </div>
         </section>
       )}

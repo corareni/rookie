@@ -15,7 +15,10 @@ type Props = {
   letter: Doc<LetterContent>;
   hasCv: boolean;
   canGenerate: boolean;
+  /** CV + letter packs left on the user's plan: the tighter of today's and this month's limit. */
   left: number;
+  /** "of 3 left today" or "of 1 left this month on Free". */
+  leftNote: string;
   signature: string;
   /** Every fact in the user's profile, so they can pick what to feature. */
   facts: string[];
@@ -39,7 +42,7 @@ const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
   { v: "long", label: "Long · ~400" },
 ];
 
-export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature, facts, notes }: Props) {
+export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, leftNote, signature, facts, notes }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [gate, setGate] = useState<string | null>(null);
@@ -86,7 +89,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     <button
       type="button"
       className="btn btn-lg"
-      disabled={busy || (hasCv && (!canGenerate || left <= 0))}
+      disabled={busy || (hasCv && !canGenerate)}
       onClick={() => (!hasCv ? setGate("write your CV and cover letter") : exists && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
     >
       {busy ? "Writing…" : `${exists ? "Regenerate" : "Write"} my ${target}`}
@@ -183,7 +186,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
           ) : !canGenerate ? (
             "rookie needs the job details first: analyse the role above."
           ) : (
-            `${left} of 6 left today. Only facts from your profile, and the CV always fits one page.`
+            `${left} ${leftNote}. Only facts from your profile, and the CV always fits one page.`
           )}
         </p>
         {confirmRegen && (

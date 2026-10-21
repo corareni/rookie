@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { AiError, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
-import { consumeRun, errorResponse, getProfile, getUser } from "@/server/ai/limits";
+import { AiError, MODEL_FAST, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
+import { consumeRun, errorResponse, getPlan, getProfile, getUser, tryDeep } from "@/server/ai/limits";
 import { chatPrompt, chatSchema, chatSystem, noLongDashes, type ChatReply } from "@/server/ai/prompts";
 
 export const maxDuration = 60;
@@ -12,14 +12,19 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   try {
     await getUser(supabase);
-    const { messages, today } = (await request.json()) as { messages?: Msg[]; today?: string };
+    const { messages, today, deep } = (await request.json()) as { messages?: Msg[]; today?: string; deep?: boolean };
     const history = (messages ?? [])
       .filter((m) => (m.role === "user" || m.role === "assistant") && typeof m.text === "string" && m.text.trim())
       .slice(-12)
       .map((m) => ({ role: m.role, text: m.text.slice(0, 2000) }));
     if (history.at(-1)?.role !== "user") throw new AiError("Ask a question first.", 400);
 
-    await consumeRun(supabase, "chat");
+    // Quick messages run on the fast model. A deep answer (Basic and Premium) uses the smarter one; when there are
+    // none left it falls back to a quick message and says so, instead of refusing.
+    const plan = await getPlan(supabase);
+    const fellBack = deep ? await tryDeep(supabase, plan) : null;
+    const smart = !!deep && !fellBack;
+    if (!smart) await consumeRun(supabase, "chat", 1, plan);
     const [{ data: roles }, { data: events }, profile] = await Promise.all([
       supabase
         .from("applications")
@@ -51,7 +56,7 @@ export async function POST(request: Request) {
 
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
     const { data } = await generateJson<ChatReply>({
-      model: MODEL_WRITE(),
+      model: smart ? MODEL_WRITE() : MODEL_FAST(),
       system: chatSystem,
       prompt: chatPrompt(board, profile, day, history),
       schema: chatSchema,
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
       .filter((l) => !l.href.startsWith("/app/a/") || ids.has(l.href.slice(7).split(/[#?/]/)[0]))
       .slice(0, 4)
       .map((l) => ({ label: l.label.slice(0, 40), href: l.href }));
-    return Response.json({ answer: reply.answer, links });
+    return Response.json({ answer: reply.answer, links, deep: smart, note: fellBack });
   } catch (e) {
     return errorResponse(e);
   }
