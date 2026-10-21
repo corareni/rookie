@@ -19,8 +19,8 @@ type Tasks = {
   comparing: boolean;
   /** Scores every open role again with the latest profile. */
   rescore: () => void;
-  /** Checks the connected Gmail, or helps connect it. */
-  checkEmails: () => void;
+  /** Checks all connected Gmail accounts (or one, by id), or helps connect one. */
+  checkEmails: (account?: string) => void;
   checking: boolean;
 };
 
@@ -107,7 +107,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   }, [rescoring, router]);
 
-  const checkEmails = useCallback(async () => {
+  const checkEmails = useCallback(async (account?: unknown) => {
     if (checking) return;
     setChecking(true);
     setProgress({ title: "Checking your emails…", detail: "Looking for news about your applications.", done: false });
@@ -115,7 +115,8 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/gmail/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ today: localToday(), tz: new Date().getTimezoneOffset() }),
+        // Called straight from buttons too, so only a string is an account id.
+        body: JSON.stringify({ today: localToday(), tz: new Date().getTimezoneOffset(), account: typeof account === "string" ? account : "all" }),
       });
       const r = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(r.error ?? "Couldn't check your emails.");

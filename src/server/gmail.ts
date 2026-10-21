@@ -14,7 +14,8 @@ export function consentUrl(origin: string, state: string) {
     response_type: "code",
     scope: `openid email ${GMAIL_SCOPE}`,
     access_type: "offline",
-    prompt: "consent",
+    // Always ask which account, so a second Gmail can be added.
+    prompt: "consent select_account",
     include_granted_scopes: "true",
     state,
   });
@@ -97,3 +98,27 @@ export async function readMessage(access: string, id: string) {
     text: `From: ${h("from")}\nSubject: ${h("subject")}\nDate: ${h("date")}\n\n${text}`,
   };
 }
+
+export type GmailAccount = {
+  /** Row id (phase 7); before that there's one account per user and this is null. */
+  id: string | null;
+  email: string | null;
+  refresh_token: string;
+  last_checked_at: string | null;
+  seen: string[];
+};
+
+/**
+ * The user's connected Gmail accounts. Works before and after the phase 7 database update
+ * (which allows several accounts per user).
+ */
+export async function listAccounts(supabase: import("@supabase/supabase-js").SupabaseClient) {
+  const multi = await supabase.from("gmail_connections").select("id,email,refresh_token,last_checked_at,seen").order("created_at");
+  if (!multi.error) return { accounts: (multi.data ?? []) as GmailAccount[], multi: true, error: null };
+  const one = await supabase.from("gmail_connections").select("email,refresh_token,last_checked_at,seen");
+  return { accounts: ((one.data ?? []) as Omit<GmailAccount, "id">[]).map((a) => ({ ...a, id: null })), multi: false, error: one.error };
+}
+
+/** Narrows a query to one account (by id after phase 7, else the user's only row). */
+export const forAccount = <T extends { eq: (c: string, v: string) => T; not: (c: string, o: string, v: null) => T }>(q: T, a: GmailAccount) =>
+  a.id ? q.eq("id", a.id) : q.not("user_id", "is", null);

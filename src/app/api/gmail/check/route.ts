@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasChanges, readEmailUpdate } from "@/server/ai/email";
 import { AiError } from "@/server/ai/gemini";
 import { consumeRun, errorResponse, getUser } from "@/server/ai/limits";
-import { gmailConfigured, readMessage, refreshAccess, searchCompany } from "@/server/gmail";
+import { forAccount, gmailConfigured, listAccounts, readMessage, refreshAccess, searchCompany } from "@/server/gmail";
 import { notify } from "@/server/notify";
 
 export const maxDuration = 60;
@@ -33,22 +33,31 @@ export async function POST(request: Request) {
     if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
       throw new AiError("Email reading is switched off on your Profile.", 403);
     if (!gmailConfigured()) return Response.json({ state: "unavailable" });
-    const { data: conn, error } = await supabase.from("gmail_connections").select("refresh_token,last_checked_at,seen,email").maybeSingle();
+    const { accounts: all, error } = await listAccounts(supabase);
     if (error) return Response.json({ state: "unavailable" });
-    if (!conn) return Response.json({ state: "connect" });
+    if (!all.length) return Response.json({ state: "connect" });
 
-    const t = await refreshAccess(conn.refresh_token);
-    if (!t.ok || !t.access_token) {
-      // Access was removed in the Google account, or expired: connect again.
-      await supabase.from("gmail_connections").delete().not("user_id", "is", null);
-      return Response.json({ state: "connect", expired: true });
+    const { today, tz, account } = (await request.json().catch(() => ({}))) as { today?: string; tz?: number; account?: string };
+    // One account (?account=id) or all of them at once.
+    const picked = all.filter((a) => !account || account === "all" || (a.id ?? "only") === account);
+
+    // A working key per account; an account whose access was removed or expired is dropped.
+    const live: { a: (typeof all)[number]; access: string; seen: Set<string> }[] = [];
+    let expired = 0;
+    for (const a of picked) {
+      const t = await refreshAccess(a.refresh_token);
+      if (!t.ok || !t.access_token) {
+        expired++;
+        await forAccount(supabase.from("gmail_connections").delete(), a);
+        continue;
+      }
+      live.push({ a, access: t.access_token, seen: new Set(a.seen ?? []) });
     }
-    const access = t.access_token;
-
-    const { today, tz } = (await request.json().catch(() => ({}))) as { today?: string; tz?: number };
+    if (!live.length) return Response.json({ state: "connect", expired: expired > 0 });
     const tzOffset = Number.isFinite(tz) ? Math.max(-840, Math.min(840, Number(tz))) : 0;
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
-    const since = conn.last_checked_at ? Math.ceil((Date.now() - Date.parse(conn.last_checked_at)) / 86_400_000) + 1 : 30;
+    const last = live.map((l) => l.a.last_checked_at).filter(Boolean).sort()[0] ?? null;
+    const since = last ? Math.ceil((Date.now() - Date.parse(last)) / 86_400_000) + 1 : 30;
     const days = Math.min(30, Math.max(2, since));
 
     const { data: roles } = await supabase
@@ -59,11 +68,10 @@ export async function POST(request: Request) {
       .order("updated_at", { ascending: false })
       .limit(12);
 
-    const seen = new Set<string>(conn.seen ?? []);
     // The newest email behind an update, so the Applications page can link straight to it in Gmail.
-    const mailRef = (msgs: { id: string; date: string }[]) => {
+    const mailRef = (msgs: { id: string; date: string; account: string | null }[]) => {
       const newest = [...msgs].sort((a, b) => b.date.localeCompare(a.date))[0];
-      return newest ? { id: newest.id, account: conn.email ?? null } : null;
+      return newest ? { id: newest.id, account: newest.account } : null;
     };
     let emails = 0;
     let updates = 0;
@@ -75,11 +83,16 @@ export async function POST(request: Request) {
     for (let i = 0; i < list.length; i += 4) {
       await Promise.all(
         list.slice(i, i + 4).map(async (r) => {
-          const ids = (await searchCompany(access, r.company!, days).catch(() => [])).filter((id) => !seen.has(id));
-          if (!ids.length) return;
-          ids.forEach((id) => seen.add(id));
-          const msgs = await Promise.all(ids.map((id) => readMessage(access, id).catch(() => null)));
-          const found = msgs.filter((m): m is NonNullable<typeof m> => !!m);
+          // New emails about this company, from every account being checked.
+          const perAccount = await Promise.all(
+            live.map(async (l) => {
+              const ids = (await searchCompany(l.access, r.company!, days).catch(() => [])).filter((id) => !l.seen.has(id));
+              ids.forEach((id) => l.seen.add(id));
+              const msgs = await Promise.all(ids.map((id) => readMessage(l.access, id).catch(() => null)));
+              return msgs.filter((m): m is NonNullable<typeof m> => !!m).map((m) => ({ ...m, account: l.a.email }));
+            }),
+          );
+          const found = perAccount.flat();
           if (!found.length) return;
           emails += found.length;
           try {
@@ -133,11 +146,13 @@ export async function POST(request: Request) {
       );
     }
 
-    await supabase
-      .from("gmail_connections")
-      .update({ last_checked_at: new Date().toISOString(), seen: [...seen].slice(-500) })
-      .not("user_id", "is", null);
-    return Response.json({ state: "done", roles: list.length, emails, updates, applied, limited });
+    for (const l of live) {
+      await forAccount(
+        supabase.from("gmail_connections").update({ last_checked_at: new Date().toISOString(), seen: [...l.seen].slice(-500) }),
+        l.a,
+      );
+    }
+    return Response.json({ state: "done", roles: list.length, emails, updates, applied, limited, accounts: live.length, expired });
   } catch (e) {
     return errorResponse(e);
   }

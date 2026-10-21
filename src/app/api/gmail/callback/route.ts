@@ -25,8 +25,9 @@ export async function GET(request: NextRequest) {
   const t = await exchangeCode(code, origin);
   if (!t.ok || !t.access_token || !t.refresh_token) return back("failed");
   const email = await gmailAddress(t.access_token).catch(() => null);
-  const { error } = await supabase
-    .from("gmail_connections")
-    .upsert({ user_id: user.id, email, refresh_token: t.refresh_token, last_checked_at: null }, { onConflict: "user_id" });
+  const row = { user_id: user.id, email, refresh_token: t.refresh_token, last_checked_at: null };
+  // After phase 7 each Gmail address is its own row; before it, one account per user (a new one replaces it).
+  let { error } = await supabase.from("gmail_connections").upsert(row, { onConflict: "user_id,email" });
+  if (error) ({ error } = await supabase.from("gmail_connections").upsert(row, { onConflict: "user_id" }));
   return back(error ? "failed" : "connected");
 }
