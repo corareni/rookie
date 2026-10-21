@@ -10,6 +10,7 @@ const APP_NAV = [
   { href: "/app/applications", label: "Applications" },
   { href: "/app/compare", label: "Compare" },
   { href: "/app/barriers", label: "Barriers" },
+  { href: "/app/calendar", label: "Calendar" },
   { href: "/app/library", label: "Library" },
   { href: "/profile", label: "Profile" },
 ];
