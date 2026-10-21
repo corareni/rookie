@@ -6,6 +6,7 @@ import { TasksProvider } from "@/components/Tasks";
 import Tour from "@/components/Tour";
 import { site } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
+import { getPlan } from "@/server/ai/limits";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -33,7 +34,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   } = await supabase.auth.getUser();
   // The name from the user's profile (CV header), else from their Google account. No name yet: show none,
   // it appears once they add their CV.
-  const { data: profile } = user ? await supabase.from("profiles").select("contact,profile").maybeSingle() : { data: null };
+  const [{ data: profile }, plan] = user
+    ? await Promise.all([supabase.from("profiles").select("contact,profile").maybeSingle(), getPlan(supabase)])
+    : [{ data: null }, null];
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const name = ((profile?.contact as { name?: string } | null)?.name || meta.full_name || meta.name || "").trim();
 
@@ -46,6 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               email={user?.email ?? null}
               name={name || null}
               readEmails={(profile?.profile as { read_emails?: boolean } | null)?.read_emails !== false}
+              premium={plan === "premium"}
             />
             <div className="wrap pt-4 pb-6">{children}</div>
             {user && <ChatBubble userId={user.id} />}

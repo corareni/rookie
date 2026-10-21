@@ -27,10 +27,38 @@ const SITE_NAV = [
 const displayName = (n: string) =>
   n === n.toUpperCase() ? n.toLowerCase().replace(/(^|[\s-])\p{L}/gu, (c) => c.toUpperCase()) : n;
 
-export function Wordmark({ className = "", dot = "text-[var(--lilac)]" }: { className?: string; dot?: string }) {
+/** A small golden star, puffy like a sticker, with a shine. */
+function GoldStar() {
+  return (
+    <svg viewBox="0 0 100 100" className="gold-star" aria-hidden="true">
+      <path
+        d="M50 13 L61.2 39.6 L89.9 42 L68.1 60.9 L74.7 89 L50 74 L25.3 89 L31.9 60.9 L10.1 42 L38.8 39.6 Z"
+        fill="#FFDF66"
+        stroke="#FFDF66"
+        strokeWidth="13"
+        strokeLinejoin="round"
+      />
+      <g fill="none" stroke="#F5C928" strokeWidth="3.2" strokeLinecap="round">
+        <path d="M44 24 L39 37" />
+        <path d="M17 44 L30 42.5" />
+        <path d="M30 73 L28 84" />
+        <path d="M62 78 L71 85" />
+        <path d="M83 46 L72 55" />
+      </g>
+      <path d="M53 18 L56 26" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" />
+      <circle cx="57.5" cy="31" r="1.9" fill="#fff" />
+    </svg>
+  );
+}
+
+export function Wordmark({ className = "", dot = "text-[var(--lilac)]", star = false }: { className?: string; dot?: string; star?: boolean }) {
   return (
     <span className={`font-bold tracking-[-0.04em] ${className}`}>
-      rookie<span className={dot}>.</span>
+      rooki
+      <span className="relative inline-block">
+        e{star && <GoldStar />}
+      </span>
+      <span className={dot}>.</span>
     </span>
   );
 }
@@ -46,11 +74,14 @@ export default function Header({
   email,
   name,
   readEmails = true,
+  premium = false,
 }: {
   email: string | null;
   name: string | null;
   /** Off when the user switched off email reading on their Profile. */
   readEmails?: boolean;
+  /** Premium accounts get a little golden star on the wordmark. */
+  premium?: boolean;
 }) {
   const path = usePathname();
   const router = useRouter();
@@ -159,7 +190,7 @@ export default function Header({
     <div className="sticky top-2 z-50 flex justify-center print:hidden">
       <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""} ${email ? "has-bell" : ""}`}>
         <Link href={email ? "/app" : "/"} className="flex flex-none items-center no-underline" aria-label="rookie home">
-          <Wordmark className="text-[22px] leading-none sm:text-[24px]" />
+          <Wordmark className="text-[22px] leading-none sm:text-[24px]" star={premium} />
         </Link>
 
         {/* In the full bar only; once it shrinks, the same button sits in the menu. */}

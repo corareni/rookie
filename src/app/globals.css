@@ -1728,3 +1728,27 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .waitlist-btn, .waitlist-plan { transition: none; }
 }
+
+/* Premium: a golden star perched diagonally on the "e" of the wordmark, wiggling now and then. */
+.gold-star {
+  position: absolute;
+  top: -0.36em;
+  right: -0.16em;
+  width: 0.62em;
+  height: 0.62em;
+  transform: rotate(18deg);
+  transform-origin: 30% 80%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+  pointer-events: none;
+  animation: star-wiggle 3.2s ease-in-out infinite;
+}
+@keyframes star-wiggle {
+  0%, 62%, 100% { transform: rotate(18deg) scale(1); }
+  70% { transform: rotate(32deg) scale(1.08); }
+  78% { transform: rotate(6deg) scale(1.04); }
+  86% { transform: rotate(26deg) scale(1.02); }
+  93% { transform: rotate(14deg) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gold-star { animation: none; }
+}
