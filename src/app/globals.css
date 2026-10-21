@@ -840,6 +840,36 @@ a {
 .entry summary::-webkit-details-marker { display: none; }
 .pill.pill-done { background: var(--mint); border-color: var(--mint); font-weight: 700; }
 
+/* Page loader: four pastel tiles that lift in turn while the grid turns a quarter */
+.rk-loader {
+  display: grid;
+  grid-template-columns: repeat(2, 26px);
+  gap: 6px;
+  animation: loader-turn 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+.rk-loader i {
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  animation: loader-lift 1.2s ease-in-out infinite;
+}
+.rk-loader i:nth-child(1) { background: #c9c0fb; }
+.rk-loader i:nth-child(2) { background: #bfeccf; animation-delay: 0.15s; }
+.rk-loader i:nth-child(4) { background: #fccab0; animation-delay: 0.3s; }
+.rk-loader i:nth-child(3) { background: #b9d9f8; animation-delay: 0.45s; }
+@keyframes loader-turn {
+  0%, 20% { transform: rotate(0deg); }
+  50%, 70% { transform: rotate(90deg); }
+  100% { transform: rotate(180deg); }
+}
+@keyframes loader-lift {
+  0%, 100% { transform: scale(1); }
+  40% { transform: scale(0.72); border-radius: 50%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rk-loader, .rk-loader i { animation: none; }
+}
+
 /* Loading placeholder while a page's data arrives */
 .skel {
   background: linear-gradient(100deg, var(--tile) 30%, var(--frame) 50%, var(--tile) 70%) 0 0 / 300% 100%;
