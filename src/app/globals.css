@@ -842,15 +842,17 @@ a {
 
 /* Page loader: four pastel tiles that lift in turn while the grid turns a quarter */
 .rk-loader {
+  /* Tile size follows the window: smaller on phones, larger on big screens. */
+  --t: clamp(20px, 2.2vw, 34px);
   display: grid;
-  grid-template-columns: repeat(2, 26px);
-  gap: 6px;
+  grid-template-columns: repeat(2, var(--t));
+  gap: calc(var(--t) * 0.23);
   animation: loader-turn 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
 }
 .rk-loader i {
-  width: 26px;
-  height: 26px;
-  border-radius: 9px;
+  width: var(--t);
+  height: var(--t);
+  border-radius: calc(var(--t) * 0.35);
   animation: loader-lift 1.2s ease-in-out infinite;
 }
 .rk-loader i:nth-child(1) { background: #c9c0fb; }
