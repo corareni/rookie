@@ -186,7 +186,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
           ) : !canGenerate ? (
             "rookie needs the job details first: analyse the role above."
           ) : (
-            `${left} ${leftNote}. Only facts from your profile, and the CV always fits one page.`
+            `${leftNote === "unlimited" ? "Unlimited on your plan" : `${left} ${leftNote}`}. Only facts from your profile, and the CV always fits one page.`
           )}
         </p>
         {confirmRegen && (

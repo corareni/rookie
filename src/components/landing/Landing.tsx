@@ -116,7 +116,7 @@ const PLAN_CARDS: { p: Plan; tone: string; tag: string }[] = [
 ];
 
 export default function Landing({ signedIn }: { signedIn: boolean }) {
-  const cta = signedIn ? { href: "/app", label: "Open your board" } : { href: "/signup", label: "Sign up free" };
+  const cta = { href: "/signup", label: "Sign up free" };
   return (
     <main className="overflow-x-clip">
       {/* Hero */}
@@ -140,19 +140,20 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               the role out of 10, writes a CV and cover letter from your real experience, and keeps every application,
               deadline and interview in one place.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-4">
-              <Link href={cta.href} className="btn btn-lg">
-                {cta.label}
-              </Link>
-              {!signedIn && (
+            {/* Signed in, the landing page is just information: no sign-up or log-in buttons. */}
+            {!signedIn && (
+              <div className="mt-7 flex flex-wrap items-center gap-4">
+                <Link href={cta.href} className="btn btn-lg">
+                  {cta.label}
+                </Link>
                 <span className="text-sm text-[var(--ink2)]">
                   Already have an account?{" "}
                   <Link href="/login" className="font-bold">
                     Log in
                   </Link>
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </section>
         <section className="tile tile-lilac span-5 relative grid place-items-center overflow-hidden !pt-24 !pb-10" aria-label="Example: a role scored for you">
@@ -349,9 +350,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               Add your profile once, paste your first job link and see your score in under a minute. Free for students and
               graduates, private to you.
             </p>
-            <Link href={cta.href} className="btn btn-lg mt-7">
-              {cta.label}
-            </Link>
+            {!signedIn && (
+              <Link href={cta.href} className="btn btn-lg mt-7">
+                {cta.label}
+              </Link>
+            )}
           </div>
           <div className="grid place-items-center">
             <Phone label="Example screen: an application tracked all the way to an offer for a Software Engineer Intern role at rookie">
@@ -394,9 +397,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
                 </ul>
               </div>
               {p === "free" ? (
-                <Link href={cta.href} className="btn self-start">
-                  {cta.label}
-                </Link>
+                !signedIn && (
+                  <Link href={cta.href} className="btn self-start">
+                    {cta.label}
+                  </Link>
+                )
               ) : (
                 <Link href={signedIn ? "/profile#waitlist" : "/signup"} className="btn btn-ghost self-start bg-white">
                   {signedIn ? "Join the waiting list" : "Sign up, then join the list"}
@@ -423,9 +428,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             date in one calendar.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href={cta.href} className="btn btn-lg">
-              {cta.label}
-            </Link>
+            {!signedIn && (
+              <Link href={cta.href} className="btn btn-lg">
+                {cta.label}
+              </Link>
+            )}
             <a href="#how" className="btn btn-ghost btn-lg">
               See how it works
             </a>
@@ -444,8 +451,17 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           <div>
             <p className="text-[13px] text-white/60">Product</p>
             <p className="mt-3 grid gap-2">
-              <Link href="/signup">Sign up</Link>
-              <Link href="/login">Log in</Link>
+              {signedIn ? (
+                <>
+                  <a href="#how">How it works</a>
+                  <a href="#plans">Plans</a>
+                </>
+              ) : (
+                <>
+                  <Link href="/signup">Sign up</Link>
+                  <Link href="/login">Log in</Link>
+                </>
+              )}
             </p>
           </div>
           <div>

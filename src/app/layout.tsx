@@ -49,7 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
               email={user?.email ?? null}
               name={name || null}
               readEmails={(profile?.profile as { read_emails?: boolean } | null)?.read_emails !== false}
-              premium={plan === "premium"}
+              premium={plan === "premium" || plan === "master"}
             />
             <div className="wrap pt-4 pb-6">{children}</div>
             {user && <ChatBubble userId={user.id} />}

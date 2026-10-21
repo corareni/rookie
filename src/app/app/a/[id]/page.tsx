@@ -54,7 +54,9 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
   // CV + letter packs left: whichever runs out first, today's or this month's.
   const limit = LIMITS[plan].generate;
   const byMonth = limit.month - used.month <= limit.day - used.day;
-  const quota = byMonth
+  const quota = !Number.isFinite(limit.month)
+    ? { left: 9999, note: "unlimited" }
+    : byMonth
     ? { left: Math.max(0, limit.month - used.month), note: `of ${limit.month} left this month on ${PLAN_LABEL[plan]}` }
     : { left: Math.max(0, limit.day - used.day), note: `of ${limit.day} left today` };
   const doc = <T,>(kind: string) => (docs?.find((d) => d.kind === kind) as Doc<T>) ?? null;

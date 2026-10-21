@@ -2,7 +2,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { AiError } from "./gemini";
 import { PROFILE_COLUMNS, toProfileData } from "@/lib/profile";
-import { KIND_LABEL, LIMITS, PLAN_LABEL, isPlan, raiseHint, type Kind, type Plan } from "@/lib/plans";
+import { KIND_LABEL, LIMITS, PLAN_LABEL, isPlan, isUnlimited, raiseHint, type Kind, type Plan } from "@/lib/plans";
 import type { Profile } from "./prompts";
 
 export type { Kind };
@@ -139,7 +139,8 @@ export async function consumeRun(supabase: SupabaseClient, kind: Kind, cost = 1,
   requirePlan(plan, kind);
   const over = await overLimit(supabase, plan, kind, cost);
   if (over) throw new LimitError(`${over.used}. ${over.resets} ${raiseHint(plan)}`, 429, "Limit reached", true);
-  await checkBudget(supabase, kind, cost);
+  // The owner's unlimited plan also skips the app-wide daily budget.
+  if (!isUnlimited(plan)) await checkBudget(supabase, kind, cost);
   await log(supabase, kind, cost);
 }
 
@@ -152,7 +153,7 @@ export async function tryDeep(supabase: SupabaseClient, plan: Plan): Promise<str
   const over = await overLimit(supabase, plan, "deep", 1);
   if (over) return `${over.used}, so this one used the quick model. ${over.resets} ${raiseHint(plan)}`;
   try {
-    await checkBudget(supabase, "deep", 1);
+    if (!isUnlimited(plan)) await checkBudget(supabase, "deep", 1);
   } catch {
     return "rookie is saving its smarter model for today, so this one used the quick model.";
   }

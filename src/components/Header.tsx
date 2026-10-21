@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import NotificationBell from "@/components/NotificationBell";
+import SiteSearch, { SearchButton } from "@/components/SiteSearch";
 import WaitlistDialog, { openWaitlist } from "@/components/WaitlistDialog";
 import { createClient } from "@/lib/supabase/client";
 
@@ -188,8 +189,8 @@ export default function Header({
 
   return (
     <div className="sticky top-2 z-50 flex justify-center print:hidden">
-      <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""} ${email ? "has-bell" : ""}`}>
-        <Link href={email ? "/app" : "/"} className="flex flex-none items-center no-underline" aria-label="rookie home">
+      <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""} ${email ? "has-bell" : ""} has-search`}>
+        <Link href="/" className="flex flex-none items-center no-underline" aria-label="rookie home">
           <Wordmark className="text-[22px] leading-none sm:text-[24px]" star={premium} />
         </Link>
 
@@ -228,6 +229,8 @@ export default function Header({
         </div>
 
         {/* Always visible when signed in, in the full bar and the compact pill. */}
+        {/* Search: always there, in the full bar and the compact pill. */}
+        <SearchButton />
         {email && <NotificationBell readEmails={readEmails} />}
 
         <button
@@ -307,6 +310,7 @@ export default function Header({
       )}
 
       <WaitlistDialog signedIn={!!email} />
+      <SiteSearch signedIn={!!email} />
     </div>
   );
 }

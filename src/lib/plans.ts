@@ -1,11 +1,15 @@
 /** rookie's plans and their AI limits (Handover/pricing-proposal.md). Shared by the server checks and the Profile meter. */
-export type Plan = "free" | "basic" | "premium";
+// "master" is a hidden, unlimited plan for the owner only. It's never listed or offered: PLANS holds the public ones,
+// and the database (schema-phase10.sql) refuses it for anyone who isn't in the private plan_owners table.
+export type Plan = "free" | "basic" | "premium" | "master";
 export const PLANS: Plan[] = ["free", "basic", "premium"];
-export const PLAN_LABEL: Record<Plan, string> = { free: "Free", basic: "Basic", premium: "Premium" };
-export const PLAN_PRICE: Record<Plan, string> = { free: "€0", basic: "€9.99 a month", premium: "€19.99 a month" };
+export const PLAN_LABEL: Record<Plan, string> = { free: "Free", basic: "Basic", premium: "Premium", master: "Unlimited" };
+export const PLAN_PRICE: Record<Plan, string> = { free: "€0", basic: "€9.99 a month", premium: "€19.99 a month", master: "" };
 /** Cheaper ways to pay, from the pricing proposal. Shown on the landing page. */
-export const PLAN_PASSES: Record<Plan, string> = { free: "No card needed", basic: "or €29.99 for a 4-month season", premium: "or €59.99 a season · €149.99 a year" };
-export const isPlan = (p: unknown): p is Plan => PLANS.includes(p as Plan);
+export const PLAN_PASSES: Record<Plan, string> = { free: "No card needed", basic: "or €29.99 for a 4-month season", premium: "or €59.99 a season · €149.99 a year", master: "" };
+export const isPlan = (p: unknown): p is Plan => p === "master" || PLANS.includes(p as Plan);
+/** No limits at all (the hidden owner plan). */
+export const isUnlimited = (p: Plan) => p === "master";
 
 /** Every kind of AI run logged in ai_runs. `deep` is an assistant answer on the smarter model. */
 export type Kind = "analyze" | "compare" | "generate" | "import" | "interview" | "library" | "rescore" | "email" | "chat" | "deep";
@@ -55,6 +59,12 @@ export const LIMITS: Record<Plan, Record<Kind, Limit>> = {
     import: IMPORT,
     library: LIBRARY,
   },
+  master: Object.fromEntries(
+    (["analyze", "rescore", "generate", "chat", "deep", "interview", "compare", "email", "import", "library"] as Kind[]).map((k) => [
+      k,
+      { month: Infinity, day: Infinity },
+    ]),
+  ) as Record<Kind, Limit>,
 };
 
 /** How each kind reads in messages and on the usage meter: [one, many]. */
@@ -76,6 +86,7 @@ export const METER: Kind[] = ["analyze", "generate", "chat", "deep", "rescore", 
 
 /** Who can raise a limit: the next plans up, and top-ups once there's a paid plan. */
 export function raiseHint(plan: Plan) {
+  if (plan === "master") return "";
   if (plan === "free") return "Basic and Premium raise this limit.";
   if (plan === "basic") return "Premium or a top-up (coming soon) raises it.";
   return "A top-up (coming soon) raises it.";
