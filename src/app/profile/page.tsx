@@ -5,6 +5,7 @@ import ProfileForm from "@/components/ProfileForm";
 import { PROFILE_COLUMNS, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import Arrow from "@/components/Arrow";
+import TourAgain from "@/components/TourAgain";
 
 export const metadata: Metadata = { title: "Profile · rookie" };
 
@@ -35,9 +36,12 @@ export default async function ProfilePage() {
             all from what you add here. Signed in as <span className="break-anywhere">{user?.email}</span>.
           </p>
         </div>
-        <a href="#upload-h" className="arrow-btn" aria-label="Jump to CV upload">
-          <Arrow size="40%" />
-        </a>
+        <span className="flex items-center gap-3">
+          <TourAgain />
+          <a href="#upload-h" className="arrow-btn" aria-label="Jump to CV upload">
+            <Arrow size="40%" />
+          </a>
+        </span>
       </section>
 
       <ProfileForm initial={toProfileData(profile, user?.email)} />

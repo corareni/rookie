@@ -230,6 +230,26 @@ export default function ChatBubble({ userId }: { userId: string }) {
     }
   }
 
+  // The onboarding tour can open the chat, or open it and ask the user's first question.
+  const askRef = useRef<(text: string) => void>(() => {});
+  useEffect(() => {
+    askRef.current = (text: string) => void ask(text);
+  });
+  useEffect(() => {
+    const onAsk = (e: Event) => {
+      openChat();
+      const q = (e as CustomEvent<string>).detail;
+      if (q) setTimeout(() => askRef.current(q), 450);
+    };
+    const onOpen = () => openChat();
+    window.addEventListener("rk:ask", onAsk);
+    window.addEventListener("rk:open-chat", onOpen);
+    return () => {
+      window.removeEventListener("rk:ask", onAsk);
+      window.removeEventListener("rk:open-chat", onOpen);
+    };
+  }, []);
+
   // Open towards the free side: if rookie sits on the left, the chat opens to the right, and so on.
   const vw = typeof window === "undefined" ? 1440 : window.innerWidth;
   const vh = typeof window === "undefined" ? 900 : window.innerHeight;

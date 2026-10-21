@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import ChatBubble from "@/components/ChatBubble";
 import Header from "@/components/Header";
 import { TasksProvider } from "@/components/Tasks";
+import Tour from "@/components/Tour";
 import { site } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
@@ -48,6 +49,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             />
             <div className="wrap pt-4 pb-6">{children}</div>
             {user && <ChatBubble userId={user.id} />}
+            {user && <Tour onboarded={!!(user.user_metadata as { onboarded?: boolean } | undefined)?.onboarded} />}
           </TasksProvider>
         </div>
       </body>

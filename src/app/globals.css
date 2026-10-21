@@ -1457,3 +1457,74 @@ select.field {
 }
 /* While a pop-up is showing in the corner, rookie's speech bubble steps aside. */
 body:has(.rk-toast) .chat-name { display: none; }
+
+/* Onboarding tour: rookie in a card in the middle; the page dims, the step's element is outlined. */
+.tour { position: fixed; inset: 0; z-index: 70; }
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 11, 12, 0.32);
+  backdrop-filter: blur(1.5px);
+  animation: tour-fade 0.35s ease both;
+}
+.tour-spot {
+  position: fixed;
+  border-radius: 26px;
+  box-shadow: 0 0 0 3px var(--lilac), 0 0 0 9999px rgba(11, 11, 12, 0.32);
+  pointer-events: none;
+  transition: top 0.5s cubic-bezier(0.22, 0.8, 0.24, 1), left 0.5s cubic-bezier(0.22, 0.8, 0.24, 1),
+    width 0.5s cubic-bezier(0.22, 0.8, 0.24, 1), height 0.5s cubic-bezier(0.22, 0.8, 0.24, 1);
+  animation: tour-fade 0.35s ease both;
+}
+.tour-card {
+  position: fixed;
+  left: 50%;
+  width: min(480px, calc(100vw - 32px));
+  border-radius: 26px;
+  background: var(--frame);
+  color: var(--ink);
+  padding: 22px 22px 18px;
+  box-shadow: 0 0 0 1px var(--line), 0 30px 70px -24px rgba(0, 0, 0, 0.45);
+  animation: tour-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+.tour-card.is-center { top: 50%; translate: -50% -50%; }
+.tour-card.is-top { top: 96px; translate: -50% 0; }
+.tour-card.is-bottom { bottom: 28px; translate: -50% 0; }
+/* rookie in his black circle, as in the corner. */
+.tour-bot {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--black);
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.5);
+}
+.tour-bot .bot { animation: bot-nod 2.4s ease-in-out infinite; }
+/* While the tour runs, rookie's corner bubble stays quiet. */
+body:has(.tour) .chat-name { display: none; }
+.tour-bot .bot-antenna { animation: bot-antenna 1.8s ease-in-out infinite; }
+.tour-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--tile2);
+  transition: width 0.35s cubic-bezier(0.22, 0.8, 0.24, 1), background 0.3s ease;
+}
+.tour-dot.is-done { background: var(--lilac); }
+.tour-dot.is-on { width: 20px; background: var(--black); }
+@keyframes tour-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes tour-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (max-width: 639px) {
+  .tour-card.is-top { top: 84px; }
+  .tour-card.is-bottom { bottom: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-dim, .tour-spot, .tour-card, .tour-bot .bot, .tour-bot .bot-antenna, .tour-dot { animation: none; transition: none; }
+}
