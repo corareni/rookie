@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Dialog from "@/components/Dialog";
 import GmailConnection from "@/components/GmailConnection";
+import SlideToSave from "@/components/SlideToSave";
 import { useTasks } from "@/components/Tasks";
 import { ChipList, EntryList, LinkList, ProjectList } from "@/components/profile/Fields";
 import { importCv } from "@/lib/ai-client";
@@ -420,19 +421,15 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
       </div>
 
       {/* Save bar */}
-      {/* A small pill like the compact header: just Save; the privacy note slides out on hover. Status
-          messages (unsaved, saved, errors) always show. */}
+      {/* Slide to save: a small black pill; the privacy note slides out on hover, status messages always show. */}
       <div className="rk-bottom-bar pointer-events-none fixed inset-x-0 bottom-5 z-20 flex justify-center px-4">
-        <div className="save-pill group pointer-events-auto">
-          <span
-            role={msg && !msg.ok ? "alert" : "status"}
-            className={`save-note ${msg || dirty ? "is-shown" : ""}`}
-          >
-            {msg ? msg.text : dirty ? "Unsaved changes" : "Private to you. Sent to Google Gemini only to score roles and write documents."}
-          </span>
-          <button type="button" className="pillbtn pillbtn-mint !px-4 !py-2 !text-[13.5px]" disabled={saving} onClick={() => save()}>
-            {saving ? "Saving…" : "Save profile"}
-          </button>
+        <div className="pointer-events-auto">
+          <SlideToSave
+            note="Private to you. Sent to Google Gemini only to score roles and write documents."
+            status={msg ? msg.text : dirty ? "Unsaved changes" : null}
+            error={!!msg && !msg.ok}
+            onSave={() => save()}
+          />
         </div>
       </div>
 

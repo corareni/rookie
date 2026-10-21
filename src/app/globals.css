@@ -1564,3 +1564,75 @@ body:has(.tour) .chat-name { display: none; }
 }
 /* Only rookie waits during the tour; the page's own loader stays out of sight behind him. */
 body:has(.tour-wait) .rk-loader { visibility: hidden; }
+
+/* Slide to save: black pill; the button sits left, the note to its right, and the button slides right to save */
+.slide-save {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  width: 152px;
+  max-width: calc(100vw - 32px);
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--black);
+  color: var(--onblack);
+  padding: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 16px 34px -14px rgba(0, 0, 0, 0.55);
+  transition: width 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
+  touch-action: none;
+}
+.slide-save.is-open { width: min(560px, calc(100vw - 32px)); }
+.slide-save-note {
+  position: absolute;
+  left: 158px;
+  right: 18px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--onblack2);
+  opacity: 0;
+  transition: opacity 0.3s ease 0.1s;
+  pointer-events: none;
+}
+.slide-save.is-open .slide-save-note { opacity: 1; }
+.slide-save.is-error .slide-save-note { color: #ffb4a8; }
+.slide-save-handle {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 142px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--black);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: grab;
+  transition:
+    transform 0.55s cubic-bezier(0.22, 0.8, 0.24, 1),
+    width 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    background 0.3s ease;
+}
+.slide-save-handle:hover { background: var(--black2); }
+.slide-save-handle.is-dragging { transition: width 0.3s ease; cursor: grabbing; }
+.slide-save-handle.is-small { width: 40px; background: var(--black2); }
+.slide-save-label,
+.slide-save-tick { grid-area: 1 / 1; transition: opacity 0.2s ease; }
+.slide-save-tick { opacity: 0; }
+.slide-save-handle.is-small .slide-save-label { opacity: 0; transition-duration: 0.1s; }
+.slide-save-handle.is-small .slide-save-tick { opacity: 1; }
+/* While dragging or sliding, the note gives way to the button. */
+.slide-save-handle.is-small ~ .slide-save-note { opacity: 0.5; }
+@media (max-width: 639px) {
+  .slide-save.is-open { width: calc(100vw - 32px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide-save, .slide-save-handle, .slide-save-note { transition: none; }
+}
