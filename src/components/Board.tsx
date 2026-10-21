@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { refreshNotifications, useCompare } from "@/components/Tasks";
+import { refreshNotifications, useCompare, useTasks } from "@/components/Tasks";
 import ProfileGate from "@/components/ProfileGate";
 import RoleCard from "@/components/RoleCard";
 import { analyzeRole } from "@/lib/ai-client";
@@ -13,6 +13,7 @@ import {
   daysUntil,
   isUrl,
   isoInDays,
+  linkName,
   type Application,
 } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
@@ -54,10 +55,14 @@ export default function Board({
   const patch = (id: string, p: Partial<Application>) =>
     setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...p } : a)));
 
-  async function runAnalysis(id: string) {
+  const { trackReading } = useTasks();
+
+  async function runAnalysis(id: string, url = items.find((a) => a.id === id)?.job_url ?? null) {
     patch(id, { job_status: "reading" });
+    const done = trackReading(linkName(url));
     try {
       const updated = await analyzeRole(id);
+      done({ ok: true, name: [updated.role ?? updated.title, updated.company].filter(Boolean).join(" at "), href: `/app/a/${id}` });
       setItems((prev) => prev.map((a) => (a.id === id ? updated : a)));
       refreshNotifications();
       if (updated.verdict !== "open")
@@ -66,7 +71,8 @@ export default function Board({
         );
     } catch (e) {
       patch(id, { job_status: "failed" });
-      setNotice(e instanceof Error ? e.message : "Couldn't read that page.");
+      // The pop-up says what went wrong.
+      done({ ok: false, msg: e instanceof Error ? e.message : "Couldn't read that page." });
     }
   }
 
@@ -91,7 +97,7 @@ export default function Board({
     }
     const row = data as unknown as Application;
     setItems((prev) => [row, ...prev]);
-    if (row.job_url) void runAnalysis(row.id);
+    if (row.job_url) void runAnalysis(row.id, row.job_url);
     return true;
   }
 

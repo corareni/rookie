@@ -76,6 +76,15 @@ export const isUrl = (text: string) => {
   }
 };
 
+/** A short name for a job link while it's being read, e.g. "careers.example.com". */
+export const linkName = (url: string | null) => {
+  try {
+    return url ? new URL(url).hostname.replace(/^www\./, "") : "Your new role";
+  } catch {
+    return "Your new role";
+  }
+};
+
 /** Whole days from today to an ISO date (negative = past). */
 export function daysUntil(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);

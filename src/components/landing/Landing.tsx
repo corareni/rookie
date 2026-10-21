@@ -111,12 +111,12 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           </div>
           <div>
             <h1 className="text-[clamp(36px,5.2vw,64px)] leading-[1.04] tracking-[-0.035em]">
-              Getting a job is harder than ever. <span className="font-light">Your applications don&apos;t have to be too.</span>
+              Track every application. <span className="font-light">Get a tailored CV for each one.</span>
             </h1>
             <p className="mt-5 max-w-[540px] text-[17px] leading-relaxed text-[var(--ink2)]">
-              For students and graduates applying to internships and first jobs. rookie scores every role you find out of
-              10, writes a tailored CV and cover letter from your real experience, and tracks every application in one
-              place.
+              For students and graduates applying to internships and jobs, all year round. Paste a job link: rookie scores
+              the role out of 10, writes a CV and cover letter from your real experience, and keeps every application,
+              deadline and interview in one place.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-4">
               <Link href={cta.href} className="btn btn-lg">

@@ -22,9 +22,11 @@ type Tasks = {
   /** Checks all connected Gmail accounts (or one, by id), or helps connect one. */
   checkEmails: (account?: string) => void;
   checking: boolean;
+  /** Shows the waiting pop-up while a job link is read; call the returned function when it's done. */
+  trackReading: (name: string) => (r: { ok: true; name: string; href: string } | { ok: false; msg: string }) => void;
 };
 
-const Ctx = createContext<Tasks>({ compare: () => {}, comparing: false, rescore: () => {}, checkEmails: () => {}, checking: false });
+const Ctx = createContext<Tasks>({ compare: () => {}, comparing: false, rescore: () => {}, checkEmails: () => {}, checking: false, trackReading: () => () => {} });
 
 export const useTasks = () => useContext(Ctx);
 export const useCompare = () => {
@@ -101,6 +103,31 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       setCompareToast({ state: "error", names, msg: e instanceof Error ? e.message : "Couldn't compare these roles." });
     }
   }
+
+  // Several links can be read at once; the pop-up keeps waiting until the last one is done.
+  const reading = useRef(0);
+  const trackReading = useCallback((name: string) => {
+    reading.current++;
+    const wait = (label: string) =>
+      setProgress({
+        title: "Reviewing the listing…",
+        detail:
+          reading.current > 1
+            ? `${reading.current} links. rookie fills in company, role and deadline, then scores each one.`
+            : `${label}. rookie fills in company, role and deadline, then scores it out of 10.`,
+        done: false,
+      });
+    wait(name);
+    return (r: { ok: true; name: string; href: string } | { ok: false; msg: string }) => {
+      reading.current = Math.max(0, reading.current - 1);
+      if (reading.current) return wait(name);
+      setProgress(
+        r.ok
+          ? { title: "Role reviewed", detail: `${r.name} is scored and ready.`, done: true, href: r.href, link: "See rookie's take" }
+          : { title: "Couldn't read that link", detail: r.msg, done: true },
+      );
+    };
+  }, []);
 
   const rescore = useCallback(async () => {
     if (rescoring) return;
@@ -194,7 +221,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, [checking, router]);
 
   return (
-    <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking }}>
+    <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking, trackReading }}>
       {children}
       <div className="rk-toasts" ref={toastsRef} style={toastPos ?? undefined}>
         {progress && (

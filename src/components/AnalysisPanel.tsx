@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTasks } from "@/components/Tasks";
 import { analyzeRole } from "@/lib/ai-client";
-import { isUrl, scoreTone, type Application } from "@/lib/applications";
+import { isUrl, linkName, scoreTone, type Application } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 
 export default function AnalysisPanel({ a }: { a: Application }) {
@@ -13,16 +14,22 @@ export default function AnalysisPanel({ a }: { a: Application }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const analysed = a.job_status === "ready" && a.score;
+  const { trackReading } = useTasks();
+  const name = [a.role ?? a.title, a.company].filter(Boolean).join(" at ");
 
   async function run(withText: boolean) {
     setBusy(true);
     setError(null);
+    const done = trackReading(name);
     try {
-      await analyzeRole(a.id, withText ? text : undefined);
+      const u = await analyzeRole(a.id, withText ? text : undefined);
+      done({ ok: true, name: [u.role ?? u.title, u.company].filter(Boolean).join(" at "), href: `/app/a/${a.id}` });
       setText("");
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't analyse this role.");
+      const msg = e instanceof Error ? e.message : "Couldn't analyse this role.";
+      done({ ok: false, msg });
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -39,12 +46,16 @@ export default function AnalysisPanel({ a }: { a: Application }) {
       setBusy(false);
       return setError(`Couldn't save the link: ${e.message}`);
     }
+    const done = trackReading(linkName(url));
     try {
-      await analyzeRole(a.id);
+      const u = await analyzeRole(a.id);
+      done({ ok: true, name: [u.role ?? u.title, u.company].filter(Boolean).join(" at "), href: `/app/a/${a.id}` });
       setLink("");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Couldn't read that link. Paste the description instead.");
+      const msg = err instanceof Error ? err.message : "Couldn't read that link. Paste the description instead.";
+      done({ ok: false, msg });
+      setError(msg);
     } finally {
       setBusy(false);
     }
