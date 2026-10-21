@@ -103,17 +103,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
   // The panel stays mounted while it shrinks back into the bubble.
   const [shown, setShown] = useState(false);
   const [quiet, setQuiet] = useState(false);
-  // The bubble shows once on arrival and whenever the cursor is on rookie.
+  // The bubble only shows while the cursor is on rookie (not by itself on arrival).
   const [hovering, setHovering] = useState(false);
-  const [hello, setHello] = useState(false);
-  useEffect(() => {
-    const on = setTimeout(() => setHello(true), 1200);
-    const off = setTimeout(() => setHello(false), 6500);
-    return () => {
-      clearTimeout(on);
-      clearTimeout(off);
-    };
-  }, []);
   const [quip, setQuip] = useState(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openChat = () => {
@@ -280,7 +271,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
       style={pos ? { right: pos.right, bottom: pos.bottom, ["--room" as string]: `${side.room}px` } : undefined}
     >
       {!open && (
-        <span className={`chat-name ${(hello || hovering) && !quiet ? "is-shown" : ""}`} aria-hidden="true">
+        <span className={`chat-name ${hovering && !quiet ? "is-shown" : ""}`} aria-hidden="true">
           <b>
             Hi, I&apos;m rookie<span className="text-[var(--lilac)]">.</span>
           </b>
@@ -304,6 +295,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
         }}
         // A tap opens or closes; a drag moves rookie (keyboard still opens with Enter or Space).
         onPointerDown={(e) => {
+          // No bubble while pressing or dragging rookie.
+          setHovering(false);
           const r = dock.current!.getBoundingClientRect();
           drag.current = { x: e.clientX, y: e.clientY, right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom, moved: false };
           e.currentTarget.setPointerCapture(e.pointerId);
