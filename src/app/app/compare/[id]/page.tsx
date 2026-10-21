@@ -3,6 +3,7 @@ import Link from "next/link";
 import DeleteComparison from "@/components/DeleteComparison";
 import { titleCase } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
+import Arrow from "@/components/Arrow";
 
 export const metadata: Metadata = { title: "Comparison · Rookie" };
 
@@ -138,7 +139,7 @@ export default async function ComparisonPage({ params }: PageProps<"/app/compare
                 <Link href={`/app/a/${role.id}`}>On board →</Link>
                 {a?.job_url && (
                   <a href={a.job_url} target="_blank" rel="noopener noreferrer">
-                    Listing ↗
+                    Listing <Arrow />
                   </a>
                 )}
               </p>

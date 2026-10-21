@@ -93,18 +93,42 @@ export function InterestedScreen() {
           honestly
         </span>
       </Tile>
-      <div className="mt-2 flex flex-wrap gap-1">
-        <Chip tone="bg-[var(--tile)]">Tech & product</Chip>
+      <div className="mt-2 grid grid-cols-3 gap-1 text-[9.5px] leading-tight">
+        {[
+          ["Start", "Jun 2027"],
+          ["Length", "12 weeks"],
+          ["Setup", "Hybrid"],
+        ].map(([k, v]) => (
+          <span key={k} className="rounded-[10px] bg-[var(--tile)] px-2 py-1.5">
+            <span className="block text-[var(--mute)]">{k}</span>
+            <b>{v}</b>
+          </span>
+        ))}
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1">
+        <Chip tone="bg-[var(--sky)]">Tech & product</Chip>
         <Chip tone="bg-[var(--butter)]">Closes in 9 days</Chip>
       </div>
-      <Tile className="mt-2 grid gap-1.5 text-[10.5px] leading-snug">
+      <Tile className="mt-2 grid gap-1.5 text-[10px] leading-snug">
         <p>
-          <b>Why you:</b> <span className="text-[var(--ink2)]">product sense from your app project and data work at your internship.</span>
+          <b>Why you:</b>{" "}
+          <span className="text-[var(--ink2)]">
+            product sense from building your app project, data work at your internship, and German and English for a team
+            spread across Europe.
+          </span>
         </p>
         <p>
-          <b>The catch:</b> <span className="text-[var(--ink2)]">they ask for SQL you only show at a basic level.</span>
+          <b>The catch:</b>{" "}
+          <span className="text-[var(--ink2)]">
+            they ask for SQL you only show at a basic level, and most hires have a technical degree. Lead with your
+            dashboards.
+          </span>
         </p>
       </Tile>
+      <div className="mt-2 rounded-[14px] bg-[var(--butter)] p-2.5 text-[10px] leading-snug">
+        <b>Notes for your CV and letter</b>
+        <p className="mt-0.5 text-[var(--ink2)]">Met their recruiter at the IE career fair. Mention the n8n automation project.</p>
+      </div>
       <div className="mt-auto grid grid-cols-[auto_1fr] gap-2 whitespace-nowrap">
         <Btn tone="bg-[var(--tile)] text-[var(--ink)]">+ Compare</Btn>
         <Btn>CV and Cover Letter</Btn>

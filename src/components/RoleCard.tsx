@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { daysUntil, deadlineText, initials, scoreTone, titleCase, type Application } from "@/lib/applications";
+import Arrow from "@/components/Arrow";
 
 type Props = {
   a: Application;
@@ -185,7 +186,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
           )}
           {a.job_url && (
             <a href={a.job_url} target="_blank" rel="noopener noreferrer" className="act gap-1.5">
-              Listing <span aria-hidden="true">↗</span>
+              Listing <Arrow />
             </a>
           )}
         </div>

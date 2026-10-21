@@ -17,6 +17,7 @@ type Row = {
   offer_on: string | null;
   job_url: string | null;
   next_step: string | null;
+  location: string | null;
 };
 
 export default async function CalendarPage() {
@@ -24,7 +25,7 @@ export default async function CalendarPage() {
   const [{ data }, events] = await Promise.all([
     supabase
       .from("applications")
-      .select("id,title,company,role,status,deadline,submitted_on,assessment_on,interview_on,offer_on,job_url,next_step,verdict")
+      .select("id,title,company,role,status,deadline,submitted_on,assessment_on,interview_on,offer_on,job_url,next_step,location,verdict")
       .neq("verdict", "binned"),
     // Scheduled interviews and tests need the Phase 5 columns; without them this is simply empty.
     supabase.from("applications").select("id,event_at,event_minutes,event_location,event_kind").not("event_at", "is", null),
@@ -32,7 +33,15 @@ export default async function CalendarPage() {
 
   const items: CalItem[] = [];
   for (const a of (data ?? []) as Row[]) {
-    const base = { appId: a.id, company: a.company ?? a.title, role: a.role, job_url: a.job_url, next_step: a.next_step };
+    const base = {
+      appId: a.id,
+      company: a.company ?? a.title,
+      role: a.role,
+      job_url: a.job_url,
+      next_step: a.next_step,
+      place: a.location,
+      status: a.status,
+    };
     if (a.submitted_on) items.push({ ...base, kind: "applied", day: a.submitted_on });
     if (a.assessment_on) items.push({ ...base, kind: "assessment", day: a.assessment_on });
     if (a.interview_on) items.push({ ...base, kind: "interview", day: a.interview_on });
@@ -48,6 +57,8 @@ export default async function CalendarPage() {
       role: a.role,
       job_url: a.job_url,
       next_step: a.next_step,
+      place: a.location,
+      status: a.status,
       kind: "scheduled",
       at: e.event_at as string,
       minutes: e.event_minutes as number,

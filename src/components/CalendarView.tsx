@@ -1,10 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import CalendarButtons from "@/components/CalendarButtons";
 import { EventDetails, EventDialog, toLocalInput, type Draft } from "@/components/CalendarEvents";
-import { buildEvent } from "@/components/EventPanel";
 import { titleCase } from "@/lib/applications";
 
 export type CalItem = {
@@ -13,6 +10,9 @@ export type CalItem = {
   role: string | null;
   job_url: string | null;
   next_step: string | null;
+  /** Where the job is (from the job ad), and its current status. */
+  place?: string | null;
+  status?: string;
   kind: "applied" | "deadline" | "assessment" | "interview" | "offer" | "scheduled";
   /** All-day items use `day` (YYYY-MM-DD); scheduled ones use `at` (ISO date-time). */
   day?: string;
@@ -22,7 +22,7 @@ export type CalItem = {
   eventKind?: "interview" | "assessment" | "other" | null;
 };
 
-const KIND: Record<CalItem["kind"], { label: string; tone: string }> = {
+export const KIND: Record<CalItem["kind"], { label: string; tone: string }> = {
   scheduled: { label: "Scheduled", tone: "bg-[var(--sky)]" },
   interview: { label: "Interview stage", tone: "bg-[var(--lilac)]" },
   assessment: { label: "Assessment stage", tone: "bg-[var(--butter)]" },
@@ -35,12 +35,50 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const localDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const dayOf = (i: CalItem) => (i.at ? localDay(new Date(i.at)) : i.day!);
 const timeOf = (i: CalItem) => (i.at ? new Date(i.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
-const scheduledLabel = (i: CalItem) => (i.eventKind === "assessment" ? "Assessment" : i.eventKind === "other" ? "Next step" : "Interview");
+export const itemLabel = (i: CalItem) =>
+  i.kind === "scheduled" ? (i.eventKind === "assessment" ? "Assessment" : i.eventKind === "other" ? "Next step" : "Interview") : KIND[i.kind].label;
+const sortKey = (i: CalItem) => i.at ?? `${i.day}T00:00`;
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const mondayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
+const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const dayName = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", month: "long" });
 
-/** Month grid plus a "coming up" list: when you applied, deadlines, stages reached and scheduled interviews or tests. */
+const ctl = "act !min-h-[34px] !px-3";
+
+/** One clickable entry; opens its details. `big` is the week view's card. */
+function Entry({ i, big = false, onOpen }: { i: CalItem; big?: boolean; onOpen: (i: CalItem) => void }) {
+  return (
+    <button
+      type="button"
+      className={`block w-full min-w-0 text-left leading-tight transition-[filter] hover:brightness-95 ${KIND[i.kind].tone} ${
+        big ? "rounded-[10px] px-2 py-1.5 text-[12px]" : "truncate rounded-md px-1.5 py-0.5 text-[11px]"
+      }`}
+      title={`${itemLabel(i)}: ${i.company}`}
+      onClick={() => onOpen(i)}
+    >
+      {big ? (
+        <>
+          <span className="block text-[10.5px] text-[var(--ink2)]">
+            {i.at ? <b className="text-[var(--ink)]">{timeOf(i)}</b> : "All day"} · {itemLabel(i)}
+          </span>
+          <b className="block break-words">{i.company}</b>
+          {i.role && <span className="line-clamp-2 block break-words font-light">{titleCase(i.role)}</span>}
+        </>
+      ) : (
+        <>
+          {i.at && <b>{timeOf(i)} </b>}
+          {i.company}
+        </>
+      )}
+    </button>
+  );
+}
+
+/** Week or month view plus a "coming up" list: applications, deadlines, stages reached and scheduled interviews or tests. */
 export default function CalendarView({ items, roles = [] }: { items: CalItem[]; roles?: { id: string; name: string }[] }) {
   const today = localDay(new Date());
+  const [view, setView] = useState<"week" | "month">("week");
+  const [cursor, setCursor] = useState(() => new Date());
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<CalItem | null>(null);
   const taken = Object.fromEntries(items.filter((i) => i.kind === "scheduled").map((i) => [i.appId, i.at!]));
@@ -61,10 +99,6 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
       location: i.location ?? "",
     });
   };
-  const [month, setMonth] = useState(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1);
-  });
 
   const byDay = useMemo(() => {
     const m = new Map<string, CalItem[]>();
@@ -72,29 +106,39 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
       const k = dayOf(i);
       m.set(k, [...(m.get(k) ?? []), i]);
     }
-    for (const list of m.values()) list.sort((a, b) => (a.at ?? "").localeCompare(b.at ?? ""));
+    // Timed events first, in order; then all-day items.
+    for (const list of m.values()) list.sort((a, b) => (a.at ?? "~").localeCompare(b.at ?? "~"));
     return m;
   }, [items]);
 
+  const month = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  const week = mondayOf(cursor);
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(week, i));
+
   // Monday-first grid covering the whole month.
   const cells = useMemo(() => {
-    const first = new Date(month);
+    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
     const offset = (first.getDay() + 6) % 7;
-    const start = new Date(first.getFullYear(), first.getMonth(), 1 - offset);
     const days = Math.ceil((offset + new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()) / 7) * 7;
-    return Array.from({ length: days }, (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i));
-  }, [month]);
+    return Array.from({ length: days }, (_, i) => addDays(mondayOf(first), i));
+  }, [cursor]);
 
   const upcoming = items
     .filter((i) => dayOf(i) >= today && (i.kind === "scheduled" || i.kind === "deadline"))
     .sort((a, b) => (a.at ?? `${a.day}T23:59`).localeCompare(b.at ?? `${b.day}T23:59`))
-    .slice(0, 8);
+    .slice(0, 6);
 
   const monthName = month.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
   const inMonth = items.filter((i) => dayOf(i).startsWith(`${month.getFullYear()}-${pad(month.getMonth() + 1)}`));
   const count = (k: CalItem["kind"]) => inMonth.filter((i) => i.kind === k).length;
+  const weekEnd = weekDays[6];
+  const weekName =
+    week.getMonth() === weekEnd.getMonth()
+      ? `${week.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString("en-GB", { month: "long" })}`
+      : `${week.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
 
-  const shift = (n: number) => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + n, 1));
+  const shift = (n: number) => setCursor((c) => (view === "month" ? new Date(c.getFullYear(), c.getMonth() + n, 1) : addDays(c, 7 * n)));
+  const unit = view === "month" ? "month" : "week";
 
   return (
     <main className="pb-16">
@@ -107,7 +151,7 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
             </h1>
             <p className="mt-4 max-w-[540px] text-[16px] text-[var(--ink2)]">
               When you applied and where, which deadlines are coming, and when your interviews and assessments are. Press
-              ＋ to add an event, or click one to edit or delete it.
+              ＋ to add an event, or click any entry for its details and the role.
             </p>
           </div>
         </section>
@@ -132,85 +176,160 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
       </div>
 
       <div className="puzzle mt-[var(--gap)]">
-        {/* Month grid (laptops and tablets) */}
-        <section className="tile span-8 max-md:hidden" aria-labelledby="month-h">
-          <div className="flex items-center justify-between gap-3">
-            <h2 id="month-h" className="text-[24px] tracking-tight">
-              <b>{monthName.split(" ")[0]}</b> <span className="font-light">{monthName.split(" ")[1]}</span>
+        <section className="tile span-8 min-w-0" aria-labelledby="cal-h">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="cal-h" className="text-[24px] tracking-tight" aria-live="polite">
+              {view === "month" ? (
+                <>
+                  <b>{monthName.split(" ")[0]}</b> <span className="font-light">{monthName.split(" ")[1]}</span>
+                </>
+              ) : (
+                <>
+                  <b>Week</b> <span className="font-light">{weekName}</span>
+                </>
+              )}
             </h2>
-            <span className="flex gap-1.5">
-              <button type="button" className="act !min-h-[34px] !px-3 !bg-[var(--black)] !text-[var(--onblack)]" onClick={() => add()}>
-                ＋ Add event
-              </button>
-              <button type="button" className="act !min-h-[34px] !px-3" aria-label="Previous month" onClick={() => shift(-1)}>
+            <span className="flex flex-wrap gap-1.5">
+              <span className="flex rounded-[12px] bg-white p-0.5" role="group" aria-label="View">
+                {(["week", "month"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    aria-pressed={view === v}
+                    className="rounded-[10px] px-3 py-1.5 text-[13px] font-bold capitalize aria-pressed:bg-[var(--lilac)]"
+                    onClick={() => setView(v)}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </span>
+              <button type="button" className={ctl} aria-label={`Previous ${unit}`} onClick={() => shift(-1)}>
                 ←
               </button>
-              <button type="button" className="act !min-h-[34px] !px-3" onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>
+              <button type="button" className={ctl} onClick={() => setCursor(new Date())}>
                 Today
               </button>
-              <button type="button" className="act !min-h-[34px] !px-3" aria-label="Next month" onClick={() => shift(1)}>
+              <button type="button" className={ctl} aria-label={`Next ${unit}`} onClick={() => shift(1)}>
                 →
+              </button>
+              <button type="button" className={`${ctl} !bg-[var(--black)] !text-[var(--onblack)]`} onClick={() => add()}>
+                ＋ Add event
               </button>
             </span>
           </div>
-          <div className="mt-4 grid grid-cols-[repeat(7,minmax(0,1fr))] gap-1.5" role="grid" aria-label={monthName}>
-            {WEEKDAYS.map((w) => (
-              <div key={w} role="columnheader" className="pb-1 text-center text-[12px] text-[var(--mute)]">
-                {w}
-              </div>
-            ))}
-            {cells.map((d) => {
-              const key = localDay(d);
-              const list = byDay.get(key) ?? [];
-              const other = d.getMonth() !== month.getMonth();
-              return (
-                <div
-                  key={key}
-                  role="gridcell"
-                  aria-label={`${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}`}
-                  className={`group min-h-[96px] min-w-0 rounded-[12px] p-1.5 ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
-                >
-                  <p className="flex items-center justify-between">
-                    <span className={`text-[12px] ${key === today ? "font-bold" : "text-[var(--ink2)]"}`}>{d.getDate()}</span>
-                    <button
-                      type="button"
-                      className="grid size-5 place-items-center rounded-full text-[13px] leading-none text-[var(--ink2)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--sky)] focus-visible:opacity-100"
-                      aria-label={`Add an event on ${d.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
-                      onClick={() => add(d)}
-                    >
-                      ＋
-                    </button>
-                  </p>
-                  <ul className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
-                    {list.slice(0, 3).map((i, n) => (
-                      <li key={n} className="min-w-0">
-                        {i.kind === "scheduled" ? (
-                          <button
-                            type="button"
-                            className={`block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight ${KIND[i.kind].tone}`}
-                            title={`${scheduledLabel(i)}: ${i.company}`}
-                            onClick={() => setOpen(i)}
-                          >
-                            <b>{timeOf(i)} </b>
-                            {i.company}
-                          </button>
-                        ) : (
-                          <Link
-                            href={`/app/a/${i.appId}`}
-                            className={`block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight no-underline ${KIND[i.kind].tone}`}
-                            title={`${KIND[i.kind].label}: ${i.company}`}
-                          >
-                            {i.company}
-                          </Link>
-                        )}
-                      </li>
+
+          {view === "week" ? (
+            // Week: seven columns on laptops, a day-by-day list on phones.
+            <div className="mt-4 grid gap-1.5 md:grid-cols-[repeat(7,minmax(0,1fr))]" aria-label={`Week of ${weekName}`}>
+              {weekDays.map((d) => {
+                const key = localDay(d);
+                const list = byDay.get(key) ?? [];
+                return (
+                  <div
+                    key={key}
+                    className={`group grid min-w-0 content-start gap-1.5 rounded-[12px] bg-white p-2 md:min-h-[300px] ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
+                  >
+                    <p className="flex items-center justify-between gap-1">
+                      <span className="text-[12px] text-[var(--ink2)]">
+                        {WEEKDAYS[(d.getDay() + 6) % 7]} <b className="text-[15px] text-[var(--ink)]">{d.getDate()}</b>
+                      </span>
+                      <button
+                        type="button"
+                        className="grid size-6 place-items-center rounded-full text-[13px] leading-none text-[var(--ink2)] hover:bg-[var(--sky)] md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                        aria-label={`Add an event on ${dayName(d)}`}
+                        onClick={() => add(d)}
+                      >
+                        ＋
+                      </button>
+                    </p>
+                    {list.map((i, n) => (
+                      <Entry key={n} i={i} big onOpen={setOpen} />
                     ))}
-                    {list.length > 3 && <li className="px-1 text-[11px] text-[var(--mute)]">+{list.length - 3} more</li>}
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+                    {list.length === 0 && <span className="text-[12px] text-[var(--mute)] md:hidden">Nothing planned</span>}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <>
+              {/* Month grid (laptops and tablets) */}
+              <div className="mt-4 grid grid-cols-[repeat(7,minmax(0,1fr))] gap-1.5 max-md:hidden" role="grid" aria-label={monthName}>
+                {WEEKDAYS.map((w) => (
+                  <div key={w} role="columnheader" className="pb-1 text-center text-[12px] text-[var(--mute)]">
+                    {w}
+                  </div>
+                ))}
+                {cells.map((d) => {
+                  const key = localDay(d);
+                  const list = byDay.get(key) ?? [];
+                  const other = d.getMonth() !== month.getMonth();
+                  return (
+                    <div
+                      key={key}
+                      role="gridcell"
+                      aria-label={`${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}`}
+                      className={`group min-h-[96px] min-w-0 rounded-[12px] p-1.5 ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
+                    >
+                      <p className="flex items-center justify-between">
+                        <span className={`text-[12px] ${key === today ? "font-bold" : "text-[var(--ink2)]"}`}>{d.getDate()}</span>
+                        <button
+                          type="button"
+                          className="grid size-5 place-items-center rounded-full text-[13px] leading-none text-[var(--ink2)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--sky)] focus-visible:opacity-100"
+                          aria-label={`Add an event on ${dayName(d)}`}
+                          onClick={() => add(d)}
+                        >
+                          ＋
+                        </button>
+                      </p>
+                      <ul className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
+                        {list.slice(0, 3).map((i, n) => (
+                          <li key={n} className="min-w-0">
+                            <Entry i={i} onOpen={setOpen} />
+                          </li>
+                        ))}
+                        {list.length > 3 && (
+                          <li>
+                            <button
+                              type="button"
+                              className="px-1 text-[11px] text-[var(--mute)] hover:text-[var(--ink)]"
+                              onClick={() => {
+                                setCursor(d);
+                                setView("week");
+                              }}
+                            >
+                              +{list.length - 3} more
+                            </button>
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Phones: the month as a list */}
+              <ul className="mt-4 grid gap-1.5 md:hidden">
+                {[...inMonth]
+                  .sort((a, b) => sortKey(a).localeCompare(sortKey(b)))
+                  .map((i, n) => (
+                    <li key={n}>
+                      <button
+                        type="button"
+                        className="flex w-full min-w-0 items-center gap-2 rounded-[10px] bg-white px-2.5 py-2 text-left text-[13px]"
+                        onClick={() => setOpen(i)}
+                      >
+                        <span className="w-[50px] flex-none text-[var(--ink2)]">
+                          {new Date(i.at ?? `${i.day}T12:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </span>
+                        <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] ${KIND[i.kind].tone}`}>{itemLabel(i)}</span>
+                        <span className="min-w-0 truncate font-bold">{i.company}</span>
+                      </button>
+                    </li>
+                  ))}
+                {inMonth.length === 0 && <li className="text-[13px] text-[var(--ink2)]">Nothing this month.</li>}
+              </ul>
+            </>
+          )}
+
           <ul className="mt-4 flex flex-wrap gap-2 text-[12px]" aria-label="Legend">
             {(Object.keys(KIND) as CalItem["kind"][]).map((k) => (
               <li key={k} className={`rounded-full px-2.5 py-1 ${KIND[k].tone}`}>
@@ -220,99 +339,35 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
           </ul>
         </section>
 
-        {/* Coming up (and the whole view on phones) */}
+        {/* Coming up */}
         <section className="tile tile-sky span-4 grid min-w-0 content-start gap-3" aria-labelledby="next-h">
-          <div className="flex items-center justify-between gap-2">
-            <h2 id="next-h" className="text-[20px] tracking-tight">
-              <b>Coming up</b> <span className="font-light">next</span>
-            </h2>
-            <button
-              type="button"
-              className="act !min-h-[34px] !px-3 !bg-[var(--black)] !text-[var(--onblack)] md:hidden"
-              onClick={() => add()}
-            >
-              ＋ Add event
-            </button>
-          </div>
-          {upcoming.length === 0 && (
-            <p className="text-[14px] text-[var(--ink2)]">
-              Nothing scheduled. Press ＋ to add an interview or assessment.
-            </p>
-          )}
+          <h2 id="next-h" className="text-[20px] tracking-tight">
+            <b>Coming up</b> <span className="font-light">next</span>
+          </h2>
+          {upcoming.length === 0 && <p className="text-[14px] text-[var(--ink2)]">Nothing scheduled. Press ＋ to add an interview or assessment.</p>}
           <ul className="grid gap-2">
-            {upcoming.map((i, n) => {
-              const event =
-                i.kind === "scheduled"
-                  ? buildEvent(
-                      { id: i.appId, company: i.company, role: i.role, title: i.company, job_url: i.job_url, next_step: i.next_step },
-                      { event_at: i.at!, event_minutes: i.minutes ?? 60, event_location: i.location ?? null, event_kind: i.eventKind ?? null },
-                    )
-                  : null;
-              return (
-                <li key={n} className="grid min-w-0 gap-2 rounded-2xl bg-white p-3">
+            {upcoming.map((i, n) => (
+              <li key={n}>
+                <button
+                  type="button"
+                  className="grid w-full min-w-0 gap-1.5 rounded-2xl bg-white p-3 text-left transition-shadow hover:shadow-md"
+                  onClick={() => setOpen(i)}
+                >
                   <span className="flex flex-wrap items-center gap-2 text-[12px]">
-                    <span className={`rounded-full px-2 py-0.5 font-bold ${KIND[i.kind].tone}`}>
-                      {i.kind === "scheduled" ? scheduledLabel(i) : KIND[i.kind].label}
-                    </span>
+                    <span className={`rounded-full px-2 py-0.5 font-bold ${KIND[i.kind].tone}`}>{itemLabel(i)}</span>
                     <span className="text-[var(--ink2)]">
                       {new Date(i.at ?? `${i.day}T12:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
                       {i.at && `, ${timeOf(i)}`}
                     </span>
                   </span>
-                  <Link href={`/app/a/${i.appId}`} className="text-[15px] leading-snug no-underline hover:underline">
+                  <span className="text-[15px] leading-snug">
                     <b>{i.company}</b> {i.role && <span className="font-light">{titleCase(i.role)}</span>}
-                  </Link>
+                  </span>
                   {i.location && <span className="text-[12.5px] text-[var(--ink2)]">{i.location}</span>}
-                  {event && <CalendarButtons event={event} small />}
-                  {event && (
-                    <span className="flex gap-3 text-[12.5px]">
-                      <button type="button" className="font-bold text-[var(--ink2)] hover:text-[var(--ink)]" onClick={() => edit(i)}>
-                        Edit
-                      </button>
-                      <button type="button" className="font-bold text-[var(--mute)] hover:text-[var(--bad)]" onClick={() => setOpen(i)}>
-                        Delete
-                      </button>
-                    </span>
-                  )}
-                </li>
-              );
-            })}
+                </button>
+              </li>
+            ))}
           </ul>
-
-          {/* Phones: this month's other dates as a simple list */}
-          <div className="md:hidden">
-            <h3 className="mt-2 text-[15px] font-bold">{monthName}</h3>
-            <ul className="mt-2 grid gap-1.5">
-              {inMonth
-                .sort((a, b) => (a.at ?? `${a.day}T00:00`).localeCompare(b.at ?? `${b.day}T00:00`))
-                .map((i, n) => (
-                  <li key={n} className="flex min-w-0 items-center gap-2 text-[13px]">
-                    <span className="w-[54px] flex-none text-[var(--ink2)]">
-                      {new Date(i.at ?? `${i.day}T12:00`).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                    </span>
-                    <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] ${KIND[i.kind].tone}`}>
-                      {i.kind === "scheduled" ? scheduledLabel(i) : KIND[i.kind].label}
-                    </span>
-                    {i.kind === "scheduled" ? (
-                      <button type="button" className="min-w-0 truncate text-left font-bold underline" onClick={() => setOpen(i)}>
-                        {i.company}
-                      </button>
-                    ) : (
-                      <span className="min-w-0 truncate font-bold">{i.company}</span>
-                    )}
-                  </li>
-                ))}
-              {inMonth.length === 0 && <li className="text-[13px] text-[var(--ink2)]">Nothing this month.</li>}
-            </ul>
-            <span className="mt-3 flex gap-1.5">
-              <button type="button" className="act !min-h-[32px] !px-3" aria-label="Previous month" onClick={() => shift(-1)}>
-                ←
-              </button>
-              <button type="button" className="act !min-h-[32px] !px-3" aria-label="Next month" onClick={() => shift(1)}>
-                →
-              </button>
-            </span>
-          </div>
         </section>
       </div>
       <EventDialog draft={draft} roles={roles} taken={taken} onClose={() => setDraft(null)} />

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Phone, SCREENS } from "@/components/landing/Screens";
+import Arrow from "@/components/Arrow";
 
 const STEPS = [
   {
@@ -76,7 +77,7 @@ export default function StepScroller() {
                 <div className="flex items-start justify-between gap-4">
                   <span className="chip-tag !bg-white">Step {String(i + 1).padStart(2, "0")}</span>
                   <span className="arrow-btn !h-11 !w-11 !text-[18px]" aria-hidden="true">
-                    ↗
+                    <Arrow size="40%" />
                   </span>
                 </div>
                 <h3 className="mt-6 text-[clamp(30px,4.4vw,52px)] leading-none tracking-[-0.03em]">

@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import Arrow from "@/components/Arrow";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CalendarButtons from "@/components/CalendarButtons";
-import type { CalItem } from "@/components/CalendarView";
+import { itemLabel, type CalItem } from "@/components/CalendarView";
 import Dialog from "@/components/Dialog";
 import { buildEvent, type EventFields } from "@/components/EventPanel";
 import { NO_EVENT } from "@/components/StatusConfirm";
@@ -31,7 +31,6 @@ const KINDS = [
   { v: "other", label: "Other (call, case study, deadline)" },
 ] as const;
 
-const what = (k: EventFields["event_kind"] | undefined) => (k === "assessment" ? "Assessment" : k === "other" ? "Next step" : "Interview");
 
 /** Add or edit the date of an interview or assessment. One date per role, so picking a role that has one replaces it. */
 export function EventDialog({
@@ -167,7 +166,29 @@ export function EventDialog({
   );
 }
 
-/** A scheduled interview or assessment: add it to your calendar, edit it or delete it. */
+const STATUS: Record<string, string> = {
+  interested: "On your board",
+  submitted: "Submitted",
+  assessment: "Assessment",
+  interview: "Interview",
+  offer: "Offer",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+};
+
+const WHAT: Record<CalItem["kind"], string> = {
+  scheduled: "",
+  applied: "You sent your application.",
+  deadline: "Last day to apply.",
+  assessment: "You reached the assessment stage.",
+  interview: "You reached the interview stage.",
+  offer: "You received an offer.",
+};
+
+/**
+ * Details of any calendar entry, with a link to the role. Scheduled interviews and assessments can
+ * also go to Google or Apple Calendar, be edited or deleted.
+ */
 export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; onClose: () => void; onEdit: (i: CalItem) => void }) {
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
@@ -188,17 +209,29 @@ export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; 
     router.refresh();
   }
 
-  const event = item
-    ? buildEvent(
-        { id: item.appId, company: item.company, role: item.role, title: item.company, job_url: item.job_url, next_step: item.next_step },
-        { event_at: item.at!, event_minutes: item.minutes ?? 60, event_location: item.location ?? null, event_kind: item.eventKind ?? null },
-      )
-    : null;
+  const scheduled = item?.kind === "scheduled";
+  const event =
+    item && scheduled
+      ? buildEvent(
+          { id: item.appId, company: item.company, role: item.role, title: item.company, job_url: item.job_url, next_step: item.next_step },
+          { event_at: item.at!, event_minutes: item.minutes ?? 60, event_location: item.location ?? null, event_kind: item.eventKind ?? null },
+        )
+      : null;
+  const openRole = () => {
+    if (!item) return;
+    onClose();
+    router.push(`/app/a/${item.appId}`);
+  };
+  const when = item
+    ? item.at
+      ? eventLabel(item.at)
+      : new Date(`${item.day}T12:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", year: "numeric" })
+    : "";
 
   return (
     <Dialog
       open={!!item}
-      title={item ? (confirm ? `Delete this ${what(item.eventKind).toLowerCase()}?` : `${what(item.eventKind)} · ${item.company}`) : ""}
+      title={item ? (confirm ? `Delete this ${itemLabel(item).toLowerCase()}?` : `${itemLabel(item)} · ${item.company}`) : ""}
       onCancel={onClose}
       actions={
         confirm
@@ -206,33 +239,69 @@ export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; 
               { label: "Keep it", tone: "ghost", onClick: () => setConfirm(false) },
               { label: "Delete", tone: "danger", onClick: remove },
             ]
-          : [
-              { label: "Delete", tone: "ghost", onClick: () => setConfirm(true) },
-              { label: "Edit", tone: "ghost", onClick: () => item && onEdit(item) },
-              { label: "Done", onClick: onClose },
-            ]
+          : scheduled
+            ? [
+                { label: "Delete", tone: "ghost", onClick: () => setConfirm(true) },
+                { label: "Edit", tone: "ghost", onClick: () => item && onEdit(item) },
+                { label: "Open role →", onClick: openRole },
+              ]
+            : [
+                { label: "Close", tone: "ghost", onClick: onClose },
+                { label: "Open role →", onClick: openRole },
+              ]
       }
     >
       {item &&
         (confirm ? (
-          <p>
-            It&apos;s removed from Rookie. If you added it to Google or Apple Calendar, delete it there as well.
-          </p>
+          <p>It&apos;s removed from Rookie. If you added it to Google or Apple Calendar, delete it there as well.</p>
         ) : (
-          <div className="grid gap-2">
+          <div className="grid gap-3">
             <p className="text-[var(--ink)]">
-              <b>{eventLabel(item.at!)}</b>
-              {item.minutes ? ` · ${item.minutes < 60 ? `${item.minutes} min` : `${item.minutes / 60} h`}` : ""}
+              <b>{when}</b>
+              {scheduled && item.minutes ? ` · ${item.minutes < 60 ? `${item.minutes} min` : `${item.minutes / 60} h`}` : ""}
+              {!scheduled && <span className="block text-[var(--ink2)]">{WHAT[item.kind]}</span>}
             </p>
-            {item.location && <p>{item.location}</p>}
-            <Link href={`/app/a/${item.appId}`} className="font-bold" onClick={onClose}>
-              {item.company} {item.role && <span className="font-light">{titleCase(item.role)}</span>} →
-            </Link>
-            {event && (
-              <div className="mt-1">
-                <CalendarButtons event={event} small />
-              </div>
-            )}
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 rounded-2xl bg-[var(--tile)] p-3 text-[13.5px]">
+              <dt className="text-[var(--mute)]">Role</dt>
+              <dd className="text-[var(--ink)]">
+                <b>{item.company}</b> {item.role && <span className="font-light">{titleCase(item.role)}</span>}
+              </dd>
+              {item.place && (
+                <>
+                  <dt className="text-[var(--mute)]">Job based in</dt>
+                  <dd>{item.place}</dd>
+                </>
+              )}
+              {item.status && (
+                <>
+                  <dt className="text-[var(--mute)]">Status now</dt>
+                  <dd>{STATUS[item.status] ?? item.status}</dd>
+                </>
+              )}
+              {scheduled && item.location && (
+                <>
+                  <dt className="text-[var(--mute)]">Where</dt>
+                  <dd className="break-anywhere">{item.location}</dd>
+                </>
+              )}
+              {item.next_step && (
+                <>
+                  <dt className="text-[var(--mute)]">Next step</dt>
+                  <dd>{item.next_step}</dd>
+                </>
+              )}
+              {item.job_url && (
+                <>
+                  <dt className="text-[var(--mute)]">Job ad</dt>
+                  <dd>
+                    <a href={item.job_url} target="_blank" rel="noopener noreferrer" className="font-bold">
+                      Open listing <Arrow />
+                    </a>
+                  </dd>
+                </>
+              )}
+            </dl>
+            {event && <CalendarButtons event={event} small />}
           </div>
         ))}
       {err && (

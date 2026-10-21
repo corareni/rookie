@@ -4,6 +4,7 @@ import FileShelf, { type LibraryFile } from "@/components/FileShelf";
 import ProfileForm from "@/components/ProfileForm";
 import { PROFILE_COLUMNS, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
+import Arrow from "@/components/Arrow";
 
 export const metadata: Metadata = { title: "Profile · Rookie" };
 
@@ -35,7 +36,7 @@ export default async function ProfilePage() {
           </p>
         </div>
         <a href="#upload-h" className="arrow-btn" aria-label="Jump to CV upload">
-          ↗
+          <Arrow size="40%" />
         </a>
       </section>
 

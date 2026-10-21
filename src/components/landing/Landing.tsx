@@ -4,6 +4,7 @@ import { Badge, InterestedScreen, OfferScreen, Phone } from "@/components/landin
 import Reveal from "@/components/Reveal";
 import StepScroller from "@/components/landing/StepScroller";
 import { site } from "@/lib/site";
+import Arrow from "@/components/Arrow";
 
 const FEATURES = [
   { t: "Honest scores", d: ["Out of 10,", "for you"], tone: "bg-[var(--lilac)]" },
@@ -104,7 +105,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               <span className="chip-tag">First jobs</span>
             </div>
             <a href="#how" className="arrow-btn" aria-label="See how it works">
-              ↗
+              <Arrow size="40%" />
             </a>
           </div>
           <div>
@@ -147,14 +148,20 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             <span className="pb-2 text-[14px] text-[var(--ink2)]">applications per internship posting on average</span>
           </p>
           <a href={STATS[0].href} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[var(--mute)]">
-            Source: {STATS[0].src} ↗
+            Source: {STATS[0].src} <Arrow />
           </a>
         </section>
-        <section className="tile span-7 flex flex-col justify-between gap-6" aria-label="What Rookie does">
-          <p className="text-[26px] leading-tight tracking-tight">
-            <b>Everything</b> <span className="font-light">for your next application.</span>
-          </p>
-          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+        <section className="tile span-7 flex flex-col justify-center" aria-labelledby="everything-h">
+          {/* The heading is the first block, so six blocks fill a clean 2×3 (phone) or 3×2 rectangle. */}
+          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <li className="flex flex-col justify-between gap-3 rounded-[16px] bg-[var(--black)] px-3.5 py-4 text-[var(--onblack)]">
+              <h2 id="everything-h" className="text-[20px] leading-[1.1] tracking-tight">
+                <b>Everything</b> <span className="font-light">for your next application.</span>
+              </h2>
+              <a href="#how" className="text-[12.5px] text-[var(--onblack2)] no-underline hover:text-white">
+                See how <Arrow />
+              </a>
+            </li>
             {FEATURES.map((f, i) => (
               <Reveal as="li" key={f.t} delay={i * 70} className={`rounded-[16px] px-3.5 py-4 ${f.tone}`}>
                 <b className="block text-[14px] leading-tight">{f.t}</b>
@@ -215,7 +222,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               <div>
                 <p className="max-w-[440px] text-[15px] text-[var(--ink2)]">{s.d}</p>
                 <a href={s.href} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-[12px] text-[var(--mute)]">
-                  Source: {s.src} ↗
+                  Source: {s.src} <Arrow />
                 </a>
               </div>
             </Reveal>
@@ -241,7 +248,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           <span className="rounded-full bg-[var(--mint)] px-4 py-2 text-[15px] font-bold text-[var(--ink)]">~+150% in two years</span>
           <span className="rounded-full bg-[var(--lilac)] px-4 py-2 text-[15px] font-bold text-[var(--ink)]">273 per tech internship</span>
           <a href={STATS[0].href} target="_blank" rel="noopener noreferrer" className="ml-auto text-[12px] text-white/70">
-            Source: {STATS[0].src} ↗
+            Source: {STATS[0].src} <Arrow />
           </a>
         </div>
       </Reveal>

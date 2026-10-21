@@ -6,6 +6,7 @@ import { useState } from "react";
 import StatusConfirm, { NO_EVENT, type StatusChange } from "@/components/StatusConfirm";
 import { COLUMNS, STATUSES, deadlineText, isUrl, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
+import Arrow from "@/components/Arrow";
 
 type Form = {
   status: Status;
@@ -139,7 +140,7 @@ export default function ApplicationEditor({
         {app.deadline && <span className="chip chip-mute">{deadlineText(app.deadline)}</span>}
         {app.job_url && (
           <a href={app.job_url} target="_blank" rel="noopener noreferrer" className="font-semibold">
-            Open job ad ↗
+            Open job ad <Arrow />
           </a>
         )}
       </div>
