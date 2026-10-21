@@ -12,7 +12,8 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: `${site.name}: ${site.tagline}`,
+  // Lowercase "rookie", like the logo.
+  title: `${site.name.toLowerCase()} - ${site.tagline}`,
   description: site.oneLiner,
 };
 
