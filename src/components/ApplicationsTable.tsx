@@ -6,6 +6,8 @@ import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Applicat
 import CalendarButtons from "@/components/CalendarButtons";
 import { buildEvent, type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
+import Dialog from "@/components/Dialog";
+import EmailUpdate from "@/components/EmailUpdate";
 import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
 
@@ -21,6 +23,19 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
   const [events, setEvents] = useState(initialEvents);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<(StatusChange & { id: string }) | null>(null);
+  const [emailOpen, setEmailOpen] = useState(false);
+
+  /** Mirror an update applied from an email in the table. */
+  function applied(id: string, patch: Record<string, unknown>) {
+    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    if ("event_at" in patch) {
+      setEvents((prev) => {
+        const { [id]: old, ...rest } = prev;
+        if (!patch.event_at) return rest;
+        return { ...rest, [id]: { ...(old ?? { event_minutes: 60, event_location: null, event_kind: null }), ...patch } as EventFields };
+      });
+    }
+  }
 
   async function save(id: string, p: Partial<Application>) {
     setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...p } : a)));
@@ -53,6 +68,11 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
           Everything you&apos;ve applied to, where it stands and what&apos;s next. Mark a role as applied on the Board and it
           shows up here.
         </p>
+        {items.length > 0 && (
+          <button type="button" className="btn mt-5 !py-2.5" onClick={() => setEmailOpen(true)}>
+            ✉ Got an email? Paste it
+          </button>
+        )}
         <div className="kpis mt-6">
           {(["submitted", "interview", "offer", "rejected"] as Status[]).map((s) => (
             <div key={s} className="kpi">
@@ -123,6 +143,20 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
         </div>
       )}
       <StatusConfirm change={pending} onCancel={() => setPending(null)} onConfirm={changeStatus} />
+      <Dialog
+        open={emailOpen}
+        title="Got an email from a company?"
+        onCancel={() => setEmailOpen(false)}
+        actions={[{ label: "Close", tone: "ghost", onClick: () => setEmailOpen(false) }]}
+      >
+        <p className="mb-3">Paste it and Rookie suggests the new status, interview date and next step.</p>
+        {emailOpen && (
+          <EmailUpdate
+            roles={items.map((a) => ({ ...a, event_at: events[a.id]?.event_at ?? null, event_kind: events[a.id]?.event_kind ?? null }))}
+            onApplied={applied}
+          />
+        )}
+      </Dialog>
     </main>
   );
 }

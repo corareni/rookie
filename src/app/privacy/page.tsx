@@ -35,6 +35,10 @@ export default function PrivacyPage() {
             content to improve its products. The AI key stays on our server and never reaches your browser.
           </p>
           <p className="mt-2">
+            If you paste an email from a company, Rookie sends that email text to Gemini once to read what changed. The email
+            itself is not saved; only the update you choose to apply is.
+          </p>
+          <p className="mt-2">
             AI can be wrong. Rookie only uses facts from your CV, but always read your documents before you send them.
           </p>
         </section>

@@ -35,3 +35,22 @@ export async function importCv(file: File) {
   if (!res.ok) throw new Error(data.error ?? "Couldn't read your CV. Try again.");
   return data as { contact: Contact; cv_text: string; profile: StructuredProfile };
 }
+
+export type EmailUpdate = {
+  found: boolean;
+  summary: string;
+  status: "no_change" | "submitted" | "assessment" | "interview" | "offer" | "rejected" | "withdrawn";
+  event_at: string;
+  event_kind: "none" | "interview" | "assessment" | "other";
+  event_minutes: number;
+  event_location: string;
+  next_step: string;
+  deadline: string;
+};
+
+/** Reads a pasted email about a role; `today` is the user's local date, for "next Tuesday". */
+export const analyzeEmail = (id: string, text: string) => {
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return post<EmailUpdate>("/api/email", { id, text, today });
+};

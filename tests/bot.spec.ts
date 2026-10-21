@@ -113,7 +113,7 @@ test("no data readable without logging in", async ({ request, page }) => {
     });
     if (res.ok()) expect(await res.json(), `anon read of ${table}`).toEqual([]);
   }
-  for (const api of ["/api/analyze", "/api/compare", "/api/generate"]) {
+  for (const api of ["/api/analyze", "/api/compare", "/api/generate", "/api/email"]) {
     const res = await request.post(api, { data: {} });
     expect(res.status(), `${api} rejects logged-out users`).toBe(401);
   }

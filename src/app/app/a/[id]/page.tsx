@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnalysisPanel from "@/components/AnalysisPanel";
 import ApplicationEditor from "@/components/ApplicationEditor";
 import Documents from "@/components/Documents";
+import EmailUpdate from "@/components/EmailUpdate";
 import EventPanel, { type EventFields } from "@/components/EventPanel";
 import InterviewPrep from "@/components/InterviewPrep";
 import { COLUMNS, type Application } from "@/lib/applications";
@@ -83,6 +84,19 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
           stage={a.status}
           initial={((prep?.interview_prep as { questions?: [] } | null)?.questions ?? []) as never[]}
         />
+      )}
+      {(
+        <section id="email" className="mt-8 scroll-mt-20" aria-labelledby="email-h">
+          <h2 id="email-h" className="sec">
+            <small>[ ]</small> Got an email? <span className="font-light text-[var(--mute)]">· Rookie updates the status for you</span>
+          </h2>
+          <div className="tile tile-butter mt-3">
+            <EmailUpdate
+              fixed
+              roles={[{ ...a, event_at: evq.data?.event_at ?? null, event_kind: (evq.data?.event_kind as EventFields["event_kind"]) ?? null }]}
+            />
+          </div>
+        </section>
       )}
     </ApplicationEditor>
   );

@@ -50,6 +50,13 @@ export default function ApplicationEditor({
   const [app, setApp] = useState(initial);
   const [pending, setPending] = useState<StatusChange | null>(null);
   const [form, setForm] = useState<Form>(toForm(initial));
+  // Take fresh data after a refresh (e.g. an update applied from an email), so saving never undoes it.
+  const [seen, setSeen] = useState(initial);
+  if (initial !== seen) {
+    setSeen(initial);
+    setApp(initial);
+    setForm(toForm(initial));
+  }
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
