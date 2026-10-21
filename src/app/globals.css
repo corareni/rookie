@@ -913,6 +913,7 @@ a {
   gap: 10px;
   width: min(340px, calc(100vw - 36px));
   pointer-events: none;
+  transition: opacity 0.25s ease;
 }
 .rk-toast {
   pointer-events: auto;
@@ -1122,7 +1123,8 @@ a {
   width: 56px;
   height: 56px;
 }
-body:has(.chat-dock:not(.is-placed)) .rk-toasts { bottom: 86px; }
+/* Default spot, above rookie in the corner; the app then places pop-ups next to wherever rookie is. */
+body:has(.chat-dock) .rk-toasts { bottom: 86px; }
 .chat-fab {
   display: grid;
   place-items: center;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import CompareToast, { type CompareState } from "@/components/CompareToast";
 import Dialog from "@/components/Dialog";
 import { compareRoles } from "@/lib/ai-client";
@@ -47,6 +47,49 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<Progress>(null);
   const [rescoring, setRescoring] = useState(false);
   const [checking, setChecking] = useState(false);
+  // Pop-ups never cover rookie: they sit just above him (or below him if he's near the top), on his side of the
+  // screen, and move to the top while his chat is open. Re-measured while a pop-up is showing, as he can be dragged.
+  const toastsRef = useRef<HTMLDivElement>(null);
+  const [toastPos, setToastPos] = useState<React.CSSProperties | null>(null);
+  const showing = !!progress || !!compareToast;
+  useEffect(() => {
+    if (!showing) return;
+    const place = () => {
+      const dock = document.querySelector<HTMLElement>(".chat-dock");
+      if (!dock) return setToastPos(null);
+      const r = dock.getBoundingClientRect();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const gap = 12;
+      const phone = vw < 640;
+      const onRight = r.left + r.width / 2 > vw / 2;
+      // Phones: always the full width; wider screens: lined up with rookie, kept on screen.
+      const side: React.CSSProperties = phone
+        ? { left: 16, right: 16, width: "auto" }
+        : onRight
+          ? { right: Math.max(16, vw - r.right), left: "auto" }
+          : { left: Math.max(16, r.left), right: "auto" };
+      let next: React.CSSProperties;
+      const chat = dock.classList.contains("is-open") ? document.querySelector(".chat-card")?.getBoundingClientRect() : null;
+      if (chat) {
+        // Chat open: on the other side of the screen from it; on phones (the chat fills the screen) wait until it closes.
+        next = phone
+          ? { ...side, top: 84, bottom: "auto", opacity: 0, pointerEvents: "none" }
+          : chat.left + chat.width / 2 > vw / 2
+            ? { left: 16, right: "auto", top: 84, bottom: "auto" }
+            : { right: 16, left: "auto", top: 84, bottom: "auto" };
+      } else if (r.top + r.height / 2 > vh / 2) next = { ...side, bottom: vh - r.top + gap, top: "auto" };
+      else next = { ...side, top: r.bottom + gap, bottom: "auto" };
+      setToastPos((p) => (JSON.stringify(p) === JSON.stringify(next) ? p : next));
+    };
+    place();
+    const t = setInterval(place, 250);
+    window.addEventListener("resize", place);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("resize", place);
+    };
+  }, [showing]);
   const [gmailHelp, setGmailHelp] = useState<null | "connect" | "expired" | "unavailable">(null);
 
   async function compare(ids: string[], names: string[]) {
@@ -153,7 +196,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   return (
     <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking }}>
       {children}
-      <div className="rk-toasts">
+      <div className="rk-toasts" ref={toastsRef} style={toastPos ?? undefined}>
         {progress && (
           <div role="status" aria-live="polite" className={`rk-toast ${progress.done ? "done" : ""}`}>
             <div className="flex items-start justify-between gap-3">
