@@ -3,6 +3,7 @@ import Link from "next/link";
 import AnalysisPanel from "@/components/AnalysisPanel";
 import ApplicationEditor from "@/components/ApplicationEditor";
 import Documents from "@/components/Documents";
+import EventPanel, { type EventFields } from "@/components/EventPanel";
 import InterviewPrep from "@/components/InterviewPrep";
 import { COLUMNS, type Application } from "@/lib/applications";
 import type { CvContent, Doc, LetterContent } from "@/lib/documents";
@@ -19,7 +20,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
 
-  const [{ data }, { data: docs }, { data: profile }, { count }, { data: prep }] = await Promise.all([
+  const [{ data }, { data: docs }, { data: profile }, { count }, { data: prep }, evq] = await Promise.all([
     supabase.from("applications").select(COLUMNS).eq("id", id).maybeSingle(),
     supabase.from("documents").select("kind,content,meta,edited").eq("application_id", id),
     supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
@@ -30,6 +31,8 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
       .gte("created_at", today.toISOString()),
     // Needs the Phase 4 column; if it's missing this is simply empty.
     supabase.from("applications").select("interview_prep").eq("id", id).maybeSingle(),
+    // Needs the Phase 5 columns; if they're missing the panel says so.
+    supabase.from("applications").select("event_at,event_minutes,event_location,event_kind").eq("id", id).maybeSingle(),
   ]);
 
   if (!data) {
@@ -54,6 +57,13 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
 
   return (
     <ApplicationEditor initial={a}>
+      {(a.status === "interview" || a.status === "assessment" || evq.data?.event_at) && (
+        <EventPanel
+          app={a}
+          ready={!evq.error}
+          initial={(evq.data as EventFields | null) ?? { event_at: null, event_minutes: 60, event_location: null, event_kind: null }}
+        />
+      )}
       <AnalysisPanel a={a} />
       <Documents
         applicationId={a.id}

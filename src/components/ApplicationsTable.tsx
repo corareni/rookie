@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Application, type Status } from "@/lib/applications";
+import CalendarButtons from "@/components/CalendarButtons";
+import { buildEvent, type EventFields } from "@/components/EventPanel";
+import { eventLabel } from "@/lib/calendar";
 import { createClient } from "@/lib/supabase/client";
 
 const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
@@ -12,7 +15,7 @@ const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
   { title: "Rejected or withdrawn", statuses: ["rejected", "withdrawn"], tone: "bg-[var(--badbg)] text-[var(--bad)]" },
 ];
 
-export default function ApplicationsTable({ initial }: { initial: Application[] }) {
+export default function ApplicationsTable({ initial, events = {} }: { initial: Application[]; events?: Record<string, EventFields> }) {
   const [items, setItems] = useState(initial);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,7 +82,7 @@ export default function ApplicationsTable({ initial }: { initial: Application[] 
                   <span>{rows.length}</span>
                 </h2>
                 {rows.map((a) => (
-                  <Row key={a.id} a={a} onSave={(p) => save(a.id, p)} />
+                  <Row key={a.id} a={a} ev={events[a.id]} onSave={(p) => save(a.id, p)} />
                 ))}
               </section>
             );
@@ -90,7 +93,7 @@ export default function ApplicationsTable({ initial }: { initial: Application[] 
   );
 }
 
-function Row({ a, onSave }: { a: Application; onSave: (p: Partial<Application>) => void }) {
+function Row({ a, ev, onSave }: { a: Application; ev?: EventFields; onSave: (p: Partial<Application>) => void }) {
   const [next, setNext] = useState(a.next_step ?? "");
   const days = a.deadline ? daysUntil(a.deadline) : null;
   return (
@@ -101,9 +104,25 @@ function Row({ a, onSave }: { a: Application; onSave: (p: Partial<Application>) 
         </Link>
         {a.company && <p className="text-[15px] font-light text-[var(--ink)]">{titleCase(a.role ?? a.title)}</p>}
         {(a.status === "interview" || a.status === "assessment") && (
-          <Link href={`/app/a/${a.id}#interview`} className="act mt-2 !min-h-[32px] !text-[12.5px]">
-            Practise questions
-          </Link>
+          <span className="mt-2 flex flex-wrap gap-1.5">
+            <Link href={`/app/a/${a.id}#interview`} className="act !min-h-[32px] !text-[12.5px]">
+              Practise questions
+            </Link>
+            {!ev?.event_at && (
+              <Link href={`/app/a/${a.id}#calendar`} className="act !min-h-[32px] !text-[12.5px] !bg-[var(--sky)]">
+                Set date and time
+              </Link>
+            )}
+          </span>
+        )}
+        {ev?.event_at && (
+          <span className="mt-2 grid gap-1.5">
+            <span className="text-[13px] font-bold">
+              {ev.event_kind === "assessment" ? "Assessment" : ev.event_kind === "other" ? "Next step" : "Interview"} ·{" "}
+              {eventLabel(ev.event_at)}
+            </span>
+            <CalendarButtons event={buildEvent(a, ev)!} small />
+          </span>
         )}
         {a.deadline && days !== null && days >= -1 && (
           <p className={`mt-1 text-[13px] font-semibold ${days <= 3 ? "text-[var(--warn)]" : "text-[var(--good)]"}`}>
