@@ -1528,3 +1528,39 @@ body:has(.tour) .chat-name { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .tour-dim, .tour-spot, .tour-card, .tour-bot .bot, .tour-bot .bot-antenna, .tour-dot { animation: none; transition: none; }
 }
+
+/* Tour: rookie waits while the next page loads */
+.tour-dim.is-solid { background: rgba(11, 11, 12, 0.72); backdrop-filter: blur(6px); }
+.tour-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  animation: dialog-in 0.3s ease both;
+}
+.tour-wait-bot {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--black);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 20px 40px -16px rgba(0, 0, 0, 0.6);
+  animation: tour-hop 1.1s cubic-bezier(0.3, 0.7, 0.4, 1) infinite;
+}
+.tour-wait-bot .bot { animation: bot-nod 1.1s ease-in-out infinite; }
+.tour-wait-bot .bot-antenna { animation: bot-antenna 0.7s ease-in-out infinite; }
+.tour-wait-bot .bot-eyes { animation: bot-look 1.1s ease-in-out infinite; }
+@keyframes tour-hop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  15% { transform: translateY(0) scale(1.06, 0.94); }
+  45% { transform: translateY(-16px) scale(0.97, 1.03); }
+  75% { transform: translateY(0) scale(1.03, 0.97); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-wait, .tour-wait-bot, .tour-wait-bot .bot, .tour-wait-bot .bot-antenna, .tour-wait-bot .bot-eyes { animation: none; }
+}
+/* Only rookie waits during the tour; the page's own loader stays out of sight behind him. */
+body:has(.tour-wait) .rk-loader { visibility: hidden; }

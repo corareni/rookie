@@ -102,6 +102,8 @@ export default function Tour({ onboarded }: { onboarded: boolean }) {
   const path = usePathname();
   const [step, setStep] = useState<number | null>(null);
   const [spotRect, setRect] = useState<DOMRect | null>(null);
+  // The step whose page has finished loading; until then the card shows rookie waiting, not a half-loaded page.
+  const [readyStep, setReadyStep] = useState<number | null>(null);
   const [question, setQuestion] = useState("");
 
   // Start for new users (or resume after a reload), and whenever "Take the tour again" asks.
@@ -138,28 +140,39 @@ export default function Tour({ onboarded }: { onboarded: boolean }) {
     }
   }, [step]);
 
-  // Go to the step's page, then find and outline its element (it may take a moment to load).
+  // Go to the step's page, wait until it has loaded (no loading screen, and its element is there), then
+  // outline the element and show the step.
   useLayoutEffect(() => {
-    if (!s) return;
+    if (!s || step === null) return;
     if (path !== s.path) {
       router.push(s.path);
       return;
     }
-    if (!s.spot) return;
     let tries = 0;
     let frame = 0;
     let el: Element | null = null;
-    const find = () => {
-      el = document.querySelector(s.spot!);
-      if (el) {
-        el.scrollIntoView({ block: "center", behavior: "smooth" });
-        setTimeout(measure, 450);
-      } else if (tries++ < 40) frame = window.setTimeout(find, 100);
-      else setRect(null);
-    };
+    const loading = () => !!document.querySelector(".rk-loader");
     const measure = () => {
       const target = (el as HTMLElement | null)?.closest("section, form, .tile") ?? el;
       setRect(target ? target.getBoundingClientRect() : null);
+    };
+    const find = () => {
+      el = s.spot ? document.querySelector(s.spot) : null;
+      const done = !loading() && (!s.spot || el);
+      if (done) {
+        if (el) {
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+          frame = window.setTimeout(() => {
+            measure();
+            setReadyStep(step);
+          }, 450);
+        } else setReadyStep(step);
+      } else if (tries++ < 80) frame = window.setTimeout(find, 100);
+      else {
+        // Give up waiting after ~8 seconds and show the step without an outline.
+        setRect(null);
+        setReadyStep(step);
+      }
     };
     find();
     const onMove = () => el && measure();
@@ -170,7 +183,7 @@ export default function Tour({ onboarded }: { onboarded: boolean }) {
       window.removeEventListener("resize", onMove);
       window.removeEventListener("scroll", onMove);
     };
-  }, [s, path, router]);
+  }, [s, step, path, router]);
 
   const finish = useCallback(async () => {
     setStep(null);
@@ -190,6 +203,28 @@ export default function Tour({ onboarded }: { onboarded: boolean }) {
   }
 
   if (!s || step === null) return null;
+
+  // While the next page loads: just rookie, busy, instead of a half-loaded page behind the card.
+  if (readyStep !== step) {
+    return (
+      <div className="tour" role="dialog" aria-modal="true" aria-label="Loading the next step">
+        <div className="tour-dim is-solid" aria-hidden="true" />
+        <div className="tour-wait" role="status">
+          <span className="tour-wait-bot" aria-hidden="true">
+            <RookieBot size={64} />
+          </span>
+          <span className="rk-dots" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+            <span />
+          </span>
+          <p className="text-[14px] font-bold text-white">Getting the next page ready…</p>
+        </div>
+      </div>
+    );
+  }
+
   const last = step === STEPS.length - 1;
   // Only outline something on steps that have a target.
   const rect = s.spot ? spotRect : null;
