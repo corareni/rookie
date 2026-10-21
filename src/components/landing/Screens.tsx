@@ -249,9 +249,9 @@ export function AssessmentScreen() {
           <Chip tone="bg-[var(--butter)]">Assessment</Chip>
         </div>
         <p className="mt-1.5 text-[9.5px] font-bold">Online test · Fri 7 Nov, 10:00</p>
-        <div className="mt-1 grid grid-cols-2 gap-1">
-          <Act>Practise questions</Act>
-          <Act tone="bg-[var(--sky)]">＋ Google Calendar</Act>
+        <div className="mt-1 flex gap-1 whitespace-nowrap">
+          <span className="rounded-full bg-white px-2 py-1 text-[8.5px] font-bold">Practise questions</span>
+          <span className="rounded-full bg-[var(--sky)] px-2 py-1 text-[8.5px] font-bold">＋ Calendar</span>
         </div>
       </Tile>
       <p className="mt-2 rounded-[10px] bg-[var(--card2)] px-2 py-1 text-[9.5px] font-bold">● Submitted, waiting to hear back</p>
@@ -304,9 +304,9 @@ export function InterviewScreen() {
           <Chip tone="bg-[var(--sky)]">Interview</Chip> <b>Thu 13 Nov, 10:00</b>
         </p>
         <p className="mt-1 text-[var(--ink2)]">Google Meet · 45 min</p>
-        <div className="mt-1.5 grid grid-cols-2 gap-1">
-          <Act tone="bg-[var(--sky)]">＋ Google Calendar</Act>
-          <Act tone="bg-[var(--lilac)]">＋ Apple Calendar</Act>
+        <div className="mt-1.5 flex gap-1 whitespace-nowrap">
+          <span className="rounded-full bg-[var(--sky)] px-2 py-1 text-[8.5px] font-bold">＋ Google</span>
+          <span className="rounded-full bg-[var(--lilac)] px-2 py-1 text-[8.5px] font-bold">＋ Apple</span>
         </div>
       </Tile>
       <Tile className="mt-2 text-[9.5px] leading-snug">

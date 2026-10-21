@@ -72,7 +72,7 @@ export default function StepScroller() {
 
   return (
     <div className="grid gap-[var(--gap)] lg:grid-cols-[1fr_340px]">
-      <ol className="grid gap-[var(--gap)] lg:block lg:pb-[20vh]">
+      <ol className="grid gap-[var(--gap)] lg:block lg:pb-[24vh]">
         {STEPS.map((s, i) => {
           const Screen = SCREENS[i];
           const on = i === active;
@@ -84,12 +84,15 @@ export default function StepScroller() {
                 refs.current[i] = el;
               }}
               data-i={i}
-              className={`step-stack ${i < STEPS.length - 1 ? "lg:mb-[34vh]" : ""}`}
+              className="step-stack"
               style={{ ["--stack-top" as string]: `calc(14vh + ${i * 18}px)`, zIndex: i + 1 }}
             >
               <div
-                className={`step-card tile ${TONES[i]} w-full ${on ? "lg:opacity-100" : past ? "lg:scale-[0.97] lg:opacity-40" : "lg:opacity-100"}`}
+                className={`step-card tile ${TONES[i]} w-full`}
+                data-state={on ? "on" : past ? "past" : "next"}
               >
+                {/* Covered cards stay solid; only their text fades, so nothing shows through the stack. */}
+                <div className="step-body">
                 <div className="flex items-start justify-between gap-4">
                   <span className="chip-tag !bg-white">Step {String(i + 1).padStart(2, "0")}</span>
                   <span className="arrow-btn !h-11 !w-11 !text-[18px]" aria-hidden="true">
@@ -104,6 +107,7 @@ export default function StepScroller() {
                   <Phone label={`Example screen: ${s.t}`}>
                     <Screen />
                   </Phone>
+                </div>
                 </div>
               </div>
             </li>
