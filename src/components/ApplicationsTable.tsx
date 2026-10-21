@@ -268,8 +268,9 @@ function Row({
   const [next, setNext] = useState(a.next_step ?? "");
   const days = a.deadline ? daysUntil(a.deadline) : null;
   return (
-    <div className="grid gap-3 border-b border-[var(--line)] px-3 py-4 last:border-0 md:grid-cols-[1.6fr_90px_160px_1.3fr] md:items-center md:gap-4">
-      <div className="min-w-0">
+    <div className="grid gap-3 border-b border-[var(--line)] px-3 py-4 last:border-0 md:grid-cols-[1.6fr_90px_160px_1.3fr] md:items-start md:gap-4">
+      {/* Applied, Status and Next sit on one line at the top of the row, however tall the company column gets. */}
+      <div className="min-w-0 md:pt-2">
         <Link href={`/app/a/${a.id}`} className="text-[16px] font-bold no-underline hover:underline">
           {a.company ?? a.title}
         </Link>
@@ -314,8 +315,8 @@ function Row({
           </p>
         )}
       </div>
-      <span className="text-[14px] text-[var(--ink2)]">
-        <span className="md:hidden">Applied </span>
+      <span className="text-[14px] text-[var(--ink2)] md:flex md:h-10 md:items-center">
+        <span className="md:hidden">Applied&nbsp;</span>
         {a.submitted_on ? formatDate(a.submitted_on) : "–"}
       </span>
       <label>
@@ -323,7 +324,7 @@ function Row({
         <select
           value={a.status}
           onChange={(e) => onStatus(e.target.value as Status)}
-          className="pill w-full !py-2"
+          className="pill h-10 w-full !py-0"
         >
           {STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
@@ -336,7 +337,7 @@ function Row({
         <label>
           <span className="sr-only">Next step for {a.company ?? a.title}</span>
           <input
-            className="field !py-2 !text-[14px]"
+            className="field h-10 !py-0 !text-[14px]"
             placeholder="Next step, e.g. online test by Fri"
             value={next}
             onChange={(e) => setNext(e.target.value)}
