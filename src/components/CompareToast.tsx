@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CloseIcon from "@/components/CloseIcon";
 
 export type CompareState =
   | { state: "working"; names: string[] }
@@ -56,8 +57,8 @@ export default function CompareToast({ toast, onClose }: { toast: CompareState; 
           )}
         </div>
         {toast.state !== "working" && (
-          <button type="button" aria-label="Close" className="text-[18px] leading-none text-[var(--onblack2)] hover:text-white" onClick={onClose}>
-            ×
+          <button type="button" aria-label="Close" className="grid size-7 flex-none place-items-center rounded-full text-[var(--onblack2)] hover:bg-white/10 hover:text-white" onClick={onClose}>
+            <CloseIcon size={12} />
           </button>
         )}
       </div>

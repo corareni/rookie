@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { emptyEntry, type Entry, type Link, type Project } from "@/lib/profile";
+import CloseIcon from "@/components/CloseIcon";
 
 /**
  * Which entries are open for editing. Saved entries are read-only toggles until you press Edit;
@@ -324,10 +325,10 @@ export function ChipList({
             <button
               type="button"
               aria-label={`Remove ${x}`}
-              className="px-1"
+              className="grid size-5 flex-none place-items-center rounded-full hover:bg-black/10"
               onClick={() => onChange(items.filter((y) => y !== x))}
             >
-              ×
+              <CloseIcon size={9} />
             </button>
           </span>
         ))}

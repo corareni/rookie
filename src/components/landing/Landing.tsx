@@ -166,10 +166,9 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             {FEATURES.map((f, i) => (
               <Reveal as="li" key={f.t} delay={i * 70} className={`rounded-[16px] px-3.5 py-4 ${f.tone}`}>
                 <b className="block text-[14px] leading-tight">{f.t}</b>
-                <span className="mt-2 block text-[12.5px] leading-snug text-[var(--ink2)]">
-                  {f.d[0]}
-                  <br />
-                  {f.d[1]}
+                {/* One line on laptops and desktops; it only wraps where the boxes are narrow. */}
+                <span className="mt-2 block text-[12.5px] leading-snug text-[var(--ink2)] xl:whitespace-nowrap">
+                  {f.d[0]} {f.d[1]}
                 </span>
               </Reveal>
             ))}

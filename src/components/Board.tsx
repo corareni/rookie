@@ -17,6 +17,7 @@ import {
 } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 import { useHydrated } from "@/lib/use-hydrated";
+import CloseIcon from "@/components/CloseIcon";
 
 type Sort = "best" | "closing" | "newest";
 
@@ -248,8 +249,8 @@ export default function Board({
       {notice && (
         <p role="status" className="mt-4 flex items-start justify-between gap-3 rounded-2xl bg-[var(--card2)] px-4 py-3 text-sm">
           <span>{notice}</span>
-          <button type="button" aria-label="Dismiss" onClick={() => setNotice(null)}>
-            ×
+          <button type="button" aria-label="Dismiss" className="grid size-6 flex-none place-items-center rounded-full hover:bg-black/10" onClick={() => setNotice(null)}>
+            <CloseIcon size={11} />
           </button>
         </p>
       )}

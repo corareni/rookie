@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import CloseIcon from "@/components/CloseIcon";
 
 type Msg = { role: "user" | "assistant"; text: string; links?: { label: string; href: string }[] };
 
@@ -171,10 +172,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
         onClick={() => setOpen((o) => !o)}
       >
         {open ? (
-          // Two lines, so the × sits exactly in the middle (a text × sits off-centre in most fonts).
-          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18" />
-          </svg>
+          <CloseIcon size={18} />
         ) : (
           <RookieBot />
         )}
@@ -233,7 +231,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
                     </span>
                   </button>
                   <button type="button" className="chat-row-x" aria-label={`Delete chat: ${c.title}`} onClick={() => removeChat(c.id)}>
-                    ×
+                    <CloseIcon size={11} />
                   </button>
                 </div>
               ))}

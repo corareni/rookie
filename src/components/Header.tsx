@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import CloseIcon from "@/components/CloseIcon";
 import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 
@@ -184,7 +185,7 @@ export default function Header({ email, name }: { email: string | null; name: st
           onClick={() => setOpen((o) => !o)}
         >
           {/* On phones the pill is tight, so the menu button is just the icon. */}
-          <span className="max-sm:sr-only">Menu</span> <span aria-hidden="true">{open ? "×" : "≡"}</span>
+          <span className="max-sm:sr-only">Menu</span> {open ? <CloseIcon size={11} /> : <span aria-hidden="true">≡</span>}
         </button>
       </header>
 

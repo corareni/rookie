@@ -32,3 +32,7 @@ Before doing anything, read `HANDOVER.md` in this folder. It is the full product
 The owner is Cora. She studies Business + CS/AI and can read code, but explain each manual step (Supabase, GitHub, Vercel) in plain words, one step at a time, and stop and wait when a step needs her to click something in a dashboard.
 
 Work in phases: Phase 1 (everything the bot grades) must be deployed and passing `npm run test:bot` on the live URL before any Phase 2 (AI) work. Section 0 of HANDOVER.md (v3 amendments) overrides the rest of it: the app is called Rookie and the AI provider is Google Gemini. The Gemini API key is server-only (`GEMINI_API_KEY`, never `NEXT_PUBLIC_`, never imported in client code), and no AI call may ever sit in the path of adding an item via `core-input` / `core-submit`.
+
+## UI rules
+- Close and delete buttons: never type "×". Use `<CloseIcon />` (`src/components/CloseIcon.tsx`, drawn lines, exactly centred)
+  inside a button that centres its content (`grid place-items-center` with a fixed size).

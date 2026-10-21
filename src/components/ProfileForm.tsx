@@ -9,6 +9,7 @@ import { ChipList, EntryList, LinkList, ProjectList } from "@/components/profile
 import { importCv } from "@/lib/ai-client";
 import { profileComplete, type BarrierRule, type Contact, type ProfileData, type StructuredProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
+import CloseIcon from "@/components/CloseIcon";
 
 const MEMORY_PROMPT = `Write down everything you know about me that could help me apply for jobs and internships: my education, work and volunteering experience, projects, skills and tools, languages, achievements with numbers, what I'm good at, how I work, my interests and hobbies, my goals and the kind of roles and companies I want, and any constraints (location, visa, dates). Use short bullet points under clear headings. Only include facts you actually know about me; don't guess.`;
 
@@ -260,10 +261,10 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
                 <button
                   type="button"
                   aria-label="Remove this point"
-                  className="flex-none px-1"
+                  className="grid size-5 flex-none place-items-center rounded-full hover:bg-black/10"
                   onClick={() => saveNow({ story_points: d.story_points.filter((_, j) => j !== i) })}
                 >
-                  ×
+                  <CloseIcon size={9} />
                 </button>
               </li>
             ))}
@@ -318,10 +319,10 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
                 <button
                   type="button"
                   aria-label="Remove this barrier"
-                  className="flex-none px-1"
+                  className="grid size-5 flex-none place-items-center rounded-full hover:bg-black/10"
                   onClick={() => saveNow({ barriers: d.barriers.filter((_, j) => j !== i) })}
                 >
-                  ×
+                  <CloseIcon size={9} />
                 </button>
               </li>
             ))}

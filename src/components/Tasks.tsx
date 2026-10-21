@@ -7,6 +7,7 @@ import CompareToast, { type CompareState } from "@/components/CompareToast";
 import Dialog from "@/components/Dialog";
 import { compareRoles } from "@/lib/ai-client";
 import { createClient } from "@/lib/supabase/client";
+import CloseIcon from "@/components/CloseIcon";
 
 /** Tells the bell to fetch its list again. */
 export const refreshNotifications = () => window.dispatchEvent(new Event("rk:notify"));
@@ -172,10 +173,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
                 <button
                   type="button"
                   aria-label="Close"
-                  className="text-[18px] leading-none text-[var(--onblack2)] hover:text-white"
+                  className="grid size-7 flex-none place-items-center rounded-full text-[var(--onblack2)] hover:bg-white/10 hover:text-white"
                   onClick={() => setProgress(null)}
                 >
-                  ×
+                  <CloseIcon size={12} />
                 </button>
               )}
             </div>

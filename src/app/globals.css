@@ -998,6 +998,8 @@ a {
 .bell-item.is-new { box-shadow: inset 3px 0 0 var(--peach); }
 .bell-item:hover { background: #26262a; }
 .bell-x {
+  display: grid;
+  place-items: center;
   flex: none;
   width: 26px;
   height: 26px;
@@ -1028,7 +1030,7 @@ a {
   transition: transform 0.2s ease, bottom 0.3s ease;
 }
 .chat-fab:hover { transform: scale(1.05); }
-/* Closed: Rookie on a white circle. Open: a black circle with a centred ×. */
+/* Closed: Rookie on a white circle. Open: a black circle with a centred close icon. */
 .chat-fab:not(.is-open) {
   background: var(--frame);
   box-shadow: 0 0 0 1px var(--line), 0 14px 30px -12px rgba(0, 0, 0, 0.35);
@@ -1201,6 +1203,8 @@ body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(10
 .chat-row:hover { background: var(--tile2); }
 .chat-row.is-current { box-shadow: inset 3px 0 0 var(--lilac); }
 .chat-row-x {
+  display: grid;
+  place-items: center;
   flex: none;
   width: 26px;
   height: 26px;

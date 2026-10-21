@@ -9,6 +9,7 @@ import type { EmailUpdate } from "@/lib/ai-client";
 import { eventLabel } from "@/lib/calendar";
 import { loadNotifications } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
+import CloseIcon from "@/components/CloseIcon";
 
 type Item = {
   id: string;
@@ -179,7 +180,7 @@ export default function NotificationBell() {
                     className="bell-x"
                     onClick={() => remove(i.id)}
                   >
-                    ×
+                    <CloseIcon size={11} />
                   </button>
                 </li>
               ))}
