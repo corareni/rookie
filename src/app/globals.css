@@ -943,6 +943,14 @@ a {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -16px rgba(0, 0, 0, 0.5);
   animation: menu-in 0.22s ease-out;
 }
+/* The small header is a centred pill, so its pop-up is centred under it too. */
+.is-compact .bell-panel {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+}
 @media (max-width: 639px) {
   /* On phones the panel spans the screen under the header pill. */
   .bell-panel { position: fixed; top: 76px; left: 16px; right: 16px; width: auto; }
@@ -1060,15 +1068,40 @@ body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
   bottom: 86px;
   z-index: 56;
   display: flex;
-  flex-direction: column;
   width: min(390px, calc(100vw - 32px));
   height: min(600px, 70vh);
+  /* The outer layer floats gently (and holds still while you use it)... */
+  animation: chat-float 3.6s ease-in-out 1.25s infinite;
+}
+/* ...the card inside springs in and wiggles once, like the compare pop-up. */
+.chat-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
   border-radius: 22px;
   background: var(--frame);
   color: var(--ink);
   box-shadow: 0 0 0 1px var(--line), 0 30px 60px -20px rgba(0, 0, 0, 0.35);
-  animation: dialog-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  transform-origin: 100% 100%;
+  animation: chat-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) both, toast-wiggle 0.7s ease-in-out 0.55s 1;
   overflow: hidden;
+}
+@keyframes chat-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.86); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes chat-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+/* Holds still while you use it. */
+.chat-panel:hover,
+.chat-panel:focus-within { animation-play-state: paused; }
+.chat-avatar .bot { animation: bot-sway 3.2s ease-in-out infinite; }
+.chat-row { animation: toast-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
+@media (prefers-reduced-motion: reduce) {
+  .chat-panel, .chat-card, .chat-avatar .bot, .chat-row { animation: none; }
 }
 body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(100vh - 260px)); }
 @media (max-width: 639px) {
@@ -1110,3 +1143,34 @@ body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(10
 @media (prefers-reduced-motion: reduce) {
   .chat-panel { animation: none; }
 }
+
+/* Ask Rookie: header tools and the chat history list */
+.chat-tool {
+  border-radius: 999px;
+  background: var(--tile);
+  padding: 6px 11px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.chat-tool:hover,
+.chat-tool[aria-pressed="true"] { background: var(--lilac); }
+.chat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: var(--tile);
+  padding: 10px 8px 10px 12px;
+}
+.chat-row:hover { background: var(--tile2); }
+.chat-row.is-current { box-shadow: inset 3px 0 0 var(--lilac); }
+.chat-row-x {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--mute);
+  font-size: 17px;
+  line-height: 1;
+}
+.chat-row-x:hover { background: var(--frame); color: var(--bad); }

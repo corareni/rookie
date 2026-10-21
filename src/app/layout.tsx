@@ -43,7 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <TasksProvider>
             <Header email={user?.email ?? null} name={name || null} />
             <div className="wrap pt-4 pb-6">{children}</div>
-            {user && <ChatBubble />}
+            {user && <ChatBubble userId={user.id} />}
           </TasksProvider>
         </div>
       </body>

@@ -87,6 +87,14 @@ export default function Header({ email, name }: { email: string | null; name: st
     // browser (clears the session cookies) and leave anyway.
     const done = await Promise.race([auth.signOut().then(() => true), new Promise<false>((r) => setTimeout(() => r(false), 2000))]);
     if (!done) await auth.signOut({ scope: "local" });
+    try {
+      // Chat history is kept per user in this browser; don't leave it behind on a shared computer.
+      Object.keys(localStorage)
+        .filter((k) => k.startsWith("rookie-chats"))
+        .forEach((k) => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
     window.location.assign("/");
   }
 

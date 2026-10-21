@@ -46,8 +46,9 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-2">
             When you ask Rookie a question in the chat, your question, the conversation so far and a summary of your
-            board and profile go to Gemini to answer it. Chats aren&apos;t saved: they stay in your browser tab until you
-            close it or press Clear.
+            board and profile go to Gemini to answer it. Rookie doesn&apos;t store your chats on its servers: your chat
+            history is kept only in this browser, so you can go back to earlier questions, and it&apos;s deleted when you
+            log out. You can also delete any chat from History.
           </p>
           <p className="mt-2">
             AI can be wrong. Rookie only uses facts from your CV, but always read your documents before you send them.
