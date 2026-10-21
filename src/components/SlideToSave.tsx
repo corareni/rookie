@@ -2,6 +2,9 @@
 
 import { useRef, useState } from "react";
 
+/** The ✓ circle's size; matches .slide-save-handle.is-small. */
+const CIRCLE = 40;
+
 /**
  * "Slide to save": a black pill with the Save button on the left. On hover it widens to show a short note;
  * clicking slides the button to the right (it shrinks into a ✓ on the way) and saves. The button can also be
@@ -12,6 +15,7 @@ export default function SlideToSave({
   note,
   status,
   error = false,
+  visible = true,
   onSave,
 }: {
   label?: string;
@@ -20,6 +24,8 @@ export default function SlideToSave({
   /** Unsaved, saved or error text: keeps the pill open while it's there. */
   status?: string | null;
   error?: boolean;
+  /** Only shown when there's something to save (or an error); hidden while you just look around. */
+  visible?: boolean;
   onSave: () => Promise<boolean>;
 }) {
   const pill = useRef<HTMLDivElement>(null);
@@ -29,41 +35,46 @@ export default function SlideToSave({
   const [phase, setPhase] = useState<"idle" | "dragging" | "sliding" | "saving" | "done">("idle");
   const [open, setOpen] = useState(false);
 
-  /** How far the button can travel: to the right end of the widened pill. */
+  /** How far the ✓ circle travels: to the right end of the open pill (worked out from its final width, so it
+   *  never stops short or runs past the end while the pill is still widening). */
   const room = () => {
-    const p = pill.current;
-    const h = handle.current;
-    if (!p || !h) return 0;
-    return Math.max(0, p.clientWidth - 48 - 10);
+    const open = Math.min(560, window.innerWidth - 32);
+    return Math.max(0, open - 15 - CIRCLE);
   };
 
   async function commit() {
-    if (phase === "saving" || phase === "sliding") return;
+    if (phase !== "idle" && phase !== "dragging") return;
     setOpen(true);
+    // First shrink into the ✓ circle, then slide all the way.
     setPhase("sliding");
-    // Let the pill finish widening, then slide all the way and shrink into a ✓.
-    await new Promise((r) => setTimeout(r, 260));
+    await new Promise((r) => setTimeout(r, 220));
     setX(room());
     setPhase("saving");
-    const ok = await onSave();
-    setPhase(ok ? "done" : "idle");
-    setTimeout(
-      () => {
-        setX(0);
-        setPhase("idle");
-        setOpen(false);
-      },
-      ok ? 1400 : 300,
-    );
+    // Always finish the slide to the end, even when saving is quicker than the animation.
+    const [ok] = await Promise.all([onSave(), new Promise((r) => setTimeout(r, 650))]);
+    if (!ok) {
+      setX(0);
+      setPhase("idle");
+      return;
+    }
+    // Saved: the circle glides back and the pill shrinks around the ✓ and "Saved.", then it hides.
+    setX(0);
+    setPhase("done");
+    setTimeout(() => {
+      setPhase("idle");
+      setOpen(false);
+    }, 1600);
   }
 
-  const shrunk = phase === "saving" || phase === "done" || (phase === "dragging" && x > 24);
-  const expanded = open || phase !== "idle" || !!status;
+  const shrunk = phase !== "idle";
+  const expanded = (open || phase === "sliding" || phase === "saving" || phase === "dragging" || !!status) && phase !== "done";
+  const shown = visible || phase !== "idle";
 
   return (
     <div
       ref={pill}
-      className={`slide-save ${expanded ? "is-open" : ""} ${error ? "is-error" : ""}`}
+      className={`slide-save ${expanded ? "is-open" : ""} ${phase === "done" ? "is-done" : ""} ${error ? "is-error" : ""} ${shown ? "" : "is-hidden"}`}
+      aria-hidden={!shown}
       onPointerEnter={() => setOpen(true)}
       onPointerLeave={() => phase === "idle" && setOpen(false)}
       onFocus={() => setOpen(true)}

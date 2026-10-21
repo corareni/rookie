@@ -1585,9 +1585,16 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
   touch-action: none;
 }
 .slide-save.is-open { width: min(560px, calc(100vw - 32px)); }
+/* Saved: just the ✓ circle and "Saved." */
+.slide-save.is-done { width: 132px; }
+.slide-save.is-done .slide-save-note { left: 58px; opacity: 1; color: var(--onblack); }
+/* Hidden until there's something to save. */
+.slide-save { transition: width 0.45s cubic-bezier(0.22, 0.8, 0.24, 1), opacity 0.35s ease, transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1); }
+.slide-save.is-hidden { opacity: 0; transform: translateY(24px) scale(0.96); pointer-events: none; }
 .slide-save-note {
   position: absolute;
   left: 158px;
+  transition: opacity 0.3s ease 0.1s, left 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
   right: 18px;
   overflow: hidden;
   white-space: nowrap;
@@ -1595,7 +1602,6 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
   font-size: 11.5px;
   color: var(--onblack2);
   opacity: 0;
-  transition: opacity 0.3s ease 0.1s;
   pointer-events: none;
 }
 .slide-save.is-open .slide-save-note { opacity: 1; }
@@ -1625,9 +1631,9 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
 .slide-save-handle:hover { background: var(--black2); }
 .slide-save-handle.is-dragging { transition: width 0.3s ease; cursor: grabbing; }
 .slide-save-handle.is-small { width: 40px; background: var(--black2); }
-.slide-save-label,
-.slide-save-tick { grid-area: 1 / 1; transition: opacity 0.2s ease; }
-.slide-save-tick { opacity: 0; }
+.slide-save-label { grid-area: 1 / 1; transition: opacity 0.2s ease; }
+/* The ✓ is pinned to the exact centre of the circle, whatever width the button is mid-animation. */
+.slide-save-tick { position: absolute; inset: 0; margin: auto; opacity: 0; transition: opacity 0.2s ease; }
 .slide-save-handle.is-small .slide-save-label { opacity: 0; transition-duration: 0.1s; }
 .slide-save-handle.is-small .slide-save-tick { opacity: 1; }
 /* While dragging or sliding, the note gives way to the button. */

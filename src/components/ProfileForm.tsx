@@ -426,8 +426,9 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
         <div className="pointer-events-auto">
           <SlideToSave
             note="Private to you. Sent to Google Gemini only to score roles and write documents."
-            status={msg ? msg.text : dirty ? "Unsaved changes" : null}
+            status={msg && !msg.ok ? msg.text : dirty ? "Unsaved changes" : null}
             error={!!msg && !msg.ok}
+            visible={dirty || (!!msg && !msg.ok)}
             onSave={() => save()}
           />
         </div>

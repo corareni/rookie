@@ -13,6 +13,14 @@ import { useTasks } from "@/components/Tasks";
 import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
 
+/** Each stat in its own light colour: submitted lilac, interview or test blue, offer green, rejected red. */
+const KPI_TONE: Partial<Record<Status, string>> = {
+  submitted: "!bg-[var(--lilac)]",
+  interview: "!bg-[var(--sky)]",
+  offer: "!bg-[var(--goodbg)]",
+  rejected: "!bg-[var(--badbg)]",
+};
+
 const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
   { title: "Interviews and assessments", statuses: ["interview", "assessment"], tone: "bg-[var(--warnbg)] text-[var(--warn)]" },
   { title: "Offers", statuses: ["offer"], tone: "bg-[var(--goodbg)] text-[var(--good)]" },
@@ -79,6 +87,17 @@ export default function ApplicationsTable({
     if (error) setError(`Couldn't save: ${error.message}`);
   }
 
+  const [removing, setRemoving] = useState<Application | null>(null);
+  async function removeRole(a: Application) {
+    setRemoving(null);
+    setItems((prev) => prev.filter((x) => x.id !== a.id));
+    const { error } = await createClient().from("applications").delete().eq("id", a.id);
+    if (error) {
+      setItems((prev) => [...prev, a]);
+      setError(`Couldn't remove it: ${error.message}`);
+    }
+  }
+
   async function changeStatus(removeEvent: boolean) {
     if (!pending) return;
     const { id, to } = pending;
@@ -129,7 +148,7 @@ export default function ApplicationsTable({
         )}
         <div className="kpis mt-6">
           {(["submitted", "interview", "offer", "rejected"] as Status[]).map((s) => (
-            <div key={s} className="kpi">
+            <div key={s} className={`kpi ${KPI_TONE[s]}`}>
               <b>
                 {s === "interview"
                   ? items.filter((a) => a.status === "interview" || a.status === "assessment").length
@@ -179,6 +198,7 @@ export default function ApplicationsTable({
                     ev={events[a.id]}
                     mail={fromEmail[a.id]?.status === a.status ? fromEmail[a.id] : undefined}
                     onSave={(p) => save(a.id, p)}
+                    onRemove={() => setRemoving(a)}
                     onStatus={(to) =>
                       setPending({
                         id: a.id,
@@ -198,6 +218,20 @@ export default function ApplicationsTable({
         </div>
       )}
       <StatusConfirm change={pending} onCancel={() => setPending(null)} onConfirm={changeStatus} />
+      <Dialog
+        open={!!removing}
+        title={removing ? `Remove ${removing.company ?? removing.title}?` : ""}
+        onCancel={() => setRemoving(null)}
+        actions={[
+          { label: "Keep it", tone: "ghost", onClick: () => setRemoving(null) },
+          { label: "Remove", tone: "danger", onClick: () => removing && removeRole(removing) },
+        ]}
+      >
+        <p>
+          It disappears from your Applications, Calendar and Board, with its CV and cover letter drafts and notes. Copies
+          you saved in your Library stay. This can&apos;t be undone.
+        </p>
+      </Dialog>
       <Dialog
         open={emailOpen}
         title="Got an email from a company?"
@@ -222,12 +256,14 @@ function Row({
   mail,
   onSave,
   onStatus,
+  onRemove,
 }: {
   a: Application;
   ev?: EventFields;
   mail?: { at: string; summary: string; link: string | null };
   onSave: (p: Partial<Application>) => void;
   onStatus: (s: Status) => void;
+  onRemove: () => void;
 }) {
   const [next, setNext] = useState(a.next_step ?? "");
   const days = a.deadline ? daysUntil(a.deadline) : null;
@@ -296,16 +332,26 @@ function Row({
           ))}
         </select>
       </label>
-      <label>
-        <span className="sr-only">Next step for {a.company ?? a.title}</span>
-        <input
-          className="field !py-2 !text-[14px]"
-          placeholder="Next step, e.g. online test by Fri"
-          value={next}
-          onChange={(e) => setNext(e.target.value)}
-          onBlur={() => next !== (a.next_step ?? "") && onSave({ next_step: next })}
-        />
-      </label>
+      <div className="grid gap-1.5">
+        <label>
+          <span className="sr-only">Next step for {a.company ?? a.title}</span>
+          <input
+            className="field !py-2 !text-[14px]"
+            placeholder="Next step, e.g. online test by Fri"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            onBlur={() => next !== (a.next_step ?? "") && onSave({ next_step: next })}
+          />
+        </label>
+        <button
+          type="button"
+          className="justify-self-end text-[12.5px] text-[var(--mute)] hover:text-[var(--bad)]"
+          aria-label={`Remove ${a.company ?? a.title}`}
+          onClick={onRemove}
+        >
+          Remove
+        </button>
+      </div>
     </div>
   );
 }

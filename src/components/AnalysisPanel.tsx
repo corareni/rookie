@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { analyzeRole } from "@/lib/ai-client";
-import { scoreTone, type Application } from "@/lib/applications";
+import { isUrl, scoreTone, type Application } from "@/lib/applications";
+import { createClient } from "@/lib/supabase/client";
 
 export default function AnalysisPanel({ a }: { a: Application }) {
   const router = useRouter();
   const [text, setText] = useState("");
+  const [link, setLink] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const analysed = a.job_status === "ready" && a.score;
@@ -25,6 +27,29 @@ export default function AnalysisPanel({ a }: { a: Application }) {
       setBusy(false);
     }
   }
+
+  /** Save a pasted job link on the role, then let rookie read it (fills in company, role, deadline and score). */
+  async function readLink() {
+    const url = link.trim();
+    if (!isUrl(url)) return setError("Paste the full link, starting with http:// or https://");
+    setBusy(true);
+    setError(null);
+    const { error: e } = await createClient().from("applications").update({ job_url: url, job_text: null }).eq("id", a.id);
+    if (e) {
+      setBusy(false);
+      return setError(`Couldn't save the link: ${e.message}`);
+    }
+    try {
+      await analyzeRole(a.id);
+      setLink("");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Couldn't read that link. Paste the description instead.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  const missing = !a.company || !a.role;
 
   return (
     <section className="card mt-4" aria-labelledby="analysis">
@@ -67,6 +92,30 @@ export default function AnalysisPanel({ a }: { a: Application }) {
               ? "rookie couldn't read the job page (sites like LinkedIn and Workday often block it). Paste the job description below instead."
               : "Paste the job description below, or add a job link above, and rookie will score it for you."}
         </p>
+      )}
+
+      {!a.job_url && (
+        <div className="mt-5 grid gap-2">
+          <label htmlFor="job-link" className="label">
+            {missing ? "Paste the job link and rookie fills in the missing details" : "Paste the job link"}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <input
+              id="job-link"
+              type="text"
+              inputMode="url"
+              className="field min-w-0 flex-1 !text-[14px]"
+              placeholder="https://… the job ad or application page"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && link.trim() && void readLink()}
+            />
+            <button type="button" className="btn" disabled={busy || !link.trim()} onClick={readLink}>
+              {busy ? "Reading…" : "Read this link"}
+            </button>
+          </div>
+          <p className="text-[12.5px] text-[var(--mute)]">Or paste the description below if the site blocks reading.</p>
+        </div>
       )}
 
       <div className="mt-5 grid gap-2">
