@@ -295,7 +295,7 @@ export default function Tour({ onboarded }: { onboarded: boolean }) {
           </span>
           <span className="flex flex-wrap justify-end gap-2">
             {!last && (
-              <button type="button" className="text-[13px] font-bold text-[var(--mute)] hover:text-[var(--ink)]" onClick={finish}>
+              <button type="button" className="mr-4 text-[13px] font-bold text-[var(--mute)] hover:text-[var(--ink)]" onClick={finish}>
                 Skip tour
               </button>
             )}

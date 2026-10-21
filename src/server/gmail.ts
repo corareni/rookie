@@ -122,3 +122,11 @@ export async function listAccounts(supabase: import("@supabase/supabase-js").Sup
 /** Narrows a query to one account (by id after phase 7, else the user's only row). */
 export const forAccount = <T extends { eq: (c: string, v: string) => T; not: (c: string, o: string, v: null) => T }>(q: T, a: GmailAccount) =>
   a.id ? q.eq("id", a.id) : q.not("user_id", "is", null);
+
+/** Recent emails that look like part of an application process, whichever company they're from. */
+export async function searchApplications(access: string, days: number, max = 12) {
+  const words = '(application OR applied OR applying OR interview OR assessment OR "online test" OR "next steps" OR offer OR internship OR "working student" OR graduate OR "thank you for your interest")';
+  const q = `newer_than:${days}d -from:me -in:chats -category:promotions -category:social subject:${words}`;
+  const r = await gmail<{ messages?: { id: string }[] }>(access, `messages?maxResults=${max}&q=${encodeURIComponent(q)}`);
+  return (r.messages ?? []).map((m) => m.id);
+}

@@ -1,8 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { hasChanges, readEmailUpdate } from "@/server/ai/email";
-import { AiError } from "@/server/ai/gemini";
+import { AiError, MODEL_FAST, generateJson } from "@/server/ai/gemini";
 import { consumeRun, errorResponse, getUser } from "@/server/ai/limits";
-import { forAccount, gmailConfigured, listAccounts, readMessage, refreshAccess, searchCompany } from "@/server/gmail";
+import { forAccount, gmailConfigured, listAccounts, readMessage, refreshAccess, searchApplications, searchCompany } from "@/server/gmail";
+import { discoverPrompt, discoverSchema, discoverSystem, noLongDashes, type FoundApplication } from "@/server/ai/prompts";
 import { notify } from "@/server/notify";
 
 export const maxDuration = 60;
@@ -12,6 +13,22 @@ const ORDER = ["interested", "submitted", "assessment", "interview", "offer"];
 const TERMINAL = ["rejected", "withdrawn"];
 const rank = (s: string) => ORDER.indexOf(s);
 const LABEL: Record<string, string> = { submitted: "Submitted", assessment: "Assessment", interview: "Interview", offer: "Offer", rejected: "Rejected", withdrawn: "Withdrawn" };
+
+/** Status, interview or test date, next step and deadline from an email, ready to save on a role. */
+function updatePatch(
+  status: string,
+  u: { event_at: string; event_kind: string; event_minutes: number; event_location: string; next_step: string; deadline: string },
+  tz = 0,
+) {
+  const patch: Record<string, unknown> = { status };
+  if (u.event_at && u.event_kind !== "none") {
+    const at = localToUtc(u.event_at, tz);
+    if (at) Object.assign(patch, { event_at: at, event_kind: u.event_kind, event_minutes: Math.min(720, Math.max(5, u.event_minutes || 60)), event_location: u.event_location || null });
+  }
+  if (u.next_step) patch.next_step = u.next_step.slice(0, 200);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(u.deadline)) patch.deadline = u.deadline;
+  return patch;
+}
 
 /** "2026-10-28T10:00" in the user's time zone (offset in minutes, as from getTimezoneOffset) to UTC. */
 function localToUtc(local: string, offset: number) {
@@ -146,13 +163,108 @@ export async function POST(request: Request) {
       );
     }
 
+    // Other application emails: roles that aren't on the board yet (or are, under a slightly different name).
+    let added = 0;
+    let needsInfo = 0;
+    if (!limited) {
+      const fresh: { id: string; date: string; text: string; account: string | null; subject: string }[] = [];
+      for (const l of live) {
+        const ids = (await searchApplications(l.access, days).catch(() => [])).filter((id) => !l.seen.has(id));
+        ids.forEach((id) => l.seen.add(id));
+        const msgs = await Promise.all(ids.map((id) => readMessage(l.access, id).catch(() => null)));
+        for (const m of msgs) if (m) fresh.push({ ...m, text: m.text.slice(0, 1800), account: l.a.email, subject: /Subject: (.*)/.exec(m.text)?.[1] ?? "" });
+      }
+      if (fresh.length) {
+        emails += fresh.length;
+        let ok = true;
+        try {
+          await consumeRun(supabase, "email");
+        } catch {
+          ok = false;
+          limited = true;
+        }
+        const found = ok
+          ? await generateJson<{ items: FoundApplication[] }>({
+              model: MODEL_FAST(),
+              system: discoverSystem,
+              prompt: discoverPrompt(day, fresh.slice(0, 12).map((m) => m.text)),
+              schema: discoverSchema,
+            })
+              .then((r) => noLongDashes(r.data).items ?? [])
+              .catch(() => [])
+          : [];
+        const { data: board } = await supabase.from("applications").select("id,title,company,role,status").neq("verdict", "binned");
+        const norm = (x: string | null | undefined) => (x ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const byCompany = new Map((board ?? []).filter((b) => b.company).map((b) => [norm(b.company), b]));
+        // Several emails about the same company in one go: handle the newest one.
+        const seenCompany = new Set<string>();
+        const items = found
+          .filter((f) => f.job_related && fresh[f.index])
+          .sort((a, b) => fresh[b.index].date.localeCompare(fresh[a.index].date));
+        for (const f of items) {
+          const m = fresh[f.index];
+          const key = norm(f.company) || `subject:${norm(m.subject)}`;
+          if (seenCompany.has(key)) continue;
+          seenCompany.add(key);
+          const ref = { id: m.id, account: m.account };
+          const status = f.status === "none" ? "submitted" : f.status;
+          const known = f.company ? byCompany.get(norm(f.company)) : undefined;
+          if (known) {
+            // Already on the board: same rule as above, only clear progress is applied.
+            if (!(TERMINAL.includes(status) || rank(status) > rank(known.status))) continue;
+            const patch = updatePatch(status, f, tzOffset);
+            const { error } = await supabase.from("applications").update(patch).eq("id", known.id);
+            updates++;
+            if (!error) applied++;
+            await notify(supabase, {
+              key: `email:${known.id}:${m.id}`,
+              kind: "email",
+              title: `${known.company}: moved to ${LABEL[status] ?? status}`,
+              body: `From an email. ${f.summary}`,
+              href: `/app/a/${known.id}`,
+              application_id: known.id,
+              data: { applied: !error, from: known.status, suggestion: { status, summary: f.summary }, mail: ref },
+            });
+            continue;
+          }
+          // Not on the board yet: add it to Applications at that stage; ask for anything the email didn't say.
+          const missing = [!f.company && "company", !f.role && "role"].filter(Boolean) as string[];
+          const row = {
+            title: (f.role && f.company ? `${f.role} at ${f.company}` : f.role || f.company || m.subject || "Application from an email").slice(0, 300),
+            company: f.company?.slice(0, 200) || null,
+            role: f.role?.slice(0, 300) || null,
+            job_url: /^https?:\/\//.test(f.job_url) ? f.job_url.slice(0, 2000) : null,
+            submitted_on: m.date.slice(0, 10),
+            ...updatePatch(status, f, tzOffset),
+          };
+          const { data: created, error } = await supabase.from("applications").insert(row).select("id").single();
+          if (error || !created) continue;
+          added++;
+          if (missing.length) needsInfo++;
+          await notify(supabase, {
+            key: `email:new:${m.id}`,
+            kind: "email",
+            title: missing.length
+              ? `New application from an email: add the ${missing.join(" and ")}`
+              : `Added to Applications: ${f.company} · ${f.role}`,
+            body: missing.length
+              ? `${f.summary} The email didn't say the ${missing.join(" or ")}. Open it and fill in what's missing.`
+              : `From an email. ${f.summary}`,
+            href: `/app/a/${created.id}`,
+            application_id: created.id,
+            data: { applied: true, from: null, suggestion: { status, summary: f.summary }, mail: ref, missing },
+          });
+        }
+      }
+    }
+
     for (const l of live) {
       await forAccount(
         supabase.from("gmail_connections").update({ last_checked_at: new Date().toISOString(), seen: [...l.seen].slice(-500) }),
         l.a,
       );
     }
-    return Response.json({ state: "done", roles: list.length, emails, updates, applied, limited, accounts: live.length, expired });
+    return Response.json({ state: "done", roles: list.length, emails, updates, applied, added, needsInfo, limited, accounts: live.length, expired });
   } catch (e) {
     return errorResponse(e);
   }

@@ -125,19 +125,24 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
         setGmailHelp(r.state === "unavailable" ? "unavailable" : r.expired ? "expired" : "connect");
         return;
       }
+      const extra = r.added
+        ? ` ${r.added} new application${r.added > 1 ? "s" : ""} added to Applications${r.needsInfo ? `, ${r.needsInfo} need${r.needsInfo > 1 ? "" : "s"} details from you (see the bell)` : ""}.`
+        : "";
       setProgress({
-        title: r.updates ? `${r.updates} update${r.updates > 1 ? "s" : ""} found` : "No news yet",
+        title: r.updates || r.added ? `${(r.updates ?? 0) + (r.added ?? 0)} update${(r.updates ?? 0) + (r.added ?? 0) > 1 ? "s" : ""} found` : "No news yet",
         detail: r.updates
-          ? r.applied
-            ? `${r.applied} application${r.applied > 1 ? "s" : ""} moved to a new stage. ${r.updates > r.applied ? "The rest are in the bell to review." : "See the bell for details."}`
-            : "Open the bell to review and apply them."
+          ? (r.applied
+              ? `${r.applied} application${r.applied > 1 ? "s" : ""} moved to a new stage. ${r.updates > r.applied ? "The rest are in the bell to review." : "See the bell for details."}`
+              : "Open the bell to review and apply them.") + extra
+          : r.added
+            ? extra.trim()
           : r.roles
             ? `Checked ${r.roles} application${r.roles > 1 ? "s" : ""}${r.emails ? ` and ${r.emails} email${r.emails > 1 ? "s" : ""}` : ""}. Nothing changes your status.`
-            : "Mark a role as applied first: rookie checks emails about your applications.",
+            : "No emails about applications found in your inbox.",
         done: true,
       });
       refreshNotifications();
-      if (r.applied) router.refresh();
+      if (r.applied || r.added) router.refresh();
     } catch (e) {
       setProgress({ title: "Couldn't check your emails", detail: e instanceof Error ? e.message : "Try again.", done: true });
     } finally {
