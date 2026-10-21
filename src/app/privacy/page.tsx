@@ -17,6 +17,10 @@ export default function PrivacyPage() {
           <h2 className="text-lg font-semibold text-[var(--ink)]">What we store</h2>
           <ul className="mt-2 list-disc pl-5">
             <li>Your email address and a securely hashed password (handled by Supabase Auth).</li>
+            <li>
+              If you sign in with Google: your name, email address and profile picture from your Google account. Rookie
+              never sees your Google password.
+            </li>
             <li>The applications you add: title, job link, company, role, location, dates, status and notes.</li>
             <li>Your profile, if you add one: your experience, education, skills and other details, your story points, your barriers, any AI memory you paste in, and contact details. An uploaded CV file is read once and never stored; only the text you keep is saved.</li>
             <li>The AI analyses, comparisons, CVs and cover letters Rookie writes for you.</li>
