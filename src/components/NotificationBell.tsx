@@ -54,7 +54,7 @@ function BellIcon() {
  * The bell: updates about your roles (analysis done, scores that moved after a profile update, deadlines and
  * interviews coming up, news from your emails). Click one to open it, × to delete it.
  */
-export default function NotificationBell() {
+export default function NotificationBell({ readEmails = true }: { readEmails?: boolean }) {
   const router = useRouter();
   const { checkEmails, checking } = useTasks();
   const [items, setItems] = useState<Item[]>([]);
@@ -187,6 +187,7 @@ export default function NotificationBell() {
             </ul>
           )}
 
+          {readEmails && (
           <div className="mt-2 border-t border-white/10 pt-2">
             <button
               type="button"
@@ -200,6 +201,7 @@ export default function NotificationBell() {
               {checking ? "Checking emails…" : "Check emails"}
             </button>
           </div>
+          )}
         </div>
       )}
 

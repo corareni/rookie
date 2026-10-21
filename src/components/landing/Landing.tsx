@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RookieBot } from "@/components/ChatBubble";
 import { Wordmark } from "@/components/Header";
 import { Badge, InterestedScreen, OfferScreen, Phone } from "@/components/landing/Screens";
 import Reveal from "@/components/Reveal";
@@ -153,7 +154,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         </section>
         <section className="tile span-7 flex flex-col justify-center" aria-labelledby="everything-h">
           {/* The heading is the first block, so six blocks fill a clean 2×3 (phone) or 3×2 rectangle. */}
-          <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+          <ul className="grid auto-rows-fr grid-cols-2 gap-2.5 sm:grid-cols-3">
             <li className="flex flex-col justify-between gap-3 px-1 py-4 text-[var(--ink)]">
               <h2 id="everything-h" className="leading-[1.1] tracking-tight">
                 <b className="block text-[clamp(30px,3vw,38px)] leading-none tracking-[-0.03em]">Everything</b>{" "}
@@ -177,22 +178,75 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       </div>
 
       {/* Scroll story */}
-      <section id="how" aria-labelledby="journey" className="mt-16 scroll-mt-6">
-        <Reveal className="mb-4">
+      <section id="how" aria-labelledby="journey" className="mt-28 scroll-mt-6 lg:mt-40">
+        <Reveal className="mb-10">
           <h2 id="journey" className="text-[clamp(30px,4vw,52px)] leading-none tracking-[-0.03em]">
             From first link <span className="font-light">to first day.</span>
           </h2>
-          <p className="mt-3 text-[16px] text-[var(--ink2)]">Six steps, one place. Scroll to see each part of rookie.</p>
+          <p className="mt-4 max-w-[560px] text-[17px] leading-relaxed text-[var(--ink2)]">
+            Six steps, one place. Scroll to see each part of rookie.
+          </p>
         </Reveal>
         <StepScroller />
       </section>
 
+      {/* Meet rookie, the helper bot */}
+      <section aria-labelledby="meet-h" className="mt-28 lg:mt-40">
+        <div className="grid items-center gap-12 lg:grid-cols-[1fr_1.05fr] lg:gap-20">
+          <Reveal>
+            <span className="chip-tag">Your helper</span>
+            <h2 id="meet-h" className="mt-6 text-[clamp(34px,4.6vw,60px)] leading-[1.02] tracking-[-0.035em]">
+              Meet rookie<span className="text-[var(--lilac)]">.</span>{" "}
+              <span className="font-light">Questions answered, from your own board.</span>
+            </h2>
+            <p className="mt-6 max-w-[520px] text-[17px] leading-relaxed text-[var(--ink2)]">
+              Not sure which role to go for, how to prepare for a test or what your CV is missing? Ask rookie. It knows
+              your roles, scores, deadlines and profile, gives you a straight answer and takes you to the right page.
+            </p>
+            <ul className="mt-8 grid max-w-[520px] gap-4 text-[15px]">
+              {[
+                ["Knows your board", "Answers use your own roles, scores, deadlines and profile, never made-up facts."],
+                ["Points you the right way", "Every answer links to the role, the calendar or the page you need next."],
+                ["Stays out of your way", "Sits in the corner of every page. Drag it anywhere; it never changes anything by itself."],
+              ].map(([t, d]) => (
+                <li key={t} className="flex gap-3">
+                  <span className="mt-[7px] h-2 w-2 flex-none rounded-full bg-[var(--lilac)] ring-4 ring-[var(--lilac)]/30" aria-hidden="true" />
+                  <span>
+                    <b>{t}.</b> <span className="text-[var(--ink2)]">{d}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+          <Reveal delay={120} className="tile relative overflow-hidden !p-8 lg:!p-12" aria-label="Example chat with rookie">
+            <div className="meet-bot mx-auto grid size-24 place-items-center rounded-full bg-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.35)]">
+              <RookieBot size={72} />
+            </div>
+            <div className="mx-auto mt-8 grid max-w-[420px] gap-3 text-[14px]">
+              <p className="chat-msg chat-user">Which role should I focus on this week?</p>
+              <div className="chat-msg chat-bot !bg-white">
+                <p>
+                  <b>Spotify</b>, Business Analyst Intern. It scores 8/10, closes on Friday and fits your SQL dashboards.
+                  Start there, then Google&apos;s APM role next week.
+                </p>
+                <span className="mt-2.5 flex flex-wrap gap-1.5">
+                  <span className="chat-link">Open Spotify →</span>
+                  <span className="chat-link">Calendar →</span>
+                </span>
+              </div>
+              <p className="chat-msg chat-user">How do I prepare for the online test?</p>
+            </div>
+            <p className="mt-6 text-center text-[12px] text-[var(--ink2)]">Example. Chats stay in your browser.</p>
+          </Reveal>
+        </div>
+      </section>
+
       {/* How it works */}
-      <section aria-labelledby="how-h" className="mt-16">
+      <section aria-labelledby="how-h" className="mt-28 lg:mt-40">
         <h2 id="how-h" className="text-[clamp(30px,4vw,48px)] leading-none tracking-[-0.03em]">
           How it works. <span className="font-light">Four steps.</span>
         </h2>
-        <ol className="puzzle mt-6">
+        <ol className="puzzle mt-10">
           {HOW.map((h) => (
             <Reveal as="li" key={h.n} delay={(Number(h.n) % 2) * 90} className={`tile ${h.tone} ${h.span} flex min-h-[230px] flex-col justify-between gap-6`}>
               <span className="text-[56px] font-light leading-none tracking-[-0.04em]">{h.n}</span>
@@ -208,11 +262,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       </section>
 
       {/* The numbers */}
-      <section id="numbers" aria-labelledby="numbers-h" className="mt-16 scroll-mt-6">
+      <section id="numbers" aria-labelledby="numbers-h" className="mt-28 scroll-mt-6 lg:mt-40">
         <h2 id="numbers-h" className="text-[clamp(30px,4vw,48px)] leading-none tracking-[-0.03em]">
           The numbers. <span className="font-light">Why applying needs a better system.</span>
         </h2>
-        <div className="puzzle mt-6">
+        <div className="puzzle mt-10">
           {STATS.map((s) => (
             <Reveal as="article" key={s.value} className={`tile ${s.tone} ${s.span} flex min-h-[250px] flex-col justify-between gap-6`}>
               <p className="flex flex-wrap items-end gap-3">
@@ -253,8 +307,8 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         </div>
       </Reveal>
 
-      {/* Call to action: the offer, in one big red rectangle */}
-      <Reveal as="section" className="tile tile-mint relative mt-16 overflow-hidden">
+      {/* The offer */}
+      <Reveal as="section" className="tile tile-mint relative mt-28 overflow-hidden lg:mt-40 lg:!p-14">
         <div className="grid items-center gap-10 lg:grid-cols-[1.25fr_1fr]">
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[12px] uppercase tracking-[0.14em]">
@@ -264,9 +318,9 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               You landed <span className="font-light">the right one.</span>
             </h2>
             <p className="mt-5 flex items-center gap-3 text-[18px]">
-              <Badge co="google" size={34} />
+              <Badge co="rookie" size={34} />
               <span>
-                <b>Google</b> <span className="font-light">· Associate Product Manager Intern</span>
+                <b>rookie</b> <span className="font-light">· Software Engineer Intern</span>
               </span>
             </p>
             <p className="mt-6 max-w-[480px] text-[16px] text-[var(--ink2)]">
@@ -278,15 +332,38 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             </Link>
           </div>
           <div className="grid place-items-center">
-            <Phone label="Example screen: an application tracked all the way to an offer from Google">
+            <Phone label="Example screen: an application tracked all the way to an offer for a Software Engineer Intern role at rookie">
               <OfferScreen />
             </Phone>
           </div>
         </div>
       </Reveal>
 
+      {/* Call to action, on white */}
+      <section aria-labelledby="start-h" className="mx-auto max-w-[760px] px-2 py-28 text-center lg:py-40">
+        <Reveal>
+          <span className="chip-tag">Free for students and graduates</span>
+          <h2 id="start-h" className="mt-7 text-[clamp(36px,5vw,64px)] leading-[1.02] tracking-[-0.035em]">
+            Your next application <span className="font-light">starts here.</span>
+          </h2>
+          <p className="mx-auto mt-6 max-w-[520px] text-[17px] leading-relaxed text-[var(--ink2)]">
+            Add your profile once. Paste a job link and get an honest score, a tailored CV and cover letter, and every
+            date in one calendar.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <Link href={cta.href} className="btn btn-lg">
+              {cta.label}
+            </Link>
+            <a href="#how" className="btn btn-ghost btn-lg">
+              See how it works
+            </a>
+          </div>
+          <p className="mt-6 text-[13px] text-[var(--mute)]">Private to you · Data stored in the EU · No card needed</p>
+        </Reveal>
+      </section>
+
       {/* Footer */}
-      <footer className="tile tile-black mt-[var(--gap)] !pb-8">
+      <footer className="tile tile-black !pb-8">
         <p className="text-center text-[clamp(64px,17vw,220px)] font-bold leading-[0.9] tracking-[-0.05em]" aria-hidden="true">
           {site.name.toLowerCase()}
           <span className="text-[var(--lilac)]">.</span>

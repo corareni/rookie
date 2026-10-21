@@ -6,7 +6,7 @@ import { useTasks } from "@/components/Tasks";
 type Status = { configured: boolean; connected: boolean; email: string | null; lastChecked: string | null };
 
 /** Profile tile: connect Gmail (read-only) so "Check emails" can look for news about your applications. */
-export default function GmailConnection() {
+export default function GmailConnection({ allowed, onAllowed }: { allowed: boolean; onAllowed: (on: boolean) => void }) {
   const { checkEmails, checking } = useTasks();
   const [st, setSt] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
@@ -17,6 +17,13 @@ export default function GmailConnection() {
       .then(setSt)
       .catch(() => setSt(null));
   }, []);
+
+  async function toggle() {
+    const on = !allowed;
+    // Switching off also disconnects Gmail, so nothing can be read any more.
+    if (!on && st?.connected) await disconnect();
+    onAllowed(on);
+  }
 
   async function disconnect() {
     setBusy(true);
@@ -29,7 +36,7 @@ export default function GmailConnection() {
     <section className="tile tile-butter span-12 flex flex-wrap items-center justify-between gap-4" aria-labelledby="gmail-h">
       <div className="max-w-[640px]">
         <h2 id="gmail-h" className="text-[18px]">
-          <b>Gmail</b> <span className="font-light">: let rookie spot replies from companies</span>
+          <b>Emails</b> <span className="font-light">: let rookie spot replies from companies</span>
         </h2>
         <p className="mt-1 text-[14px] text-[var(--ink2)]">
           {!st
@@ -43,7 +50,18 @@ export default function GmailConnection() {
                 : "Read-only access. rookie looks for emails about your applications and suggests status updates in the bell. You approve every change."}
         </p>
       </div>
-      {st?.configured && (
+      <label className="flex w-full cursor-pointer items-center justify-between gap-4 rounded-2xl bg-white px-4 py-3">
+        <span>
+          <b className="block text-[14px]">Let rookie read my emails</b>
+          <span className="text-[13px] text-[var(--ink2)]">
+            {allowed
+              ? "On: you can paste emails or check Gmail, and rookie suggests status updates."
+              : "Off: rookie never reads your emails, and the email buttons are hidden."}
+          </span>
+        </span>
+        <input type="checkbox" role="switch" className="rk-switch" checked={allowed} onChange={toggle} aria-label="Let rookie read my emails" />
+      </label>
+      {allowed && st?.configured && (
         <span className="flex flex-wrap gap-2">
           {st.connected ? (
             <>

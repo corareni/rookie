@@ -10,6 +10,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   try {
     await getUser(supabase);
+    const { data: prefs } = await supabase.from("profiles").select("profile").maybeSingle();
+    if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
+      throw new AiError("Email reading is switched off on your Profile.", 403);
     const { id, text, today } = (await request.json()) as { id?: string; text?: string; today?: string };
     if (!id) throw new AiError("Pick the role this email is about.", 400);
     const email = (text ?? "").trim();

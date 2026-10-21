@@ -3,12 +3,14 @@ import ApplicationsTable from "@/components/ApplicationsTable";
 import type { EventFields } from "@/components/EventPanel";
 import { APPLIED_STATUSES, COLUMNS, type Application } from "@/lib/applications";
 import { withEventNote } from "@/lib/event-columns";
+import { PROFILE_COLUMNS, readsEmails, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Applications · rookie" };
 
 export default async function ApplicationsPage({ searchParams }: PageProps<"/app/applications">) {
   const supabase = await createClient();
+  const { data: prof } = await supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle();
   const { data } = await supabase
     .from("applications")
     .select(COLUMNS)
@@ -22,6 +24,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
     <ApplicationsTable
       initial={(data ?? []) as unknown as Application[]}
       events={Object.fromEntries((events ?? []).map(({ id, ...e }) => [id, e as EventFields]))}
+      readEmails={readsEmails(prof ? toProfileData(prof) : null)}
       gmail={typeof (await searchParams).gmail === "string" ? ((await searchParams).gmail as string) : null}
     />
   );

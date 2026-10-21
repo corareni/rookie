@@ -149,6 +149,15 @@ a {
   color: var(--ink);
   font-weight: 700;
 }
+/* On wide screens the sections sit in the exact centre of the bar. */
+@media (min-width: 1400px) {
+  .topbar:not(.is-compact) .topnav {
+    position: absolute;
+    left: 50%;
+    translate: -50% 0;
+    margin: 0;
+  }
+}
 /* One pill that slides between sections instead of jumping. */
 .topnav.has-pill { position: relative; }
 .topnav.has-pill a { position: relative; z-index: 1; transition: color 0.3s ease; }
@@ -760,10 +769,26 @@ a {
   overflow: hidden;
 }
 .step-card {
-  transition: opacity 0.7s ease;
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 0.8, 0.24, 1);
+  transform-origin: 50% 0;
 }
+/* Step cards stack like a deck as you scroll: each sticks a little lower than the one before. */
+@media (min-width: 1024px) {
+  .step-stack { position: sticky; top: var(--stack-top); }
+  .step-stack .step-card { box-shadow: 0 -18px 40px -30px rgba(0, 0, 0, 0.35); }
+}
+/* Phones: the next screen slides up over the previous one, which sinks back a little. */
+.phone-stack {
+  transition:
+    transform 0.8s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.6s ease,
+    filter 0.6s ease;
+}
+.phone-stack[data-state="next"] { transform: translateY(70px); opacity: 0; pointer-events: none; }
+.phone-stack[data-state="under"] { transform: translateY(-14px) scale(0.93); opacity: 0.55; filter: saturate(0.6); pointer-events: none; }
+.phone-stack[data-state="on"] { transform: none; opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .spin, .step-card, .screen-fade { animation: none !important; transition: none !important; }
+  .spin, .step-card, .screen-fade, .phone-stack { animation: none !important; transition: none !important; }
 }
 
 /* Writing animation */
@@ -1085,9 +1110,7 @@ a {
   width: 56px;
   height: 56px;
 }
-body:has(.rk-bottom-bar) .chat-dock:not(.is-placed) { bottom: 96px; }
 body:has(.chat-dock:not(.is-placed)) .rk-toasts { bottom: 86px; }
-body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
 .chat-fab {
   display: grid;
   place-items: center;
@@ -1215,7 +1238,6 @@ body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
   /* On phones the chat uses the width of the screen, under the header. */
   .chat-panel,
   .chat-dock.is-placed .chat-panel { position: fixed; left: 16px; right: 16px; top: 84px; bottom: auto; width: auto; height: calc(100dvh - 180px); }
-  body:has(.rk-bottom-bar) .chat-dock:not(.is-placed) { bottom: 150px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bot-eyes, .chat-fab:hover .bot, .chat-fab:hover .bot-eyes, .chat-fab:hover .bot-antenna, .chat-name,
@@ -1295,4 +1317,80 @@ body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .phone-float .phone { animation: none; }
+}
+
+/* On/off switch */
+.rk-switch {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--tile2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+.rk-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--frame);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.3s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.rk-switch:checked { background: var(--black); }
+.rk-switch:checked::after { transform: translateX(18px); }
+.rk-switch:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+/* Profile save pill: same rounding as the compact header, a little smaller */
+.save-pill {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: calc(100vw - 32px);
+  border-radius: 999px;
+  background: var(--black);
+  color: var(--onblack);
+  padding: 5px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 16px 34px -14px rgba(0, 0, 0, 0.55);
+}
+.save-note {
+  overflow: hidden;
+  max-width: 0;
+  white-space: nowrap;
+  font-size: 12.5px;
+  color: var(--onblack2);
+  opacity: 0;
+  transition:
+    max-width 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.3s ease,
+    padding 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.save-pill:hover .save-note,
+.save-pill:focus-within .save-note,
+.save-note.is-shown {
+  max-width: 520px;
+  opacity: 1;
+  padding: 0 10px 0 14px;
+}
+.save-note.is-shown { color: var(--onblack); }
+@media (max-width: 639px) {
+  .save-pill:hover .save-note:not(.is-shown) { max-width: 0; padding: 0; opacity: 0; }
+  .save-note.is-shown { max-width: 200px; text-overflow: ellipsis; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-note { transition: none; }
+}
+
+/* Landing: rookie floats gently in the "Meet rookie" card */
+.meet-bot { animation: phone-float 5s ease-in-out infinite; }
+.meet-bot .bot-antenna { animation: bot-antenna 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .meet-bot, .meet-bot .bot-antenna { animation: none; }
 }

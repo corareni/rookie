@@ -41,7 +41,16 @@ const subscribe = (cb: () => void) => {
   return () => mq.removeEventListener("change", cb);
 };
 
-export default function Header({ email, name }: { email: string | null; name: string | null }) {
+export default function Header({
+  email,
+  name,
+  readEmails = true,
+}: {
+  email: string | null;
+  name: string | null;
+  /** Off when the user switched off email reading on their Profile. */
+  readEmails?: boolean;
+}) {
   const path = usePathname();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -176,13 +185,13 @@ export default function Header({ email, name }: { email: string | null; name: st
 
         <div className={`ml-auto flex flex-none items-center gap-2 ${keepAuth ? "" : "morph-part"}`} inert={compact && !keepAuth}>
           {who && !phone && (
-            <span className="max-w-[200px] truncate text-[13.5px] text-[var(--onblack2)] max-lg:hidden">{who}</span>
+            <span className="max-w-[160px] truncate text-[13.5px] text-[var(--onblack2)] max-lg:hidden">{who}</span>
           )}
           {auth(true)}
         </div>
 
         {/* Always visible when signed in, in the full bar and the compact pill. */}
-        {email && <NotificationBell />}
+        {email && <NotificationBell readEmails={readEmails} />}
 
         <button
           type="button"

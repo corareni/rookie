@@ -8,7 +8,7 @@ import EventPanel, { type EventFields } from "@/components/EventPanel";
 import InterviewPrep from "@/components/InterviewPrep";
 import { COLUMNS, type Application } from "@/lib/applications";
 import type { CvContent, Doc, LetterContent } from "@/lib/documents";
-import { PROFILE_COLUMNS, profileAsText, profileComplete, toProfileData } from "@/lib/profile";
+import { PROFILE_COLUMNS, profileAsText, profileComplete, readsEmails, toProfileData } from "@/lib/profile";
 import { withEventNote, type EventRow } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
@@ -86,7 +86,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
           initial={((prep?.interview_prep as { questions?: [] } | null)?.questions ?? []) as never[]}
         />
       )}
-      {(
+      {readsEmails(pd) && (
         <section id="email" className="mt-8 scroll-mt-20" aria-labelledby="email-h">
           <h2 id="email-h" className="sec">
             <small>[ ]</small> Got an email? <span className="font-light text-[var(--mute)]">· rookie updates the status for you</span>

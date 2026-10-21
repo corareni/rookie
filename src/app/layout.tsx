@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   } = await supabase.auth.getUser();
   // The name from the user's profile (CV header), else from their Google account. No name yet: show none,
   // it appears once they add their CV.
-  const { data: profile } = user ? await supabase.from("profiles").select("contact").maybeSingle() : { data: null };
+  const { data: profile } = user ? await supabase.from("profiles").select("contact,profile").maybeSingle() : { data: null };
   const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
   const name = ((profile?.contact as { name?: string } | null)?.name || meta.full_name || meta.name || "").trim();
 
@@ -41,7 +41,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <div className="frame print:m-0 print:rounded-none print:p-0">
           <TasksProvider>
-            <Header email={user?.email ?? null} name={name || null} />
+            <Header
+              email={user?.email ?? null}
+              name={name || null}
+              readEmails={(profile?.profile as { read_emails?: boolean } | null)?.read_emails !== false}
+            />
             <div className="wrap pt-4 pb-6">{children}</div>
             {user && <ChatBubble userId={user.id} />}
           </TasksProvider>

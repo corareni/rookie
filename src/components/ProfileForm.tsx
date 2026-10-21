@@ -7,7 +7,7 @@ import GmailConnection from "@/components/GmailConnection";
 import { useTasks } from "@/components/Tasks";
 import { ChipList, EntryList, LinkList, ProjectList } from "@/components/profile/Fields";
 import { importCv } from "@/lib/ai-client";
-import { profileComplete, type BarrierRule, type Contact, type ProfileData, type StructuredProfile } from "@/lib/profile";
+import { profileComplete, readsEmails, type BarrierRule, type Contact, type ProfileData, type StructuredProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 import CloseIcon from "@/components/CloseIcon";
 
@@ -22,7 +22,12 @@ const CONTACT: [keyof Contact, string, string][] = [
 ];
 
 /** The parts of the profile a score depends on (not contact details or writing notes). */
-const scoreBasis = (d: ProfileData) => JSON.stringify([d.cv_text, d.profile, d.story_points, d.memory, d.barriers]);
+const scoreBasis = (d: ProfileData) => {
+  // The email setting doesn't change anything about a score.
+  const { read_emails: _setting, ...profile } = d.profile;
+  void _setting;
+  return JSON.stringify([d.cv_text, profile, d.story_points, d.memory, d.barriers]);
+};
 
 export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const [d, setD] = useState(initial);
@@ -405,16 +410,27 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             <textarea id="cv_text" rows={10} className="field mt-2 font-mono !text-[12.5px]" value={d.cv_text} onChange={(e) => update({ cv_text: e.target.value })} />
           </details>
         </section>
-        <GmailConnection />
+        <GmailConnection
+          allowed={readsEmails(d)}
+          onAllowed={async (on) => {
+            await saveNow({ profile: { ...d.profile, read_emails: on } });
+            router.refresh();
+          }}
+        />
       </div>
 
       {/* Save bar */}
-      <div className="rk-bottom-bar fixed inset-x-0 bottom-4 z-20 px-4">
-        <div className="mx-auto flex max-w-[680px] flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[18px] bg-[var(--black)] px-5 py-3.5 text-white shadow-xl max-sm:flex-col max-sm:items-stretch">
-          <span role={msg && !msg.ok ? "alert" : "status"} className="min-w-0 flex-1 text-[13px] leading-snug">
-            {msg ? msg.text : dirty ? "You have unsaved changes." : "Private to you. Sent to Google Gemini only to score roles and write documents."}
+      {/* A small pill like the compact header: just Save; the privacy note slides out on hover. Status
+          messages (unsaved, saved, errors) always show. */}
+      <div className="rk-bottom-bar pointer-events-none fixed inset-x-0 bottom-5 z-20 flex justify-center px-4">
+        <div className="save-pill group pointer-events-auto">
+          <span
+            role={msg && !msg.ok ? "alert" : "status"}
+            className={`save-note ${msg || dirty ? "is-shown" : ""}`}
+          >
+            {msg ? msg.text : dirty ? "Unsaved changes" : "Private to you. Sent to Google Gemini only to score roles and write documents."}
           </span>
-          <button type="button" className="pillbtn pillbtn-mint justify-center max-sm:w-full" disabled={saving} onClick={() => save()}>
+          <button type="button" className="pillbtn pillbtn-mint !px-4 !py-2 !text-[13.5px]" disabled={saving} onClick={() => save()}>
             {saving ? "Saving…" : "Save profile"}
           </button>
         </div>

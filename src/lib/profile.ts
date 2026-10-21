@@ -16,6 +16,8 @@ export type StructuredProfile = {
   fun_facts: string[];
   links: Link[];
   outside_work: string;
+  /** Whether rookie may read emails (pasted or from Gmail) to update applications. On unless switched off. */
+  read_emails?: boolean;
 };
 
 export type BarrierRule = { text: string; kind: "deal_breaker" | "concern" };
@@ -82,6 +84,9 @@ export function hasProfileContent(d: ProfileData) {
   const p = d.profile;
   return !!(d.cv_text.trim() || p.experience.length || p.education.length || p.projects.length);
 }
+
+/** The user allows rookie to read emails about their applications (on by default). */
+export const readsEmails = (d: Pick<ProfileData, "profile"> | null) => d?.profile.read_emails !== false;
 
 /** Enough to apply with: some experience or education, and a name for the CV header. */
 export function profileComplete(d: ProfileData) {

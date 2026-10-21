@@ -30,11 +30,14 @@ export default function ApplicationsTable({
   initial,
   events: initialEvents = {},
   gmail = null,
+  readEmails = true,
 }: {
   initial: Application[];
   events?: Record<string, EventFields>;
   /** Result of connecting Gmail, from the address Google sends the user back to. */
   gmail?: string | null;
+  /** Off when the user switched off email reading on their Profile: no email buttons. */
+  readEmails?: boolean;
 }) {
   const { checkEmails, checking } = useTasks();
   const checked = useRef(false);
@@ -102,7 +105,7 @@ export default function ApplicationsTable({
           Everything you&apos;ve applied to, where it stands and what&apos;s next. Mark a role as applied on the Board and it
           shows up here.
         </p>
-        {items.length > 0 && (
+        {items.length > 0 && readEmails && (
           <span className="mt-5 flex flex-wrap gap-2">
             <button type="button" className="btn !py-2.5" disabled={checking} onClick={checkEmails}>
               {checking ? "Checking your emails…" : "Check emails"}

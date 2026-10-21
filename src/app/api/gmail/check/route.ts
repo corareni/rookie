@@ -17,6 +17,9 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   try {
     await getUser(supabase);
+    const { data: prefs } = await supabase.from("profiles").select("profile").maybeSingle();
+    if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
+      throw new AiError("Email reading is switched off on your Profile.", 403);
     if (!gmailConfigured()) return Response.json({ state: "unavailable" });
     const { data: conn, error } = await supabase.from("gmail_connections").select("refresh_token,last_checked_at,seen").maybeSingle();
     if (error) return Response.json({ state: "unavailable" });

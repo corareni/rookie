@@ -411,7 +411,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
 }
 
 /** rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
-function RookieBot({ size = 46 }: { size?: number }) {
+export function RookieBot({ size = 46 }: { size?: number }) {
   return (
     <svg className="bot" viewBox="0 0 48 48" width={size} height={size} aria-hidden="true">
       <g fill="none" stroke="#0b0b0c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
