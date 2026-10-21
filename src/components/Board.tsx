@@ -216,7 +216,7 @@ export default function Board({
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="tile mt-[var(--gap)] !p-4 sm:!p-6">
+      <form onSubmit={onSubmit} className="tile tile-mint mt-[var(--gap)] !p-4 sm:!p-6">
         <label htmlFor="core-input" className="mb-3 flex flex-wrap justify-between gap-2 text-[14px] text-[var(--ink2)]">
           <span>
             <span className="text-[var(--mute)]">[01]</span> Add a role

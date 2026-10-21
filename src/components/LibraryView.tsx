@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import CompanyRole from "@/components/CompanyRole";
 import FileShelf, { type LibraryFile } from "@/components/FileShelf";
 
@@ -38,6 +39,12 @@ export default function LibraryView({
   files: LibraryFile[];
   ready: boolean;
 }) {
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const match = (text: string) => !q || text.toLowerCase().includes(q);
+  const cur = current.filter((c) => match(c.label));
+  const sent = saved.filter((s) => match(`${s.label} ${s.kind === "cv" ? "CV" : "Cover Letter"}`));
+
   return (
     <main className="pb-16">
       <div className="puzzle">
@@ -68,12 +75,26 @@ export default function LibraryView({
       </div>
 
 
+      <div className="mt-[var(--gap)]">
+        <label htmlFor="lib-search" className="sr-only">
+          Search your documents
+        </label>
+        <input
+          id="lib-search"
+          type="search"
+          className="field !rounded-full !px-5"
+          placeholder="Search by company, role or file name…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
       <section className="mt-10" aria-labelledby="cur-h">
         <h2 id="cur-h" className="sec">
           <small>[01]</small> Your applications
         </h2>
         <div className="mt-3 grid gap-2.5">
-          {current.map((c) => (
+          {cur.map((c) => (
             <div key={c.id} className="tile !py-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
               <div>
                 <Link href={`/app/a/${c.id}#documents`} className="text-[18px] no-underline hover:underline">
@@ -93,6 +114,9 @@ export default function LibraryView({
               </div>
             </div>
           ))}
+          {q && cur.length === 0 && current.length > 0 && (
+            <p className="text-[14px] text-[var(--ink2)]">No applications match &quot;{query}&quot;.</p>
+          )}
           {current.length === 0 && (
             <p className="text-[14px] text-[var(--ink2)]">
               Nothing yet. Open a role on your <Link href="/app">board</Link> and press &quot;Write my CV and Cover Letter&quot;.
@@ -106,7 +130,7 @@ export default function LibraryView({
           <small>[02]</small> Sent versions <span className="font-light text-[var(--mute)]">· saved when you mark a role as applied</span>
         </h2>
         <div className="mt-3 grid gap-2.5">
-          {saved.map((s) => (
+          {sent.map((s) => (
             <div key={s.id} className="tile !py-3.5 flex flex-wrap items-center justify-between gap-3">
               <span>
                 <CompanyRole label={s.label} />{" "}
@@ -145,6 +169,7 @@ export default function LibraryView({
               </>
             }
             hint="Rookie uses your own cover letters as a reference for your tone and structure, never as facts. PDF or Word, up to 10 MB. Only you can see your files."
+            query={query}
             successText="Saved."
             letterText="Saved. Rookie will use it as a style reference for new letters."
           />

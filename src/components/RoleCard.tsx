@@ -157,7 +157,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
         )}
       </div>
 
-      <div className="grid content-start gap-2 md:w-[244px]">
+      <div className="grid content-start gap-2 md:w-[280px]">
         {actions && <div className="grid gap-2">{actions}</div>}
         {onApply && (
           <button type="button" className="btn w-full !py-2.5" onClick={onApply}>
@@ -169,7 +169,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             Move to board
           </button>
         )}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-2">
           <Link href={`/app/a/${a.id}#documents`} className="act !bg-[var(--lilac)]">
             CV and Cover Letter
           </Link>
@@ -203,7 +203,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             <button
               type="button"
               aria-label={`Remove ${a.company ?? a.title}`}
-              className="justify-self-end px-1 text-[12.5px] text-[var(--mute)] hover:text-[var(--bad)]"
+              className="justify-self-end text-right text-[12.5px] text-[var(--mute)] hover:text-[var(--bad)]"
               onClick={() => setConfirm(true)}
             >
               Remove

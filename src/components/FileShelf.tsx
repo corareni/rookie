@@ -24,6 +24,7 @@ export default function FileShelf({
   tone = "tile-mint",
   successText,
   letterText,
+  query = "",
 }: {
   userId: string;
   initial: LibraryFile[];
@@ -35,6 +36,8 @@ export default function FileShelf({
   /** Message after a successful upload; `letterText` replaces it for cover letters. */
   successText: string;
   letterText?: string;
+  /** Optional search text; only matching files are listed. */
+  query?: string;
 }) {
   const [files, setFiles] = useState(initial);
   const [kind, setKind] = useState<Kind["v"]>(kinds[0].v);
@@ -42,7 +45,9 @@ export default function FileShelf({
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirm, setConfirm] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
-  const shown = files.filter((f) => kinds.some((k) => k.v === f.kind));
+  const mine = files.filter((f) => kinds.some((k) => k.v === f.kind));
+  const q = query.trim().toLowerCase();
+  const shown = q ? mine.filter((f) => `${f.name} ${kindLabel(f.kind)}`.toLowerCase().includes(q)) : mine;
 
   async function upload(file: File | undefined) {
     if (!file) return;
@@ -95,7 +100,7 @@ export default function FileShelf({
 
   return (
     <div className="puzzle">
-      <div className={`tile ${tone} span-5 grid content-start gap-3`}>
+      <div className={`tile ${tone} ${mine.length ? "span-5" : "span-12"} grid content-start gap-3`}>
         <p className="text-[18px] leading-tight">{title}</p>
         <p className="text-[14px] text-[var(--ink2)]">{hint}</p>
         {kinds.length > 1 && (
@@ -135,7 +140,9 @@ export default function FileShelf({
           </p>
         )}
       </div>
+      {mine.length > 0 && (
       <div className="span-7 grid content-start gap-2.5">
+        {shown.length === 0 && <p className="text-[14px] text-[var(--ink2)]">No files match &quot;{query}&quot;.</p>}
         {shown.map((f) => (
           <div key={f.id} className="tile !py-3.5 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
             <span className="min-w-0">
@@ -165,8 +172,8 @@ export default function FileShelf({
             </span>
           </div>
         ))}
-        {shown.length === 0 && <p className="text-[14px] text-[var(--ink2)]">No files yet.</p>}
       </div>
+      )}
     </div>
   );
 }
