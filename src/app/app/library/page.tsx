@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import LibraryView, { type CurrentDoc, type LibraryFile, type SavedDoc } from "@/components/LibraryView";
+import LibraryView, { type CurrentDoc, type LibraryFile } from "@/components/LibraryView";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Library · Rookie" };
@@ -9,10 +9,9 @@ export default async function LibraryPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const [{ data: docs }, { data: apps }, saved, files] = await Promise.all([
+  const [{ data: docs }, { data: apps }, files] = await Promise.all([
     supabase.from("documents").select("application_id,kind,updated_at").order("updated_at", { ascending: false }),
     supabase.from("applications").select("id,company,role,title,status"),
-    supabase.from("saved_documents").select("id,application_id,label,kind,created_at").order("created_at", { ascending: false }),
     supabase.from("library_files").select("id,name,path,kind,size,created_at").order("created_at", { ascending: false }),
   ]);
 
@@ -36,9 +35,8 @@ export default async function LibraryPage() {
     <LibraryView
       userId={user!.id}
       current={[...byApp.values()]}
-      saved={(saved.data ?? []) as SavedDoc[]}
       files={(files.data ?? []) as LibraryFile[]}
-      ready={!saved.error && !files.error}
+      ready={!files.error}
     />
   );
 }

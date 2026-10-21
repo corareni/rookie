@@ -6,21 +6,19 @@ import CompanyRole from "@/components/CompanyRole";
 import FileShelf, { type LibraryFile } from "@/components/FileShelf";
 
 export type CurrentDoc = { id: string; label: string; status: string; updated: string; kinds: ("cv" | "cover_letter")[] };
-export type SavedDoc = { id: string; application_id: string | null; label: string; kind: "cv" | "cover_letter"; created_at: string };
 export type { LibraryFile };
 
 const date = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 
-function Downloads({ base, kind, saved }: { base: string; kind: "cv" | "cover_letter"; saved?: string }) {
+function Downloads({ base, kind }: { base: string; kind: "cv" | "cover_letter" }) {
   const file = kind === "cv" ? "cv" : "letter";
-  const q = saved ? `?saved=${saved}` : "";
   return (
     <span className="flex gap-1.5">
-      <a className="act !min-h-[32px] !px-3 !text-[12.5px] !bg-[var(--mint)]" href={`${base}/${file}.pdf${q}`}>
-        ↓ PDF
+      <a className="act !min-h-[32px] !px-3 !text-[12.5px] !bg-[var(--mint)]" href={`${base}/${file}.pdf`}>
+        <span aria-hidden="true">↓</span> PDF
       </a>
-      <a className="act !min-h-[32px] !px-3 !text-[12.5px] !bg-[var(--lilac)]" href={`${base}/${file}.docx${q}`}>
-        ↓ Word
+      <a className="act !min-h-[32px] !px-3 !text-[12.5px] !bg-[var(--lilac)]" href={`${base}/${file}.docx`}>
+        <span aria-hidden="true">↓</span> Word
       </a>
     </span>
   );
@@ -29,13 +27,11 @@ function Downloads({ base, kind, saved }: { base: string; kind: "cv" | "cover_le
 export default function LibraryView({
   userId,
   current,
-  saved,
   files,
   ready,
 }: {
   userId: string;
   current: CurrentDoc[];
-  saved: SavedDoc[];
   files: LibraryFile[];
   ready: boolean;
 }) {
@@ -43,7 +39,6 @@ export default function LibraryView({
   const q = query.trim().toLowerCase();
   const match = (text: string) => !q || text.toLowerCase().includes(q);
   const cur = current.filter((c) => match(c.label));
-  const sent = saved.filter((s) => match(`${s.label} ${s.kind === "cv" ? "CV" : "Cover Letter"}`));
 
   return (
     <main className="pb-16">
@@ -54,15 +49,15 @@ export default function LibraryView({
             Every document. <em>Always there.</em>
           </h1>
           <p className="mt-4 max-w-[560px] text-[16px] text-[var(--ink2)]">
-            Your tailored CVs and cover letters, the versions you actually sent, and your own letters for Rookie to learn
-            your voice from. Download any of them as PDF or Word.
+            Your tailored CVs and cover letters for every application, and your own letters for Rookie to learn your
+            voice from. Download any of them as PDF or Word.
           </p>
         </section>
         <section className="tile span-4 grid content-center gap-2">
           <dl className="grid grid-cols-3 gap-2 text-center">
             {[
               ["Current", current.length],
-              ["Sent", saved.length],
+              ["Applied", current.filter((c) => c.status !== "interested").length],
               ["Uploaded", files.length],
             ].map(([k, v], i) => (
               <div key={k as string} className={`rounded-2xl px-2 py-3 ${i === 0 ? "bg-[var(--lilac)]" : "bg-white"}`}>
@@ -125,33 +120,9 @@ export default function LibraryView({
         </div>
       </section>
 
-      <section className="mt-10" aria-labelledby="sent-h">
-        <h2 id="sent-h" className="sec">
-          <small>[02]</small> Sent versions <span className="font-light text-[var(--mute)]">· saved when you mark a role as applied</span>
-        </h2>
-        <div className="mt-3 grid gap-2.5">
-          {sent.map((s) => (
-            <div key={s.id} className="tile !py-3.5 flex flex-wrap items-center justify-between gap-3">
-              <span>
-                <CompanyRole label={s.label} />{" "}
-                <span className="font-light text-[var(--mute)]">
-                  · {s.kind === "cv" ? "CV" : "Cover Letter"} · {date(s.created_at)}
-                </span>
-              </span>
-              <Downloads base={`/api/documents/${s.application_id ?? "saved"}`} kind={s.kind} saved={s.id} />
-            </div>
-          ))}
-          {saved.length === 0 && (
-            <p className="text-[14px] text-[var(--ink2)]">
-              {ready ? "When you mark a role as applied, the CV and letter you sent are kept here." : "The library is almost ready. It switches on with the next database update."}
-            </p>
-          )}
-        </div>
-      </section>
-
       <section className="mt-10" aria-labelledby="own-h">
         <h2 id="own-h" className="sec">
-          <small>[03]</small> Your own letters and CVs
+          <small>[02]</small> Your own letters and CVs
         </h2>
         <div className="mt-3">
           <FileShelf
