@@ -10,7 +10,7 @@ type Mode = "signup" | "login";
 const copy = {
   signup: {
     title: "Create your board",
-    sub: "Free. Continue with Google, or use an email and password.",
+    sub: "Free. Email and password, nothing else.",
     button: "Create account",
     busy: "Creating account…",
     switchText: "Already have an account?",
@@ -31,10 +31,13 @@ const copy = {
 export default function AuthForm({
   mode,
   signedInAs,
+  google: googleOn = false,
   googleError = false,
 }: {
   mode: Mode;
   signedInAs: string | null;
+  /** Show "Sign in with Google" only once it's switched on in Supabase. */
+  google?: boolean;
   /** Set when Google sign-in came back without a session. */
   googleError?: boolean;
 }) {
@@ -116,7 +119,9 @@ export default function AuthForm({
         <h1 id="auth-h" className="mt-5 text-[clamp(32px,3.4vw,44px)] leading-[1.05] tracking-[-0.035em]">
           {t.title.split(" ")[0]} <span className="font-light">{t.title.split(" ").slice(1).join(" ")}</span>
         </h1>
-        <p className="mt-2 text-[var(--ink2)]">{t.sub}</p>
+        <p className="mt-2 text-[var(--ink2)]">
+          {googleOn && mode === "signup" ? "Free. Continue with Google, or use an email and password." : t.sub}
+        </p>
 
         {signedInAs && (
           <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm">
@@ -125,22 +130,26 @@ export default function AuthForm({
           </p>
         )}
 
-        <button
-          type="button"
-          className="btn btn-ghost btn-lg mt-6 w-full gap-3 !bg-white"
-          disabled={google || busy || !ready}
-          onClick={withGoogle}
-        >
-          <GoogleLogo />
-          {google ? "Opening Google…" : mode === "signup" ? "Sign up with Google" : "Sign in with Google"}
-        </button>
-        <p className="mt-5 flex items-center gap-3 text-[12px] uppercase tracking-[0.12em] text-[var(--mute)]" aria-hidden="true">
-          <span className="h-px flex-1 bg-[var(--line)]" />
-          or with email
-          <span className="h-px flex-1 bg-[var(--line)]" />
-        </p>
+        {googleOn && (
+          <>
+          <button
+            type="button"
+            className="btn btn-ghost btn-lg mt-6 w-full gap-3 !bg-white"
+            disabled={google || busy || !ready}
+            onClick={withGoogle}
+          >
+            <GoogleLogo />
+            {google ? "Opening Google…" : mode === "signup" ? "Sign up with Google" : "Sign in with Google"}
+          </button>
+          <p className="mt-5 flex items-center gap-3 text-[12px] uppercase tracking-[0.12em] text-[var(--mute)]" aria-hidden="true">
+            <span className="h-px flex-1 bg-[var(--line)]" />
+            or with email
+            <span className="h-px flex-1 bg-[var(--line)]" />
+          </p>
+          </>
+        )}
 
-        <form onSubmit={onSubmit} className="mt-5 grid gap-4">
+        <form onSubmit={onSubmit} className={`${googleOn ? "mt-5" : "mt-6"} grid gap-4`}>
           <div>
             <label htmlFor={`${mode}-email`} className="label">
               Email
