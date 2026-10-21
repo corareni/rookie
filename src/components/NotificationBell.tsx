@@ -7,6 +7,7 @@ import { SuggestionCard, type EmailRole } from "@/components/EmailUpdate";
 import { useTasks } from "@/components/Tasks";
 import type { EmailUpdate } from "@/lib/ai-client";
 import { eventLabel } from "@/lib/calendar";
+import { loadNotifications } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
 
 type Item = {
@@ -62,11 +63,10 @@ export default function NotificationBell() {
   const box = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch("/api/notifications").catch(() => null);
-    if (!res?.ok) return;
-    const d = (await res.json()) as { ready: boolean; items: Item[] };
+    const d = await loadNotifications(createClient()).catch(() => null);
+    if (!d) return;
     setReady(d.ready);
-    setItems(d.items ?? []);
+    setItems((d.items ?? []) as Item[]);
   }, []);
 
   useEffect(() => {
