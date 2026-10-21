@@ -115,7 +115,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/gmail/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ today: localToday() }),
+        body: JSON.stringify({ today: localToday(), tz: new Date().getTimezoneOffset() }),
       });
       const r = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(r.error ?? "Couldn't check your emails.");
@@ -127,19 +127,22 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       setProgress({
         title: r.updates ? `${r.updates} update${r.updates > 1 ? "s" : ""} found` : "No news yet",
         detail: r.updates
-          ? "Open the bell to review and apply them."
+          ? r.applied
+            ? `${r.applied} application${r.applied > 1 ? "s" : ""} moved to a new stage. ${r.updates > r.applied ? "The rest are in the bell to review." : "See the bell for details."}`
+            : "Open the bell to review and apply them."
           : r.roles
             ? `Checked ${r.roles} application${r.roles > 1 ? "s" : ""}${r.emails ? ` and ${r.emails} email${r.emails > 1 ? "s" : ""}` : ""}. Nothing changes your status.`
             : "Mark a role as applied first: rookie checks emails about your applications.",
         done: true,
       });
       refreshNotifications();
+      if (r.applied) router.refresh();
     } catch (e) {
       setProgress({ title: "Couldn't check your emails", detail: e instanceof Error ? e.message : "Try again.", done: true });
     } finally {
       setChecking(false);
     }
-  }, [checking]);
+  }, [checking, router]);
 
   return (
     <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking }}>
@@ -210,9 +213,10 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
             <ol className="list-decimal pl-5">
               <li>Press Connect Gmail and pick your Google account.</li>
               <li>
-                Google may say the app isn&apos;t verified yet. Press <b>Advanced</b>, then <b>Go to rookie</b>.
+                Google says it hasn&apos;t verified the app yet. Press <b>Continue</b> (on some screens: <b>Advanced</b>, then{" "}
+                <b>Go to rookie</b>).
               </li>
-              <li>Allow rookie to read your emails. It can&apos;t send, change or delete anything.</li>
+              <li>Tick the box to let rookie read your emails, then Continue. It can&apos;t send, change or delete anything.</li>
             </ol>
             <p className="text-[13px]">
               Only emails mentioning your applications are read, by Google Gemini, and they aren&apos;t stored. Disconnect any

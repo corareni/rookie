@@ -20,8 +20,23 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
   const { data: events } = await withEventNote((c) =>
     supabase.from("applications").select(`id,${c}`).not("event_at", "is", null),
   );
+  // Roles whose stage was set from an email (still at that stage), for the "From an email" label.
+  const { data: fromMail } = await supabase
+    .from("notifications")
+    .select("application_id,created_at,body,data")
+    .eq("kind", "email")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  const fromEmail: Record<string, { at: string; summary: string; status: string }> = {};
+  for (const n of fromMail ?? []) {
+    const d = n.data as { applied?: boolean; suggestion?: { status?: string; summary?: string } } | null;
+    if (!n.application_id || !d?.applied || fromEmail[n.application_id]) continue;
+    fromEmail[n.application_id] = { at: n.created_at, summary: d.suggestion?.summary ?? "", status: d.suggestion?.status ?? "" };
+  }
+
   return (
     <ApplicationsTable
+      fromEmail={fromEmail}
       initial={(data ?? []) as unknown as Application[]}
       events={Object.fromEntries((events ?? []).map(({ id, ...e }) => [id, e as EventFields]))}
       readEmails={readsEmails(prof ? toProfileData(prof) : null)}

@@ -31,6 +31,7 @@ export default function ApplicationsTable({
   events: initialEvents = {},
   gmail = null,
   readEmails = true,
+  fromEmail = {},
 }: {
   initial: Application[];
   events?: Record<string, EventFields>;
@@ -38,6 +39,8 @@ export default function ApplicationsTable({
   gmail?: string | null;
   /** Off when the user switched off email reading on their Profile: no email buttons. */
   readEmails?: boolean;
+  /** Roles whose current stage was set automatically from an email. */
+  fromEmail?: Record<string, { at: string; summary: string; status: string }>;
 }) {
   const { checkEmails, checking } = useTasks();
   const checked = useRef(false);
@@ -173,6 +176,7 @@ export default function ApplicationsTable({
                     key={a.id}
                     a={a}
                     ev={events[a.id]}
+                    mail={fromEmail[a.id]?.status === a.status ? fromEmail[a.id] : undefined}
                     onSave={(p) => save(a.id, p)}
                     onStatus={(to) =>
                       setPending({
@@ -214,11 +218,13 @@ export default function ApplicationsTable({
 function Row({
   a,
   ev,
+  mail,
   onSave,
   onStatus,
 }: {
   a: Application;
   ev?: EventFields;
+  mail?: { at: string; summary: string };
   onSave: (p: Partial<Application>) => void;
   onStatus: (s: Status) => void;
 }) {
@@ -231,6 +237,13 @@ function Row({
           {a.company ?? a.title}
         </Link>
         {a.company && <p className="text-[15px] font-light text-[var(--ink)]">{titleCase(a.role ?? a.title)}</p>}
+        {mail && (
+          <p className="mt-1.5" title={mail.summary}>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--butter)] px-2.5 py-0.5 text-[12px] font-bold">
+              From an email · {formatDate(mail.at.slice(0, 10))}
+            </span>
+          </p>
+        )}
         {(a.status === "interview" || a.status === "assessment") && (
           <span className="mt-2 flex flex-wrap gap-1.5">
             <Link href={`/app/a/${a.id}#interview`} className="act !min-h-[32px] !text-[12.5px]">

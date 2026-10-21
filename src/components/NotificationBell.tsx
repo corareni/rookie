@@ -18,7 +18,7 @@ type Item = {
   body: string;
   href: string | null;
   application_id: string | null;
-  data: { suggestion?: EmailUpdate; at?: string } | null;
+  data: { suggestion?: EmailUpdate; at?: string; applied?: boolean } | null;
   read_at: string | null;
   created_at: string;
 };
@@ -111,7 +111,7 @@ export default function NotificationBell({ readEmails = true }: { readEmails?: b
 
   async function openItem(i: Item) {
     void markRead([i.id]);
-    if (i.kind === "email" && i.data?.suggestion && i.application_id) {
+    if (i.kind === "email" && i.data?.suggestion && !i.data.applied && i.application_id) {
       const sb = createClient();
       const [{ data: a }, { data: ev }] = await Promise.all([
         sb.from("applications").select("id,title,company,role,status,submitted_on,assessment_on,interview_on,offer_on").eq("id", i.application_id).maybeSingle(),

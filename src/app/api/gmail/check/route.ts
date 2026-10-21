@@ -8,6 +8,18 @@ import { notify } from "@/server/notify";
 export const maxDuration = 60;
 
 const ACTIVE = ["submitted", "assessment", "interview", "offer"];
+const ORDER = ["interested", "submitted", "assessment", "interview", "offer"];
+const TERMINAL = ["rejected", "withdrawn"];
+const rank = (s: string) => ORDER.indexOf(s);
+const LABEL: Record<string, string> = { submitted: "Submitted", assessment: "Assessment", interview: "Interview", offer: "Offer", rejected: "Rejected", withdrawn: "Withdrawn" };
+
+/** "2026-10-28T10:00" in the user's time zone (offset in minutes, as from getTimezoneOffset) to UTC. */
+function localToUtc(local: string, offset: number) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(local);
+  if (!m) return null;
+  const utc = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) + offset * 60_000;
+  return new Date(utc).toISOString();
+}
 
 /**
  * "Check emails": searches the connected Gmail for recent emails about each application, reads the new ones
@@ -33,7 +45,8 @@ export async function POST(request: Request) {
     }
     const access = t.access_token;
 
-    const { today } = (await request.json().catch(() => ({}))) as { today?: string };
+    const { today, tz } = (await request.json().catch(() => ({}))) as { today?: string; tz?: number };
+    const tzOffset = Number.isFinite(tz) ? Math.max(-840, Math.min(840, Number(tz))) : 0;
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
     const since = conn.last_checked_at ? Math.ceil((Date.now() - Date.parse(conn.last_checked_at)) / 86_400_000) + 1 : 30;
     const days = Math.min(30, Math.max(2, since));
@@ -49,6 +62,7 @@ export async function POST(request: Request) {
     const seen = new Set<string>(conn.seen ?? []);
     let emails = 0;
     let updates = 0;
+    let applied = 0;
     let limited = false;
 
     // A few roles at a time keeps the check inside the time limit.
@@ -77,6 +91,30 @@ export async function POST(request: Request) {
           const u = await readEmailUpdate(r, day, text).catch(() => null);
           if (!u || !hasChanges(u)) return;
           updates++;
+          // Clear progress (forward to a later stage, or rejected / withdrawn) is applied straight away; anything
+          // else (moving back, no stage change) stays a suggestion to review in the bell.
+          const auto = u.status !== "no_change" && (TERMINAL.includes(u.status) || rank(u.status) > rank(r.status));
+          if (auto) {
+            const patch: Record<string, unknown> = { status: u.status };
+            if (u.event_at && u.event_kind !== "none") {
+              const at = localToUtc(u.event_at, tzOffset);
+              if (at) Object.assign(patch, { event_at: at, event_kind: u.event_kind, event_minutes: Math.min(720, Math.max(5, u.event_minutes || 60)), event_location: u.event_location || null });
+            }
+            if (u.next_step) patch.next_step = u.next_step;
+            if (u.deadline) patch.deadline = u.deadline;
+            const { error } = await supabase.from("applications").update(patch).eq("id", r.id);
+            if (!error) applied++;
+            await notify(supabase, {
+              key: `email:${r.id}:${found.map((m) => m.id).sort().join(",")}`.slice(0, 300),
+              kind: "email",
+              title: `${r.company}: moved to ${LABEL[u.status] ?? u.status}`,
+              body: `From an email. ${u.summary}`,
+              href: `/app/a/${r.id}`,
+              application_id: r.id,
+              data: { applied: !error, from: r.status, suggestion: u },
+            });
+            return;
+          }
           await notify(supabase, {
             key: `email:${r.id}:${found.map((m) => m.id).sort().join(",")}`.slice(0, 300),
             kind: "email",
@@ -94,7 +132,7 @@ export async function POST(request: Request) {
       .from("gmail_connections")
       .update({ last_checked_at: new Date().toISOString(), seen: [...seen].slice(-500) })
       .not("user_id", "is", null);
-    return Response.json({ state: "done", roles: list.length, emails, updates, limited });
+    return Response.json({ state: "done", roles: list.length, emails, updates, applied, limited });
   } catch (e) {
     return errorResponse(e);
   }
