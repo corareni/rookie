@@ -6,7 +6,7 @@ import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Applicat
 import CalendarButtons from "@/components/CalendarButtons";
 import { buildEvent, type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
-import StatusConfirm, { NO_EVENT, type StatusChange } from "@/components/StatusConfirm";
+import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
 
 const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
@@ -31,12 +31,13 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
   async function changeStatus(removeEvent: boolean) {
     if (!pending) return;
     const { id, to } = pending;
+    const dates = clearedDates(to, pending.dates);
     setPending(null);
-    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status: to } : a)));
+    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status: to, ...dates } : a)));
     if (removeEvent) setEvents(({ [id]: _gone, ...rest }) => rest);
     const { error } = await createClient()
       .from("applications")
-      .update({ status: to, ...(removeEvent ? NO_EVENT : {}) })
+      .update({ status: to, ...dates, ...(removeEvent ? NO_EVENT : {}) })
       .eq("id", id);
     if (error) setError(`Couldn't save: ${error.message}`);
   }
@@ -111,6 +112,7 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
                         to,
                         eventAt: events[a.id]?.event_at ?? null,
                         eventKind: events[a.id]?.event_kind ?? null,
+                        dates: a,
                       })
                     }
                   />

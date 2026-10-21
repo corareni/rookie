@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import StatusConfirm, { NO_EVENT, type StatusChange } from "@/components/StatusConfirm";
+import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { COLUMNS, STATUSES, deadlineText, isUrl, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 import Arrow from "@/components/Arrow";
@@ -70,11 +70,19 @@ export default function ApplicationEditor({
         to: form.status,
         eventAt: event?.event_at ?? null,
         eventKind: event?.event_kind ?? null,
+        dates: formDates(),
       });
       return;
     }
     save(false);
   }
+
+  const formDates = () => ({
+    submitted_on: orNull(form.submitted_on),
+    assessment_on: orNull(form.assessment_on),
+    interview_on: orNull(form.interview_on),
+    offer_on: orNull(form.offer_on),
+  });
 
   async function save(removeEvent: boolean) {
     setPending(null);
@@ -85,10 +93,9 @@ export default function ApplicationEditor({
       .update({
         status: form.status,
         deadline: orNull(form.deadline),
-        submitted_on: orNull(form.submitted_on),
-        assessment_on: orNull(form.assessment_on),
-        interview_on: orNull(form.interview_on),
-        offer_on: orNull(form.offer_on),
+        ...formDates(),
+        // Moving back a stage takes the later stage dates off the calendar.
+        ...(form.status !== app.status ? clearedDates(form.status, formDates()) : {}),
         company: orNull(form.company),
         role: orNull(form.role),
         location: orNull(form.location),
