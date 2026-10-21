@@ -82,7 +82,11 @@ export default function Header({ email, name }: { email: string | null; name: st
 
   async function logout() {
     setBusy(true);
-    await createClient().auth.signOut();
+    const auth = createClient().auth;
+    // End the session on the server, but never keep the user waiting: if that's slow, sign out in this
+    // browser (clears the session cookies) and leave anyway.
+    const done = await Promise.race([auth.signOut().then(() => true), new Promise<false>((r) => setTimeout(() => r(false), 2000))]);
+    if (!done) await auth.signOut({ scope: "local" });
     window.location.assign("/");
   }
 
