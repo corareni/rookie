@@ -83,8 +83,6 @@ export async function POST(request: Request) {
         : null,
     ]);
 
-    // Stopped by the user while writing: keep the documents they already have.
-    if (request.signal.aborted) throw new AiError("Stopped.", 499);
     const rows = [];
     if (cv) {
       const { changes, flags, ...content } = noLongDashes(cv.data);
@@ -94,9 +92,8 @@ export async function POST(request: Request) {
       const { used_company_facts, used_profile_facts, flags, ...content } = noLongDashes(letter.data);
       rows.push({ application_id: id, kind: "cover_letter", content: { ...content, lang: lang.v }, meta: { used_company_facts, used_profile_facts, flags }, edited: false });
     }
-    const { error } = await supabase.from("documents").upsert(rows, { onConflict: "application_id,kind" });
-    if (error) throw new AiError(`Couldn't save your documents: ${error.message}`);
-    return Response.json({ ok: true });
+    // The page saves them (so "Stop writing" can drop a run: hosting doesn't always tell us the user left).
+    return Response.json({ rows });
   } catch (e) {
     return errorResponse(e);
   }

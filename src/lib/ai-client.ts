@@ -1,5 +1,6 @@
 import type { Contact, StructuredProfile } from "@/lib/profile";
 import type { Application } from "@/lib/applications";
+import { createClient } from "@/lib/supabase/client";
 
 /** Calls rookie's own server routes; the AI key never reaches the browser. */
 async function post<T>(path: string, body: object, signal?: AbortSignal): Promise<T> {
@@ -28,8 +29,13 @@ export type GenerateOptions = {
   language: string;
 };
 
-export const generateDocs = (id: string, options?: GenerateOptions, signal?: AbortSignal) =>
-  post<{ ok: true }>("/api/generate", { id, ...options }, signal);
+/** Writes the documents, then saves them, unless the run was stopped first. */
+export async function generateDocs(id: string, options?: GenerateOptions, signal?: AbortSignal) {
+  const { rows } = await post<{ rows: object[] }>("/api/generate", { id, ...options }, signal);
+  if (signal?.aborted) throw new DOMException("Stopped", "AbortError");
+  const { error } = await createClient().from("documents").upsert(rows, { onConflict: "application_id,kind" });
+  if (error) throw new Error(`Couldn't save your documents: ${error.message}`);
+}
 
 export async function importCv(file: File) {
   const body = new FormData();
