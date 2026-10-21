@@ -23,14 +23,18 @@ export default function Dialog({
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
+    if (open && !d.open) {
+      d.showModal();
+      d.focus();
+    }
     if (!open && d.open) d.close();
   }, [open]);
 
   return (
     <dialog
       ref={ref}
-      className="rk-dialog"
+      className="rk-dialog outline-none"
+      tabIndex={-1}
       onCancel={(e) => {
         e.preventDefault();
         onCancel();

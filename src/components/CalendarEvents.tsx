@@ -176,6 +176,21 @@ const STATUS: Record<string, string> = {
   withdrawn: "Withdrawn",
 };
 
+const DATE_COLUMN: Record<Exclude<CalItem["kind"], "scheduled">, string> = {
+  applied: "submitted_on",
+  deadline: "deadline",
+  assessment: "assessment_on",
+  interview: "interview_on",
+  offer: "offer_on",
+};
+
+const CURRENT_STAGE: Partial<Record<CalItem["kind"], string>> = {
+  applied: "submitted",
+  assessment: "assessment",
+  interview: "interview",
+  offer: "offer",
+};
+
 const WHAT: Record<CalItem["kind"], string> = {
   scheduled: "",
   applied: "You sent your application.",
@@ -201,15 +216,28 @@ export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; 
     setErr(null);
   }
 
+  /** Takes just this entry off the calendar by clearing its date. */
   async function remove() {
     if (!item) return;
-    const { error } = await createClient().from("applications").update(NO_EVENT).eq("id", item.appId);
+    const patch = item.kind === "scheduled" ? NO_EVENT : { [DATE_COLUMN[item.kind]]: null };
+    const { error } = await createClient().from("applications").update(patch).eq("id", item.appId);
+    if (error) return setErr(`Couldn't delete: ${error.message}`);
+    onClose();
+    router.refresh();
+  }
+
+  /** Deletes the whole role, with its documents and dates. */
+  async function deleteRole() {
+    if (!item) return;
+    const { error } = await createClient().from("applications").delete().eq("id", item.appId);
     if (error) return setErr(`Couldn't delete: ${error.message}`);
     onClose();
     router.refresh();
   }
 
   const scheduled = item?.kind === "scheduled";
+  // A stage date for the role's current status is set again automatically, so only a status change removes it.
+  const current = !!item && !scheduled && CURRENT_STAGE[item.kind] === item.status;
   const event =
     item && scheduled
       ? buildEvent(
@@ -231,29 +259,41 @@ export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; 
   return (
     <Dialog
       open={!!item}
-      title={item ? (confirm ? `Delete this ${itemLabel(item).toLowerCase()}?` : `${itemLabel(item)} · ${item.company}`) : ""}
+      title={item ? (confirm ? "What do you want to delete?" : `${itemLabel(item)} · ${item.company}`) : ""}
       onCancel={onClose}
       actions={
         confirm
           ? [
-              { label: "Keep it", tone: "ghost", onClick: () => setConfirm(false) },
-              { label: "Delete", tone: "danger", onClick: remove },
+              { label: "Cancel", tone: "ghost", onClick: () => setConfirm(false) },
+              ...(current ? [] : [{ label: "Remove from calendar", tone: "ghost" as const, onClick: remove }]),
+              { label: "Delete the whole role", tone: "danger", onClick: deleteRole },
             ]
-          : scheduled
-            ? [
-                { label: "Delete", tone: "ghost", onClick: () => setConfirm(true) },
-                { label: "Edit", tone: "ghost", onClick: () => item && onEdit(item) },
-                { label: "Open role →", onClick: openRole },
-              ]
-            : [
-                { label: "Close", tone: "ghost", onClick: onClose },
-                { label: "Open role →", onClick: openRole },
-              ]
+          : [
+              { label: "Delete", tone: "ghost", onClick: () => setConfirm(true) },
+              ...(scheduled ? [{ label: "Edit", tone: "ghost" as const, onClick: () => item && onEdit(item) }] : []),
+              { label: "Open role →", onClick: openRole },
+            ]
       }
     >
       {item &&
         (confirm ? (
-          <p>It&apos;s removed from Rookie. If you added it to Google or Apple Calendar, delete it there as well.</p>
+          <div className="grid gap-2">
+            {current ? (
+              <p>
+                This is the role&apos;s current stage, so it stays on the calendar until you change the status. You can
+                delete the whole role instead.
+              </p>
+            ) : (
+              <p>
+                <b>Remove from calendar</b> takes only this {itemLabel(item).toLowerCase()} ({when}) off your calendar.
+              </p>
+            )}
+            <p>
+              <b>Delete the whole role</b> removes {item.company} from Rookie: its board card, CV and cover letter
+              drafts, notes and every date. Copies saved in your Library stay. This can&apos;t be undone.
+            </p>
+            {scheduled && <p className="text-[13px]">If you added it to Google or Apple Calendar, delete it there as well.</p>}
+          </div>
         ) : (
           <div className="grid gap-3">
             <p className="text-[var(--ink)]">
