@@ -997,6 +997,58 @@ a {
   transition: transform 0.2s ease, bottom 0.3s ease;
 }
 .chat-fab:hover { transform: scale(1.05); }
+/* Closed: Rookie the bot on a lilac circle. Open: a black circle with a centred ×. */
+.chat-fab:not(.is-open) { background: var(--lilac); box-shadow: 0 0 0 2px var(--black), 0 14px 30px -10px rgba(0, 0, 0, 0.45); }
+.bot { overflow: visible; transform-origin: 50% 85%; animation: bot-sway 3.2s ease-in-out infinite; }
+.bot-antenna { transform-box: fill-box; transform-origin: 50% 100%; animation: bot-antenna 1.6s ease-in-out infinite; }
+.bot-eyes { transform-box: fill-box; transform-origin: center; animation: bot-blink 4.5s ease-in-out infinite; }
+.chat-fab:hover .bot,
+.chat-fab:focus-visible .bot { animation: bot-wiggle 0.6s ease-in-out infinite; }
+@keyframes bot-sway {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-6deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-2px) rotate(6deg); }
+}
+@keyframes bot-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1.04); }
+  25% { transform: rotate(-10deg) scale(1.04); }
+  75% { transform: rotate(10deg) scale(1.04); }
+}
+@keyframes bot-antenna {
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(14deg); }
+}
+@keyframes bot-blink {
+  0%, 90%, 100% { transform: scaleY(1); }
+  94% { transform: scaleY(0.1); }
+}
+/* A small name tag that says hello once, and again on hover. */
+.chat-name {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  translate: 0 -50%;
+  white-space: nowrap;
+  border-radius: 999px;
+  background: var(--black);
+  color: var(--onblack);
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0;
+  animation: bot-hello 4s ease 1.2s 1 both;
+  transition: opacity 0.2s;
+}
+.chat-fab:hover .chat-name { opacity: 1; animation: none; }
+@keyframes bot-hello {
+  0%, 100% { opacity: 0; transform: translateX(6px); }
+  12%, 85% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot, .bot-antenna, .bot-eyes, .chat-fab:hover .bot, .chat-name { animation: none; }
+}
 /* Toasts sit above the button. */
 body:has(.chat-fab) .rk-toasts { bottom: 86px; }
 /* Out of the way of the Profile save bar and the Compare bar. */

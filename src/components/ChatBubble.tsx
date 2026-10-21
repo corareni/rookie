@@ -113,23 +113,24 @@ export default function ChatBubble() {
     <>
       <button
         type="button"
-        className="chat-fab"
-        aria-label={open ? "Close Ask Rookie" : "Ask Rookie a question"}
+        className={`chat-fab ${open ? "is-open" : ""}`}
+        aria-label={open ? "Close the chat with Rookie" : "Chat with Rookie, your application helper"}
         aria-expanded={open}
         aria-controls="chat-panel"
         onClick={() => setOpen((o) => !o)}
       >
         {open ? (
-          <span aria-hidden="true" className="text-[22px] leading-none">
-            ×
-          </span>
-        ) : (
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
-            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z" />
-            <circle cx="9" cy="9.5" r="0.6" fill="currentColor" />
-            <circle cx="12" cy="9.5" r="0.6" fill="currentColor" />
-            <circle cx="15" cy="9.5" r="0.6" fill="currentColor" />
+          // Two lines, so the × sits exactly in the middle (a text × sits off-centre in most fonts).
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" />
           </svg>
+        ) : (
+          <RookieBot />
+        )}
+        {!open && (
+          <span className="chat-name" aria-hidden="true">
+            Hi, I&apos;m Rookie
+          </span>
         )}
       </button>
 
@@ -232,5 +233,31 @@ export default function ChatBubble() {
         </section>
       )}
     </>
+  );
+}
+
+/** Rookie, the little helper bot: white head, sky visor, mint antenna and body, in the site's pastels. */
+function RookieBot() {
+  return (
+    <svg className="bot" viewBox="0 0 48 48" width="46" height="46" aria-hidden="true">
+      <g fill="none" stroke="#0b0b0c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <g className="bot-antenna">
+          <path d="M24 9V4.8" />
+          <circle cx="24" cy="4" r="2.6" fill="#bfeccf" />
+        </g>
+        <rect x="15.5" y="34" width="17" height="10" rx="4.5" fill="#bfeccf" />
+        <rect x="6.5" y="19" width="5" height="10" rx="2.5" fill="#c9c0fb" />
+        <rect x="36.5" y="19" width="5" height="10" rx="2.5" fill="#c9c0fb" />
+        <rect x="10" y="9" width="28" height="26" rx="11" fill="#ffffff" />
+        <rect x="14" y="14.5" width="20" height="14" rx="6.5" fill="#b9d9f8" />
+        <path d="M20.6 24.2q3.4 3 6.8 0" />
+      </g>
+      <g className="bot-eyes" fill="#0b0b0c">
+        <circle cx="19.6" cy="20.6" r="1.9" />
+        <circle cx="28.4" cy="20.6" r="1.9" />
+      </g>
+      <circle cx="16.8" cy="25" r="1.3" fill="#fccab0" />
+      <circle cx="31.2" cy="25" r="1.3" fill="#fccab0" />
+    </svg>
   );
 }

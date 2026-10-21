@@ -105,7 +105,7 @@ export default function ApplicationsTable({
         {items.length > 0 && (
           <span className="mt-5 flex flex-wrap gap-2">
             <button type="button" className="btn !py-2.5" disabled={checking} onClick={checkEmails}>
-              {checking ? "Checking your emails…" : "✉ Check emails"}
+              {checking ? "Checking your emails…" : "Check emails"}
             </button>
             <button type="button" className="btn btn-ghost !py-2.5" onClick={() => setEmailOpen(true)}>
               Paste an email

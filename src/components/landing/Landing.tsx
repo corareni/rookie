@@ -154,11 +154,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         <section className="tile span-7 flex flex-col justify-center" aria-labelledby="everything-h">
           {/* The heading is the first block, so six blocks fill a clean 2×3 (phone) or 3×2 rectangle. */}
           <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            <li className="flex flex-col justify-between gap-3 rounded-[16px] bg-[var(--black)] px-3.5 py-4 text-[var(--onblack)]">
+            <li className="flex flex-col justify-between gap-3 px-1 py-4 text-[var(--ink)]">
               <h2 id="everything-h" className="text-[20px] leading-[1.1] tracking-tight">
                 <b>Everything</b> <span className="font-light">for your next application.</span>
               </h2>
-              <a href="#how" className="text-[12.5px] text-[var(--onblack2)] no-underline hover:text-white">
+              <a href="#how" className="text-[12.5px] text-[var(--ink2)] no-underline hover:text-[var(--ink)]">
                 See how <Arrow />
               </a>
             </li>

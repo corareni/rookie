@@ -196,7 +196,7 @@ export default function NotificationBell() {
                 checkEmails();
               }}
             >
-              {checking ? "Checking emails…" : "✉ Check emails"}
+              {checking ? "Checking emails…" : "Check emails"}
             </button>
           </div>
         </div>
