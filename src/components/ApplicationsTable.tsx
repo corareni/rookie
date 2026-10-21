@@ -6,6 +6,7 @@ import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Applicat
 import CalendarButtons from "@/components/CalendarButtons";
 import { buildEvent, eventName, type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
+import Arrow from "@/components/Arrow";
 import Dialog from "@/components/Dialog";
 import EmailUpdate from "@/components/EmailUpdate";
 import { useTasks } from "@/components/Tasks";
@@ -40,7 +41,7 @@ export default function ApplicationsTable({
   /** Off when the user switched off email reading on their Profile: no email buttons. */
   readEmails?: boolean;
   /** Roles whose current stage was set automatically from an email. */
-  fromEmail?: Record<string, { at: string; summary: string; status: string }>;
+  fromEmail?: Record<string, { at: string; summary: string; status: string; link: string | null }>;
 }) {
   const { checkEmails, checking } = useTasks();
   const checked = useRef(false);
@@ -224,7 +225,7 @@ function Row({
 }: {
   a: Application;
   ev?: EventFields;
-  mail?: { at: string; summary: string };
+  mail?: { at: string; summary: string; link: string | null };
   onSave: (p: Partial<Application>) => void;
   onStatus: (s: Status) => void;
 }) {
@@ -238,11 +239,17 @@ function Row({
         </Link>
         {a.company && <p className="text-[15px] font-light text-[var(--ink)]">{titleCase(a.role ?? a.title)}</p>}
         {mail && (
-          <p className="mt-1.5" title={mail.summary}>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--butter)] px-2.5 py-0.5 text-[12px] font-bold">
-              From an email · {formatDate(mail.at.slice(0, 10))}
-            </span>
-          </p>
+          <div className="mt-2 grid max-w-[520px] gap-1 rounded-2xl bg-[var(--butter)]/60 px-3 py-2">
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
+              <b>From an email · {formatDate(mail.at.slice(0, 10))}</b>
+              {mail.link && (
+                <a href={mail.link} target="_blank" rel="noopener noreferrer" className="font-bold">
+                  Open email <Arrow />
+                </a>
+              )}
+            </p>
+            {mail.summary && <p className="text-[13px] leading-snug text-[var(--ink2)]">{mail.summary}</p>}
+          </div>
         )}
         {(a.status === "interview" || a.status === "assessment") && (
           <span className="mt-2 flex flex-wrap gap-1.5">

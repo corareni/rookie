@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if ((prefs?.profile as { read_emails?: boolean } | null)?.read_emails === false)
       throw new AiError("Email reading is switched off on your Profile.", 403);
     if (!gmailConfigured()) return Response.json({ state: "unavailable" });
-    const { data: conn, error } = await supabase.from("gmail_connections").select("refresh_token,last_checked_at,seen").maybeSingle();
+    const { data: conn, error } = await supabase.from("gmail_connections").select("refresh_token,last_checked_at,seen,email").maybeSingle();
     if (error) return Response.json({ state: "unavailable" });
     if (!conn) return Response.json({ state: "connect" });
 
@@ -60,6 +60,11 @@ export async function POST(request: Request) {
       .limit(12);
 
     const seen = new Set<string>(conn.seen ?? []);
+    // The newest email behind an update, so the Applications page can link straight to it in Gmail.
+    const mailRef = (msgs: { id: string; date: string }[]) => {
+      const newest = [...msgs].sort((a, b) => b.date.localeCompare(a.date))[0];
+      return newest ? { id: newest.id, account: conn.email ?? null } : null;
+    };
     let emails = 0;
     let updates = 0;
     let applied = 0;
@@ -111,7 +116,7 @@ export async function POST(request: Request) {
               body: `From an email. ${u.summary}`,
               href: `/app/a/${r.id}`,
               application_id: r.id,
-              data: { applied: !error, from: r.status, suggestion: u },
+              data: { applied: !error, from: r.status, suggestion: u, mail: mailRef(found) },
             });
             return;
           }
@@ -122,7 +127,7 @@ export async function POST(request: Request) {
             body: u.summary,
             href: `/app/a/${r.id}#email`,
             application_id: r.id,
-            data: { suggestion: u },
+            data: { suggestion: u, mail: mailRef(found) },
           });
         }),
       );

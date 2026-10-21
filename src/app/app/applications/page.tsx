@@ -27,11 +27,19 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
     .eq("kind", "email")
     .order("created_at", { ascending: false })
     .limit(100);
-  const fromEmail: Record<string, { at: string; summary: string; status: string }> = {};
+  const fromEmail: Record<string, { at: string; summary: string; status: string; link: string | null }> = {};
   for (const n of fromMail ?? []) {
-    const d = n.data as { applied?: boolean; suggestion?: { status?: string; summary?: string } } | null;
+    const d = n.data as {
+      applied?: boolean;
+      suggestion?: { status?: string; summary?: string };
+      mail?: { id?: string; account?: string | null } | null;
+    } | null;
     if (!n.application_id || !d?.applied || fromEmail[n.application_id]) continue;
-    fromEmail[n.application_id] = { at: n.created_at, summary: d.suggestion?.summary ?? "", status: d.suggestion?.status ?? "" };
+    // Gmail opens a message by its id; authuser picks the right account if several are signed in.
+    const link = d.mail?.id
+      ? `https://mail.google.com/mail/u/${d.mail.account ? `?authuser=${encodeURIComponent(d.mail.account)}` : "0/"}#all/${d.mail.id}`
+      : null;
+    fromEmail[n.application_id] = { at: n.created_at, summary: d.suggestion?.summary ?? "", status: d.suggestion?.status ?? "", link };
   }
 
   return (
