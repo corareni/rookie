@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ProfileGate from "@/components/ProfileGate";
 import WritingAnimation from "@/components/WritingAnimation";
 import { generateDocs, type GenerateOptions } from "@/lib/ai-client";
@@ -53,16 +53,27 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
   const [lang, setLang] = useState<string>(cvDoc?.content.lang ?? letterDoc?.content.lang ?? "en");
   const has = !!(cvDoc && letterDoc);
 
+  const stopper = useRef<AbortController | null>(null);
+  const [stopped, setStopped] = useState(false);
+
   async function generate() {
     setBusy(true);
     setError(null);
     setConfirmRegen(false);
+    setStopped(false);
+    stopper.current = new AbortController();
     try {
-      await generateDocs(applicationId, { style, length, facts: picked, which, language: lang });
+      await generateDocs(applicationId, { style, length, facts: picked, which, language: lang }, stopper.current.signal);
       router.refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't write your documents.");
+      // Stopped by the user: nothing is saved, the current documents stay as they were.
+      if (stopper.current?.signal.aborted) {
+        setStopped(true);
+        router.refresh();
+      }
+      else setError(e instanceof Error ? e.message : "Couldn't write your documents.");
     } finally {
+      stopper.current = null;
       setBusy(false);
     }
   }
@@ -183,13 +194,18 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
             </button>
           </p>
         )}
+        {stopped && (
+          <p role="status" className="w-full rounded-2xl bg-white px-4 py-3 text-[14px] text-[var(--ink2)]">
+            Stopped. Nothing was changed. A stopped run still counts towards today&apos;s limit.
+          </p>
+        )}
         {error && (
           <p role="alert" className="alert w-full">
             {error}
           </p>
         )}
         </div>
-        {busy && <WritingAnimation />}
+        {busy && <WritingAnimation onStop={() => stopper.current?.abort()} />}
       </div>
 
       {cvDoc &&

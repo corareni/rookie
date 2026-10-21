@@ -76,13 +76,15 @@ export async function POST(request: Request) {
     // Only write what was asked for: the CV, the letter, or both (in parallel).
     const [cv, letter] = await Promise.all([
       which !== "letter"
-        ? generateJson<TailoredCV>({ model: MODEL_WRITE(), system: cvSystem, prompt: cvPrompt(job, profile, options), schema: cvSchema })
+        ? generateJson<TailoredCV>({ model: MODEL_WRITE(), system: cvSystem, prompt: cvPrompt(job, profile, options), schema: cvSchema, signal: request.signal })
         : null,
       which !== "cv"
-        ? generateJson<Letter>({ model: MODEL_WRITE(), system: letterSystem, prompt: letterPrompt(job, profile, options), schema: letterSchema })
+        ? generateJson<Letter>({ model: MODEL_WRITE(), system: letterSystem, prompt: letterPrompt(job, profile, options), schema: letterSchema, signal: request.signal })
         : null,
     ]);
 
+    // Stopped by the user while writing: keep the documents they already have.
+    if (request.signal.aborted) throw new AiError("Stopped.", 499);
     const rows = [];
     if (cv) {
       const { changes, flags, ...content } = noLongDashes(cv.data);

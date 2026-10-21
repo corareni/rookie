@@ -2,9 +2,10 @@ import type { Contact, StructuredProfile } from "@/lib/profile";
 import type { Application } from "@/lib/applications";
 
 /** Calls rookie's own server routes; the AI key never reaches the browser. */
-async function post<T>(path: string, body: object): Promise<T> {
+async function post<T>(path: string, body: object, signal?: AbortSignal): Promise<T> {
   const res = await fetch(path, {
     method: "POST",
+    signal,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -27,7 +28,8 @@ export type GenerateOptions = {
   language: string;
 };
 
-export const generateDocs = (id: string, options?: GenerateOptions) => post<{ ok: true }>("/api/generate", { id, ...options });
+export const generateDocs = (id: string, options?: GenerateOptions, signal?: AbortSignal) =>
+  post<{ ok: true }>("/api/generate", { id, ...options }, signal);
 
 export async function importCv(file: File) {
   const body = new FormData();

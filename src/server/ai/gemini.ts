@@ -61,6 +61,8 @@ export async function generateJson<T>(opts: {
   readUrls?: boolean;
   /** A document to read first, e.g. an uploaded CV (base64). */
   file?: { data: string; mimeType: string };
+  /** Cancels the call, e.g. when the user stops it. */
+  signal?: AbortSignal;
 }): Promise<{ data: T; urlFailed: boolean }> {
   const models = [...new Set([opts.model, MODEL_FAST()])];
   let last: unknown;
@@ -77,7 +79,7 @@ export async function generateJson<T>(opts: {
           systemInstruction: opts.system,
           temperature: 0.4,
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
-          abortSignal: AbortSignal.timeout(ATTEMPT_MS),
+          abortSignal: opts.signal ? AbortSignal.any([AbortSignal.timeout(ATTEMPT_MS), opts.signal]) : AbortSignal.timeout(ATTEMPT_MS),
           ...(opts.readUrls
             ? { tools: [{ urlContext: {} }] }
             : { responseMimeType: "application/json", responseJsonSchema: opts.schema }),
@@ -90,7 +92,7 @@ export async function generateJson<T>(opts: {
       return { data: parseJson<T>(res.text ?? ""), urlFailed };
     } catch (e) {
       last = e;
-      if (!retryable(e)) break;
+      if (opts.signal?.aborted || !retryable(e)) break;
       console.warn(`Gemini ${model} failed, trying the next model:`, e instanceof Error ? e.message.slice(0, 160) : e);
     }
   }
