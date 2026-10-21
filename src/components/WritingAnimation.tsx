@@ -6,7 +6,7 @@ const STEPS = [
   "Reading the role…",
   "Picking your strongest facts…",
   "Tailoring your CV…",
-  "Writing your cover letter…",
+  "Writing your Cover Letter…",
   "Checking it fits on one page…",
 ];
 

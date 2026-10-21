@@ -732,3 +732,27 @@ a {
   .writing-line { animation: none; transform: none; }
   .writing-pen { animation: none; }
 }
+
+/* Login / sign-up patchwork: soft circles drifting inside pastel tiles */
+.drift {
+  display: block;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(2px);
+  opacity: 0.85;
+  animation: drift 14s ease-in-out infinite alternate;
+}
+.drift-1 { width: 220px; height: 220px; top: -60px; right: -40px; }
+.drift-2 { width: 120px; height: 120px; top: 40%; left: 55%; animation-duration: 11s; animation-delay: -3s; }
+.drift-3 { width: 110px; height: 110px; bottom: -40px; right: -30px; animation-duration: 9s; }
+.drift-4 { width: 90px; height: 90px; top: -30px; right: -20px; animation-duration: 12s; animation-delay: -5s; }
+.drift-5 { width: 130px; height: 130px; bottom: -60px; right: 10%; animation-duration: 13s; }
+.drift-6 { width: 100px; height: 100px; top: -40px; right: 20%; animation-duration: 10s; animation-delay: -2s; }
+@keyframes drift {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-28px, 18px) scale(1.08); }
+  100% { transform: translate(16px, -14px) scale(0.95); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drift { animation: none; }
+}

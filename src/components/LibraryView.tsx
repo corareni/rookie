@@ -86,7 +86,7 @@ export default function LibraryView({
                   .filter((k) => c.kinds.includes(k))
                   .map((k) => (
                     <span key={k} className="flex items-center justify-between gap-3 rounded-2xl bg-white px-3 py-2">
-                      <b className="text-[13px]">{k === "cv" ? "CV" : "Cover letter"}</b>
+                      <b className="text-[13px]">{k === "cv" ? "CV" : "Cover Letter"}</b>
                       <Downloads base={`/api/documents/${c.id}`} kind={k} />
                     </span>
                   ))}
@@ -95,7 +95,7 @@ export default function LibraryView({
           ))}
           {current.length === 0 && (
             <p className="text-[14px] text-[var(--ink2)]">
-              Nothing yet. Open a role on your <Link href="/app">board</Link> and press &quot;Write my CV and cover letter&quot;.
+              Nothing yet. Open a role on your <Link href="/app">board</Link> and press &quot;Write my CV and Cover Letter&quot;.
             </p>
           )}
         </div>
@@ -111,7 +111,7 @@ export default function LibraryView({
               <span>
                 <CompanyRole label={s.label} />{" "}
                 <span className="font-light text-[var(--mute)]">
-                  · {s.kind === "cv" ? "CV" : "Cover letter"} · {date(s.created_at)}
+                  · {s.kind === "cv" ? "CV" : "Cover Letter"} · {date(s.created_at)}
                 </span>
               </span>
               <Downloads base={`/api/documents/${s.application_id ?? "saved"}`} kind={s.kind} saved={s.id} />
@@ -135,7 +135,7 @@ export default function LibraryView({
             initial={files}
             ready={ready}
             kinds={[
-              { v: "cover_letter", label: "Cover letter" },
+              { v: "cover_letter", label: "Cover Letter" },
               { v: "cv", label: "CV" },
               { v: "other", label: "Transcript, certificate or other document" },
             ]}

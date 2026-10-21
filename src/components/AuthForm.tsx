@@ -72,69 +72,123 @@ export default function AuthForm({ mode, signedInAs }: { mode: Mode; signedInAs:
   }
 
   return (
-    <main className="mx-auto max-w-[420px] pt-10 sm:pt-16">
-      <h1 className="text-[34px] font-semibold leading-tight tracking-tight">{t.title}</h1>
-      <p className="mt-2 text-[var(--ink2)]">{t.sub}</p>
+    <main className="puzzle lg:min-h-[calc(100vh-150px)]">
+      <section className="tile span-5 flex flex-col justify-center !py-10 lg:!px-12" aria-labelledby="auth-h">
+        <span className="chip-tag self-start">{mode === "signup" ? "Free for students" : "Welcome back"}</span>
+        <h1 id="auth-h" className="mt-5 text-[clamp(32px,3.4vw,44px)] leading-[1.05] tracking-[-0.035em]">
+          {t.title.split(" ")[0]} <span className="font-light">{t.title.split(" ").slice(1).join(" ")}</span>
+        </h1>
+        <p className="mt-2 text-[var(--ink2)]">{t.sub}</p>
 
-      {signedInAs && (
-        <p className="mt-4 rounded-2xl bg-[var(--card2)] px-4 py-3 text-sm">
-          You&apos;re signed in as <strong className="break-anywhere">{signedInAs}</strong>.{" "}
-          <Link href="/app">Go to your board</Link>
-        </p>
-      )}
-
-      <form onSubmit={onSubmit} className="card mt-6 grid gap-4">
-        <div>
-          <label htmlFor={`${mode}-email`} className="label">
-            Email
-          </label>
-          <input
-            id={`${mode}-email`}
-            data-testid={`${mode}-email`}
-            className="field"
-            type="email"
-            autoComplete="email"
-            required
-            name="email"
-            disabled={!ready}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div>
-          <label htmlFor={`${mode}-password`} className="label">
-            Password
-          </label>
-          <input
-            id={`${mode}-password`}
-            data-testid={`${mode}-password`}
-            className="field"
-            type="password"
-            autoComplete={mode === "signup" ? "new-password" : "current-password"}
-            minLength={6}
-            required
-            name="password"
-            disabled={!ready}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {mode === "signup" && <p className="mt-1.5 text-xs text-[var(--mute)]">At least 6 characters.</p>}
-        </div>
-
-        {error && (
-          <p role="alert" className="alert">
-            {error}
+        {signedInAs && (
+          <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm">
+            You&apos;re signed in as <strong className="break-anywhere">{signedInAs}</strong>.{" "}
+            <Link href="/app">Go to your board</Link>
           </p>
         )}
 
-        <button data-testid={`${mode}-submit`} type="submit" className="btn btn-lg w-full" disabled={busy || !ready}>
-          {busy ? t.busy : t.button}
-        </button>
-      </form>
+        <form onSubmit={onSubmit} className="mt-6 grid gap-4">
+          <div>
+            <label htmlFor={`${mode}-email`} className="label">
+              Email
+            </label>
+            <input
+              id={`${mode}-email`}
+              data-testid={`${mode}-email`}
+              className="field"
+              type="email"
+              autoComplete="email"
+              required
+              name="email"
+              disabled={!ready}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor={`${mode}-password`} className="label">
+              Password
+            </label>
+            <input
+              id={`${mode}-password`}
+              data-testid={`${mode}-password`}
+              className="field"
+              type="password"
+              autoComplete={mode === "signup" ? "new-password" : "current-password"}
+              minLength={6}
+              required
+              name="password"
+              disabled={!ready}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {mode === "signup" && <p className="mt-1.5 text-xs text-[var(--mute)]">At least 6 characters.</p>}
+          </div>
 
-      <p className="mt-5 text-center text-sm text-[var(--ink2)]">
-        {t.switchText} <Link href={t.switchLink} className="font-semibold">{t.switchLabel}</Link>
-      </p>
+          {error && (
+            <p role="alert" className="alert">
+              {error}
+            </p>
+          )}
+
+          <button data-testid={`${mode}-submit`} type="submit" className="btn btn-lg w-full" disabled={busy || !ready}>
+            {busy ? t.busy : t.button}
+          </button>
+        </form>
+
+        <p className="mt-5 text-center text-sm text-[var(--ink2)]">
+          {t.switchText} <Link href={t.switchLink} className="font-semibold">{t.switchLabel}</Link>
+        </p>
+      </section>
+
+      <AuthArt />
     </main>
+  );
+}
+
+/** Decorative patchwork next to the form: pastel tiles with softly drifting circles. */
+function AuthArt() {
+  return (
+    <div className="span-7 grid grid-cols-6 gap-[var(--gap)] max-lg:hidden" aria-hidden="true">
+      <div className="tile tile-lilac drift-host relative col-span-4 row-span-2 flex flex-col justify-end overflow-hidden">
+        <span className="drift drift-1 bg-white/60" />
+        <span className="drift drift-3 bg-[var(--mint)]" />
+        <span className="drift drift-2 bg-[var(--sky)]" />
+        <p className="relative text-[clamp(34px,3.6vw,52px)] leading-[1.02] tracking-[-0.035em]">
+          Every application. <span className="font-light">One clear board.</span>
+        </p>
+      </div>
+      <div className="tile tile-peach drift-host relative col-span-2 overflow-hidden">
+        <span className="drift drift-3 bg-white/60" />
+        <p className="relative text-[13px] uppercase tracking-[0.12em] text-[var(--ink2)]">Your chance</p>
+        <p className="relative mt-2 text-[56px] font-bold leading-none tracking-[-0.04em]">
+          8<span className="text-[20px] font-light">/10</span>
+        </p>
+      </div>
+      <div className="tile tile-mint drift-host relative col-span-2 overflow-hidden">
+        <span className="drift drift-4 bg-white/60" />
+        <p className="relative text-[15px] leading-snug">
+          <b>CV and Cover Letter</b>
+          <br />
+          <span className="font-light">tailored, one page</span>
+        </p>
+        <p className="relative mt-4 flex gap-1.5">
+          <span className="rounded-full bg-white px-3 py-1 text-[12px] font-bold">↓ PDF</span>
+          <span className="rounded-full bg-white px-3 py-1 text-[12px] font-bold">↓ Word</span>
+        </p>
+      </div>
+      <div className="tile tile-sky drift-host relative col-span-3 overflow-hidden">
+        <span className="drift drift-5 bg-[var(--lilac)]" />
+        <p className="relative text-[15px]">
+          <b>Interested</b> <span className="font-light">→ Submitted → Interview →</span> <b>Offer</b>
+        </p>
+      </div>
+      <div className="tile tile-butter drift-host relative col-span-3 overflow-hidden">
+        <span className="drift drift-6 bg-[var(--peach)]" />
+        <p className="relative text-[15px]">
+          <b>Honest scores.</b> <span className="font-light">No sugar-coating.</span>
+        </p>
+      </div>
+    </div>
   );
 }

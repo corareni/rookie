@@ -105,9 +105,9 @@ export function InterestedScreen() {
           <b>The catch:</b> <span className="text-[var(--ink2)]">they ask for SQL you only show at a basic level.</span>
         </p>
       </Tile>
-      <div className="mt-auto grid grid-cols-2 gap-2">
+      <div className="mt-auto grid grid-cols-[auto_1fr] gap-2 whitespace-nowrap">
         <Btn tone="bg-[var(--tile)] text-[var(--ink)]">+ Compare</Btn>
-        <Btn>CV + letter</Btn>
+        <Btn>CV and Cover Letter</Btn>
       </div>
     </>
   );
@@ -118,7 +118,7 @@ export function ApplyScreen() {
     <>
       <Top title="Your application" sub="Tailored to Google" />
       <div className="mb-2 grid grid-cols-2 gap-1 rounded-full bg-[var(--tile)] p-1 text-center text-[10.5px]">
-        <span className="rounded-full bg-[var(--lilac)] py-1 font-bold">Cover letter</span>
+        <span className="rounded-full bg-[var(--lilac)] py-1 font-bold">Cover Letter</span>
         <span className="py-1 text-[var(--ink2)]">CV</span>
       </div>
       <div className="rounded-xl border border-[var(--line)] bg-white p-3 font-serif text-[9px] leading-[1.45] text-black">

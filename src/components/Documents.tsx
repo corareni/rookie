@@ -28,9 +28,9 @@ const STYLES: { v: GenerateOptions["style"]; label: string; hint: string }[] = [
   { v: "elaborate", label: "Elaborate", hint: "Fuller, more descriptive" },
 ];
 const WHICH: { v: GenerateOptions["which"]; label: string }[] = [
-  { v: "both", label: "CV + cover letter" },
+  { v: "both", label: "CV and Cover Letter" },
   { v: "cv", label: "CV only" },
-  { v: "letter", label: "Cover letter only" },
+  { v: "letter", label: "Cover Letter only" },
 ];
 const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
   { v: "short", label: "Short · ~200 words" },
@@ -65,7 +65,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
 
   // Only warn about edits in the documents this run will replace.
   const edited = (which !== "letter" && cvDoc?.edited) || (which !== "cv" && letterDoc?.edited);
-  const target = which === "cv" ? "CV" : which === "letter" ? "cover letter" : "CV and cover letter";
+  const target = which === "cv" ? "CV" : which === "letter" ? "Cover Letter" : "CV and Cover Letter";
   const exists = which === "cv" ? !!cvDoc : which === "letter" ? !!letterDoc : has;
   const button = (
     <button
@@ -81,7 +81,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
   return (
     <section id="documents" className="mt-8 scroll-mt-4" aria-labelledby="docs-h">
       <h2 id="docs-h" className="sec">
-        <small>[02]</small> Your tailored CV and cover letter
+        <small>[02]</small> Your tailored CV and Cover Letter
       </h2>
 
       <RoleNotes applicationId={applicationId} initial={notes} />
@@ -100,7 +100,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         {which !== "cv" && (
         <>
         <fieldset>
-          <legend className="label">Cover letter style</legend>
+          <legend className="label">Cover Letter style</legend>
           <div className="mt-1 grid gap-2 sm:grid-cols-3">
             {STYLES.map((o) => (
               <button key={o.v} type="button" className="act !h-auto !justify-start !py-2.5 !text-left" aria-pressed={style === o.v} onClick={() => setStyle(o.v)}>
@@ -194,27 +194,32 @@ async function saveDoc(applicationId: string, kind: "cv" | "cover_letter", conte
   return createClient().from("documents").update({ content, edited: true }).eq("application_id", applicationId).eq("kind", kind);
 }
 
+/** Grey boxes side by side (what changed or which facts were used), then "Please check" below, in white. */
 function Notes({ meta }: { meta: Record<string, string[]> }) {
-  const labels: Record<string, string> = {
-    changes: "What changed",
-    flags: "Please check",
-    used_company_facts: "Company facts used",
-    used_profile_facts: "Your facts used",
-  };
+  const facts: [string, string][] = [
+    ["changes", "What changed"],
+    ["used_company_facts", "Company facts used"],
+    ["used_profile_facts", "Your facts used"],
+  ];
+  const shown = facts.filter(([k]) => meta[k]?.length);
+  const box = (k: string, label: string, tone: string) => (
+    <div key={k} className={`rounded-2xl p-4 ${tone}`}>
+      <p className="text-[13px] font-semibold">{label}</p>
+      <ul className="dot-list mt-1 text-[13px] leading-snug text-[var(--ink2)]">
+        {meta[k].map((x) => (
+          <li key={x}>{x}</li>
+        ))}
+      </ul>
+    </div>
+  );
   return (
-    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-      {Object.entries(labels).map(([k, label]) =>
-        meta[k]?.length ? (
-          <div key={k} className={`rounded-2xl p-4 ${k === "flags" ? "bg-[var(--warnbg)]" : "bg-[var(--card2)]"}`}>
-            <p className="text-[13px] font-semibold">{label}</p>
-            <ul className="dot-list mt-1 text-[13px] leading-snug text-[var(--ink2)]">
-              {meta[k].map((x) => (
-                <li key={x}>{x}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null,
+    <div className="mt-4 grid gap-3">
+      {shown.length > 0 && (
+        <div className={`grid gap-3 ${shown.length > 1 ? "sm:grid-cols-2" : ""}`}>
+          {shown.map(([k, label]) => box(k, label, "bg-[var(--card2)]"))}
+        </div>
       )}
+      {meta.flags?.length ? box("flags", "Please check", "bg-white shadow-[0_0_0_1px_var(--line)]") : null}
     </div>
   );
 }
@@ -401,9 +406,9 @@ function LetterEditor({ id, doc, signature }: { id: string; doc: NonNullable<Doc
   const words = body.split(/\s+/).filter(Boolean).length;
 
   return (
-    <article className="card mt-4" aria-label="Cover letter">
+    <article className="card mt-4" aria-label="Cover Letter">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h3 className="text-lg font-semibold">Cover letter</h3>
+        <h3 className="text-lg font-semibold">Cover Letter</h3>
         <span className={`text-sm ${words > 380 ? "text-[var(--bad)]" : "text-[var(--mute)]"}`}>{words} words</span>
       </div>
       <div className="mt-4 rounded-2xl border border-[var(--line)] p-5 font-serif text-[14px]">
@@ -465,7 +470,7 @@ function RoleNotes({ applicationId, initial }: { applicationId: string; initial:
   return (
     <div className="tile tile-butter mt-3 grid gap-2">
       <label htmlFor="role-notes" className="text-[15px] font-bold">
-        Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and cover letter</span>
+        Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and Cover Letter</span>
       </label>
       <textarea
         id="role-notes"

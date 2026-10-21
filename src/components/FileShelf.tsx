@@ -8,7 +8,7 @@ type Kind = { v: "cover_letter" | "cv" | "other"; label: string };
 
 const MAX = 10 * 1024 * 1024;
 const date = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-const kindLabel = (k: string) => (k === "cover_letter" ? "Cover letter" : k === "cv" ? "CV" : "Document");
+const kindLabel = (k: string) => (k === "cover_letter" ? "Cover Letter" : k === "cv" ? "CV" : "Document");
 
 /**
  * Upload, download and delete files in the user's private storage folder.

@@ -10,11 +10,11 @@ export const maxDuration = 30;
 const FILES = {
   "cv.pdf": { kind: "cv", type: "application/pdf", label: "CV" },
   "cv.docx": { kind: "cv", type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", label: "CV" },
-  "letter.pdf": { kind: "cover_letter", type: "application/pdf", label: "Cover letter" },
+  "letter.pdf": { kind: "cover_letter", type: "application/pdf", label: "Cover Letter" },
   "letter.docx": {
     kind: "cover_letter",
     type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    label: "Cover letter",
+    label: "Cover Letter",
   },
 } as const;
 

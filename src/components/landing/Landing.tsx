@@ -8,7 +8,7 @@ import { site } from "@/lib/site";
 const FEATURES = [
   { t: "Honest scores", d: ["Out of 10,", "for you"], tone: "bg-[var(--lilac)]" },
   { t: "Tailored CV", d: ["In a clean,", "one-page format"], tone: "bg-[var(--mint)]" },
-  { t: "Cover letters", d: ["From your", "real story"], tone: "bg-[var(--peach)]" },
+  { t: "Cover Letters", d: ["From your", "real story"], tone: "bg-[var(--peach)]" },
   { t: "Compare", d: ["Best pick,", "side by side"], tone: "bg-[var(--sky)]" },
   { t: "Track", d: ["From applied", "to offer"], tone: "bg-[var(--butter)]" },
 ];
@@ -131,7 +131,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
             </div>
           </div>
         </section>
-        <section className="tile tile-lilac span-5 relative grid place-items-center overflow-hidden !py-12" aria-label="Example: a role scored for you">
+        <section className="tile tile-lilac span-5 relative grid place-items-center overflow-hidden !pt-24 !pb-10" aria-label="Example: a role scored for you">
           <Wordmark className="absolute top-6 left-7 text-[28px] leading-none" dot="text-white" />
           <Phone label="Example screen: Google's Associate Product Manager Intern role scored 8 out of 10, with why you fit and the catch">
             <InterestedScreen />
