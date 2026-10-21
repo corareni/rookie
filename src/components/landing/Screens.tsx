@@ -151,16 +151,18 @@ export function AssessmentScreen() {
       <Top title="Applied 3." sub="Where everything stands" />
       <div className="grid gap-2">
         {rows.map(([co, role, status, next, tone]) => (
-          <Tile key={co}>
-            <div className="flex items-center gap-2">
+          <Tile key={co} className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
               <Badge co={co} size={26} />
               <div className="min-w-0 flex-1">
                 <p className="text-[11.5px] font-bold">{COMPANIES[co].name}</p>
                 <p className="truncate text-[10px] text-[var(--ink2)]">{role}</p>
               </div>
+            </div>
+            <div className="mt-1.5 flex min-w-0 items-center justify-between gap-2">
+              <p className="truncate text-[10px] text-[var(--mute)]">Next: {next}</p>
               <Chip tone={tone}>{status}</Chip>
             </div>
-            <p className="mt-1.5 text-[10px] text-[var(--mute)]">Next: {next}</p>
           </Tile>
         ))}
       </div>
@@ -212,14 +214,15 @@ export function OfferScreen() {
   return (
     <>
       <Top title="Google" sub="Associate Product Manager Intern" />
-      <div className="mt-2 rounded-[18px] bg-[var(--red)] px-3 py-5 text-center text-white">
-        <p className="text-[11px] uppercase tracking-[0.12em] text-white/80">Offer</p>
+      <div className="mt-2 rounded-[18px] bg-[var(--mint)] px-3 py-5 text-center text-[var(--ink)]">
+        <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--good)]">Offer</p>
         <p className="mt-1 text-[22px] font-bold leading-tight">You landed the right one.</p>
       </div>
       <div className="mt-4 grid gap-1.5 text-[10.5px]">
         {["Interested · 2 Oct", "Submitted · 4 Oct", "Assessment · 9 Oct", "Interview · 16 Oct", "Offer · 22 Oct"].map((t, i) => (
           <p key={t} className="flex items-center gap-2 text-[var(--ink2)]">
-            <span className={`inline-block h-2 w-2 rounded-full ${i === 4 ? "bg-[var(--red)]" : "bg-[#9b8cf0]"}`} /> {t}
+            <span className={`inline-block h-2 w-2 rounded-full ${i === 4 ? "bg-[var(--good)]" : "bg-[#c4c4c9]"}`} />
+            <span className={i === 4 ? "font-bold text-[var(--ink)]" : ""}>{t}</span>
           </p>
         ))}
       </div>

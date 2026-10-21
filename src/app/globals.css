@@ -23,7 +23,6 @@
   --sky: #d9eafb;
   --butter: #faf0c2;
   --orange: #f07a1a;
-  --red: #d92d20;
   --good: #137a4a;
   --goodbg: #e2f6ea;
   --warn: #8a5c00;
@@ -172,11 +171,71 @@ a {
   font-weight: 700;
 }
 
-.topbar-compact {
-  width: auto;
-  gap: 14px;
+/* The header is one bar that morphs: it narrows into a centred pill as you scroll,
+   sections fade and fold away, and the Menu button grows in. */
+.topbar.morph {
+  width: 100%;
+  max-width: 2000px;
+  margin-inline: auto;
+  transition:
+    max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    padding 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    gap 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    box-shadow 0.6s ease;
+}
+.topbar.morph.is-scrolled {
+  max-width: 290px;
   padding: 6px 6px 6px 18px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 12px 30px -12px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 14px 30px -14px rgba(0, 0, 0, 0.5);
+}
+.morph-part {
+  max-width: 900px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.3s ease 0.15s,
+    margin 0.6s ease,
+    padding 0.6s ease;
+}
+.is-compact .morph-part {
+  max-width: 0;
+  opacity: 0;
+  margin-block: 0 !important;
+  margin-right: 0 !important;
+  padding-inline: 0 !important;
+  transition:
+    max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.2s ease,
+    margin 0.6s ease,
+    padding 0.6s ease;
+}
+.menu-btn {
+  max-width: 0;
+  opacity: 0;
+  padding-inline: 0;
+  overflow: hidden;
+  transition:
+    max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.3s ease,
+    padding 0.6s ease;
+}
+.is-compact .menu-btn {
+  max-width: 140px;
+  opacity: 1;
+  padding-inline: 16px;
+  transition:
+    max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.35s ease 0.2s,
+    padding 0.6s ease;
+}
+/* Phones: always the compact pill, a little narrower again once you scroll. */
+@media (max-width: 639px) {
+  .topbar.morph { padding: 6px 6px 6px 16px; gap: 6px; }
+  .topbar.morph.is-scrolled { max-width: 340px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .topbar.morph, .morph-part, .menu-btn { transition: none !important; }
 }
 .menu-panel {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -16px rgba(0, 0, 0, 0.5) !important;
@@ -620,17 +679,6 @@ a {
 }
 @media (prefers-reduced-motion: reduce) {
   .spin, .step-card, .screen-fade { animation: none !important; transition: none !important; }
-}
-
-.tile-red { background: var(--red); color: #fff; }
-.float-a { animation: float 6s ease-in-out infinite; }
-.float-b { animation: float 7s ease-in-out -2s infinite; }
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .float-a, .float-b { animation: none; }
 }
 
 /* Writing animation */

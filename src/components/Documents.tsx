@@ -25,6 +25,11 @@ const STYLES: { v: GenerateOptions["style"]; label: string; hint: string }[] = [
   { v: "story", label: "Storytelling", hint: "Opens with a real moment" },
   { v: "elaborate", label: "Elaborate", hint: "Fuller, more descriptive" },
 ];
+const WHICH: { v: GenerateOptions["which"]; label: string }[] = [
+  { v: "both", label: "CV + cover letter" },
+  { v: "cv", label: "CV only" },
+  { v: "letter", label: "Cover letter only" },
+];
 const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
   { v: "short", label: "Short · ~200 words" },
   { v: "standard", label: "Standard · ~300" },
@@ -39,6 +44,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
   const [style, setStyle] = useState<GenerateOptions["style"]>("story");
   const [length, setLength] = useState<GenerateOptions["length"]>("standard");
   const [picked, setPicked] = useState<string[]>([]);
+  const [which, setWhich] = useState<GenerateOptions["which"]>("both");
   const has = !!(cvDoc && letterDoc);
 
   async function generate() {
@@ -46,7 +52,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     setError(null);
     setConfirmRegen(false);
     try {
-      await generateDocs(applicationId, { style, length, facts: picked });
+      await generateDocs(applicationId, { style, length, facts: picked, which });
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't write your documents.");
@@ -55,15 +61,18 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     }
   }
 
-  const edited = cvDoc?.edited || letterDoc?.edited;
+  // Only warn about edits in the documents this run will replace.
+  const edited = (which !== "letter" && cvDoc?.edited) || (which !== "cv" && letterDoc?.edited);
+  const target = which === "cv" ? "CV" : which === "letter" ? "cover letter" : "CV and cover letter";
+  const exists = which === "cv" ? !!cvDoc : which === "letter" ? !!letterDoc : has;
   const button = (
     <button
       type="button"
       className="btn btn-lg"
       disabled={busy || !hasCv || !canGenerate || left <= 0}
-      onClick={() => (has && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
+      onClick={() => (exists && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
     >
-      {busy ? "Writing…" : has ? "Regenerate both" : "Write my CV and cover letter"}
+      {busy ? "Writing…" : `${exists ? "Regenerate" : "Write"} my ${target}`}
     </button>
   );
 
@@ -74,6 +83,18 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
       </h2>
 
       <div className="card mt-3 grid gap-5">
+        <fieldset>
+          <legend className="label">What should Rookie write?</legend>
+          <div className="mt-1 inline-grid grid-cols-3 gap-1 rounded-[14px] bg-white p-1 max-sm:grid-cols-1">
+            {WHICH.map((o) => (
+              <button key={o.v} type="button" className="act !bg-transparent aria-pressed:!bg-[var(--lilac)]" aria-pressed={which === o.v} onClick={() => setWhich(o.v)}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        {which !== "cv" && (
+        <>
         <fieldset>
           <legend className="label">Cover letter style</legend>
           <div className="mt-1 grid gap-2 sm:grid-cols-3">
@@ -97,6 +118,8 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
             ))}
           </div>
         </fieldset>
+        </>
+        )}
         {facts.length > 0 && (
           <details className="rounded-2xl bg-white p-4">
             <summary className="cursor-pointer text-[14px] font-bold">
@@ -135,7 +158,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         </p>
         {confirmRegen && (
           <p className="w-full text-sm">
-            This replaces your edits.{" "}
+            This replaces your edits to the {target}.{" "}
             <button type="button" className="font-semibold underline" onClick={generate}>
               Regenerate anyway
             </button>

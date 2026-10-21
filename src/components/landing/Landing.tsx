@@ -133,21 +133,6 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         </section>
         <section className="tile tile-lilac span-5 relative grid place-items-center overflow-hidden !py-12" aria-label="Example: a role scored for you">
           <Wordmark className="absolute top-6 left-7 text-[28px] leading-none" dot="text-white" />
-          <span className="absolute top-7 right-7 rounded-full bg-white/70 px-3 py-1 text-[11px] uppercase tracking-wide">Example</span>
-          <div className="float-a absolute top-[26%] left-[5%] hidden items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-[0_14px_30px_-18px_rgba(0,0,0,0.35)] xl:flex">
-            <Badge co="google" size={26} />
-            <span className="text-[12px] leading-tight">
-              <b className="block">Google</b>
-              <span className="text-[var(--ink2)]">8/10 for you</span>
-            </span>
-          </div>
-          <div className="float-b absolute right-[5%] bottom-[18%] hidden items-center gap-2 rounded-2xl bg-white px-3 py-2 shadow-[0_14px_30px_-18px_rgba(0,0,0,0.35)] xl:flex">
-            <span className="grid h-[26px] w-[26px] place-items-center rounded-full bg-[var(--mint)] text-[13px] font-bold">✓</span>
-            <span className="text-[12px] leading-tight">
-              <b className="block">CV + letter ready</b>
-              <span className="text-[var(--ink2)]">PDF or Word</span>
-            </span>
-          </div>
           <Phone label="Example screen: Google's Associate Product Manager Intern role scored 8 out of 10, with why you fit and the catch">
             <InterestedScreen />
           </Phone>
@@ -262,11 +247,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
       </Reveal>
 
       {/* Call to action: the offer, in one big red rectangle */}
-      <Reveal as="section" className="tile tile-red relative mt-16 overflow-hidden">
+      <Reveal as="section" className="tile tile-mint relative mt-16 overflow-hidden">
         <div className="grid items-center gap-10 lg:grid-cols-[1.25fr_1fr]">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[12px] uppercase tracking-[0.14em]">
-              <span className="h-2 w-2 rounded-full bg-white" /> Offer received
+            <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[12px] uppercase tracking-[0.14em]">
+              <span className="h-2 w-2 rounded-full bg-[var(--good)]" /> Offer received
             </span>
             <h2 id="cta" className="mt-6 text-[clamp(40px,6.4vw,92px)] leading-[0.98] tracking-[-0.045em]">
               You landed <span className="font-light">the right one.</span>
@@ -277,11 +262,11 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
                 <b>Google</b> <span className="font-light">· Associate Product Manager Intern</span>
               </span>
             </p>
-            <p className="mt-6 max-w-[480px] text-[16px] text-white/85">
+            <p className="mt-6 max-w-[480px] text-[16px] text-[var(--ink2)]">
               Add your profile once, paste your first job link and see your score in under a minute. Free for students and
               graduates, private to you.
             </p>
-            <Link href={cta.href} className="btn btn-lg mt-7 !border-white !bg-white !text-[var(--red)]">
+            <Link href={cta.href} className="btn btn-lg mt-7">
               {cta.label}
             </Link>
           </div>

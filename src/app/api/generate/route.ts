@@ -26,8 +26,10 @@ export async function POST(request: Request) {
       style?: WriteOptions["style"];
       length?: WriteOptions["length"];
       facts?: string[];
+      which?: "both" | "cv" | "letter";
     };
     const id = body.id;
+    const which = body.which === "cv" || body.which === "letter" ? body.which : "both";
     if (!id) throw new AiError("Missing role.", 400);
 
     const { data: row } = await supabase
@@ -67,27 +69,26 @@ export async function POST(request: Request) {
     };
 
     await consumeRun(supabase, "generate");
+    // Only write what was asked for: the CV, the letter, or both (in parallel).
     const [cv, letter] = await Promise.all([
-      generateJson<TailoredCV>({ model: MODEL_WRITE(), system: cvSystem, prompt: cvPrompt(job, profile, options), schema: cvSchema }),
-      generateJson<Letter>({ model: MODEL_WRITE(), system: letterSystem, prompt: letterPrompt(job, profile, options), schema: letterSchema }),
+      which !== "letter"
+        ? generateJson<TailoredCV>({ model: MODEL_WRITE(), system: cvSystem, prompt: cvPrompt(job, profile, options), schema: cvSchema })
+        : null,
+      which !== "cv"
+        ? generateJson<Letter>({ model: MODEL_WRITE(), system: letterSystem, prompt: letterPrompt(job, profile, options), schema: letterSchema })
+        : null,
     ]);
 
-    const { changes, flags, ...cvContent } = noLongDashes(cv.data);
-    const { used_company_facts, used_profile_facts, flags: letterFlags, ...letterContent } = noLongDashes(letter.data);
-
-    const { error } = await supabase.from("documents").upsert(
-      [
-        { application_id: id, kind: "cv", content: cvContent, meta: { changes, flags }, edited: false },
-        {
-          application_id: id,
-          kind: "cover_letter",
-          content: letterContent,
-          meta: { used_company_facts, used_profile_facts, flags: letterFlags },
-          edited: false,
-        },
-      ],
-      { onConflict: "application_id,kind" },
-    );
+    const rows = [];
+    if (cv) {
+      const { changes, flags, ...content } = noLongDashes(cv.data);
+      rows.push({ application_id: id, kind: "cv", content, meta: { changes, flags }, edited: false });
+    }
+    if (letter) {
+      const { used_company_facts, used_profile_facts, flags, ...content } = noLongDashes(letter.data);
+      rows.push({ application_id: id, kind: "cover_letter", content, meta: { used_company_facts, used_profile_facts, flags }, edited: false });
+    }
+    const { error } = await supabase.from("documents").upsert(rows, { onConflict: "application_id,kind" });
     if (error) throw new AiError(`Couldn't save your documents: ${error.message}`);
     return Response.json({ ok: true });
   } catch (e) {
