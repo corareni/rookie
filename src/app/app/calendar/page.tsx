@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import CalendarView, { type CalItem } from "@/components/CalendarView";
+import { withEventNote } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Calendar · Rookie" };
@@ -28,7 +29,7 @@ export default async function CalendarPage() {
       .select("id,title,company,role,status,deadline,submitted_on,assessment_on,interview_on,offer_on,job_url,next_step,location,verdict")
       .neq("verdict", "binned"),
     // Scheduled interviews and tests need the Phase 5 columns; without them this is simply empty.
-    supabase.from("applications").select("id,event_at,event_minutes,event_location,event_kind").not("event_at", "is", null),
+    withEventNote((c) => supabase.from("applications").select(`id,${c}`).not("event_at", "is", null)),
   ]);
 
   const items: CalItem[] = [];
@@ -64,6 +65,7 @@ export default async function CalendarPage() {
       minutes: e.event_minutes as number,
       location: e.event_location as string | null,
       eventKind: e.event_kind as "interview" | "assessment" | "other" | null,
+      eventNote: ((e as { event_note?: string | null }).event_note ?? null) || null,
     });
   }
 

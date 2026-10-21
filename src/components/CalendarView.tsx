@@ -1,8 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { EventDetails, EventDialog, toLocalInput, type Draft } from "@/components/CalendarEvents";
+import { eventName } from "@/components/EventPanel";
 import { titleCase } from "@/lib/applications";
+import { createClient } from "@/lib/supabase/client";
 
 export type CalItem = {
   appId: string;
@@ -20,6 +23,8 @@ export type CalItem = {
   minutes?: number;
   location?: string | null;
   eventKind?: "interview" | "assessment" | "other" | null;
+  /** The user's name for an "Other" event. */
+  eventNote?: string | null;
 };
 
 export const KIND: Record<CalItem["kind"], { label: string; tone: string }> = {
@@ -35,8 +40,17 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const localDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const dayOf = (i: CalItem) => (i.at ? localDay(new Date(i.at)) : i.day!);
 const timeOf = (i: CalItem) => (i.at ? new Date(i.at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) : "");
-export const itemLabel = (i: CalItem) =>
-  i.kind === "scheduled" ? (i.eventKind === "assessment" ? "Assessment" : i.eventKind === "other" ? "Next step" : "Interview") : KIND[i.kind].label;
+export const itemLabel = (i: CalItem) => (i.kind === "scheduled" ? eventName(i.eventKind, i.eventNote) : KIND[i.kind].label);
+
+/** The column each kind of entry is stored in, for moving it to another day. */
+const DAY_COLUMN: Record<Exclude<CalItem["kind"], "scheduled">, string> = {
+  applied: "submitted_on",
+  deadline: "deadline",
+  assessment: "assessment_on",
+  interview: "interview_on",
+  offer: "offer_on",
+};
+const sameEntry = (a: CalItem, b: CalItem) => a.appId === b.appId && a.kind === b.kind;
 const sortKey = (i: CalItem) => i.at ?? `${i.day}T00:00`;
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const mondayOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7));
@@ -46,11 +60,28 @@ const dayName = (d: Date) => d.toLocaleDateString("en-GB", { day: "numeric", mon
 const ctl = "act !min-h-[34px] !px-3";
 
 /** One clickable entry; opens its details. `big` is the week view's card. */
-function Entry({ i, big = false, onOpen }: { i: CalItem; big?: boolean; onOpen: (i: CalItem) => void }) {
+function Entry({
+  i,
+  big = false,
+  onOpen,
+  onDrag,
+}: {
+  i: CalItem;
+  big?: boolean;
+  onOpen: (i: CalItem) => void;
+  onDrag: (i: CalItem | null) => void;
+}) {
   return (
     <button
       type="button"
-      className={`block w-full min-w-0 text-left leading-tight transition-[filter] hover:brightness-95 ${KIND[i.kind].tone} ${
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", `${i.kind}:${i.appId}`);
+        onDrag(i);
+      }}
+      onDragEnd={() => onDrag(null)}
+      className={`block w-full min-w-0 cursor-grab text-left leading-tight transition-[filter] hover:brightness-95 active:cursor-grabbing ${KIND[i.kind].tone} ${
         big ? "rounded-[10px] px-2 py-1.5 text-[12px]" : "truncate rounded-md px-1.5 py-0.5 text-[11px]"
       }`}
       title={`${itemLabel(i)}: ${i.company}`}
@@ -81,13 +112,71 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
   const [cursor, setCursor] = useState(() => new Date());
   const [draft, setDraft] = useState<Draft | null>(null);
   const [open, setOpen] = useState<CalItem | null>(null);
-  const taken = Object.fromEntries(items.filter((i) => i.kind === "scheduled").map((i) => [i.appId, i.at!]));
+  const router = useRouter();
+  // A local copy, so a dragged entry moves at once; it re-syncs when the page refreshes.
+  const [list, setList] = useState(items);
+  const [seen, setSeen] = useState(items);
+  if (items !== seen) {
+    setSeen(items);
+    setList(items);
+  }
+  const [dragging, setDragging] = useState<CalItem | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [moveErr, setMoveErr] = useState<string | null>(null);
+  const taken = Object.fromEntries(list.filter((i) => i.kind === "scheduled").map((i) => [i.appId, i.at!]));
+
+  /** Drop on another day: same time for scheduled events, the new date for all-day ones. */
+  async function moveTo(i: CalItem, day: Date) {
+    const key = localDay(day);
+    if (dayOf(i) === key) return;
+    let next: CalItem;
+    let patch: Record<string, string>;
+    if (i.kind === "scheduled") {
+      const old = new Date(i.at!);
+      const at = new Date(day.getFullYear(), day.getMonth(), day.getDate(), old.getHours(), old.getMinutes()).toISOString();
+      next = { ...i, at };
+      patch = { event_at: at };
+    } else {
+      next = { ...i, day: key };
+      patch = { [DAY_COLUMN[i.kind]]: key };
+    }
+    setMoveErr(null);
+    setList((l) => l.map((x) => (sameEntry(x, i) ? next : x)));
+    const { error } = await createClient().from("applications").update(patch).eq("id", i.appId);
+    if (error) {
+      setList((l) => l.map((x) => (sameEntry(x, i) ? i : x)));
+      setMoveErr(`Couldn't move it: ${error.message}`);
+      return;
+    }
+    router.refresh();
+  }
+
+  /** Props that make a day accept a dragged entry. */
+  const dropTarget = (d: Date) => {
+    const key = localDay(d);
+    return {
+      onDragOver: (e: React.DragEvent) => {
+        if (!dragging) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (over !== key) setOver(key);
+      },
+      onDragLeave: () => over === key && setOver(null),
+      onDrop: (e: React.DragEvent) => {
+        e.preventDefault();
+        setOver(null);
+        if (dragging) void moveTo(dragging, d);
+        setDragging(null);
+      },
+    };
+  };
+  const dropRing = (d: Date) => (over === localDay(d) ? "!ring-2 !ring-[var(--lilac)] bg-[var(--lilac)]/30" : "");
 
   /** New event on a given day (9:00), or at the next full hour. */
   const add = (day?: Date) => {
     const at = day ? new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9) : new Date(Date.now() + 3600_000);
     if (!day) at.setMinutes(0, 0, 0);
-    setDraft({ appId: "", local: toLocalInput(at), minutes: 60, kind: "interview", location: "" });
+    setDraft({ appId: "", local: toLocalInput(at), minutes: 60, kind: "interview", location: "", note: "" });
   };
   const edit = (i: CalItem) => {
     setOpen(null);
@@ -97,19 +186,20 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
       minutes: i.minutes ?? 60,
       kind: i.eventKind ?? "interview",
       location: i.location ?? "",
+      note: i.eventNote ?? "",
     });
   };
 
   const byDay = useMemo(() => {
     const m = new Map<string, CalItem[]>();
-    for (const i of items) {
+    for (const i of list) {
       const k = dayOf(i);
       m.set(k, [...(m.get(k) ?? []), i]);
     }
     // Timed events first, in order; then all-day items.
     for (const list of m.values()) list.sort((a, b) => (a.at ?? "~").localeCompare(b.at ?? "~"));
     return m;
-  }, [items]);
+  }, [list]);
 
   const month = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
   const week = mondayOf(cursor);
@@ -123,13 +213,13 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
     return Array.from({ length: days }, (_, i) => addDays(mondayOf(first), i));
   }, [cursor]);
 
-  const upcoming = items
+  const upcoming = list
     .filter((i) => dayOf(i) >= today && (i.kind === "scheduled" || i.kind === "deadline"))
     .sort((a, b) => (a.at ?? `${a.day}T23:59`).localeCompare(b.at ?? `${b.day}T23:59`))
     .slice(0, 6);
 
   const monthName = month.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-  const inMonth = items.filter((i) => dayOf(i).startsWith(`${month.getFullYear()}-${pad(month.getMonth() + 1)}`));
+  const inMonth = list.filter((i) => dayOf(i).startsWith(`${month.getFullYear()}-${pad(month.getMonth() + 1)}`));
   const count = (k: CalItem["kind"]) => inMonth.filter((i) => i.kind === k).length;
   const weekEnd = weekDays[6];
   const weekName =
@@ -227,7 +317,8 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
                 return (
                   <div
                     key={key}
-                    className={`group grid min-w-0 content-start gap-1.5 rounded-[12px] bg-white p-2 md:min-h-[300px] ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
+                    {...dropTarget(d)}
+                    className={`group grid min-w-0 content-start gap-1.5 rounded-[12px] bg-white p-2 transition-colors md:min-h-[300px] ${key === today ? "ring-2 ring-[var(--ink)]" : ""} ${dropRing(d)}`}
                   >
                     <p className="flex items-center justify-between gap-1">
                       <span className="text-[12px] text-[var(--ink2)]">
@@ -243,7 +334,7 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
                       </button>
                     </p>
                     {list.map((i, n) => (
-                      <Entry key={n} i={i} big onOpen={setOpen} />
+                      <Entry key={n} i={i} big onOpen={setOpen} onDrag={setDragging} />
                     ))}
                     {list.length === 0 && <span className="text-[12px] text-[var(--mute)] md:hidden">Nothing planned</span>}
                   </div>
@@ -267,8 +358,9 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
                     <div
                       key={key}
                       role="gridcell"
+                      {...dropTarget(d)}
                       aria-label={`${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}`}
-                      className={`group min-h-[96px] min-w-0 rounded-[12px] p-1.5 ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
+                      className={`group min-h-[96px] min-w-0 rounded-[12px] p-1.5 transition-colors ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""} ${dropRing(d)}`}
                     >
                       <p className="flex items-center justify-between">
                         <span className={`text-[12px] ${key === today ? "font-bold" : "text-[var(--ink2)]"}`}>{d.getDate()}</span>
@@ -284,7 +376,7 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
                       <ul className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
                         {list.slice(0, 3).map((i, n) => (
                           <li key={n} className="min-w-0">
-                            <Entry i={i} onOpen={setOpen} />
+                            <Entry i={i} onOpen={setOpen} onDrag={setDragging} />
                           </li>
                         ))}
                         {list.length > 3 && (
@@ -330,7 +422,13 @@ export default function CalendarView({ items, roles = [] }: { items: CalItem[]; 
             </>
           )}
 
-          <ul className="mt-4 flex flex-wrap gap-2 text-[12px]" aria-label="Legend">
+          {moveErr && (
+            <p role="alert" className="alert mt-3">
+              {moveErr}
+            </p>
+          )}
+          <p className="mt-3 text-[12.5px] text-[var(--mute)] max-md:hidden">Drag an entry to another day to move it. Times stay the same.</p>
+          <ul className="mt-3 flex flex-wrap gap-2 text-[12px]" aria-label="Legend">
             {(Object.keys(KIND) as CalItem["kind"][]).map((k) => (
               <li key={k} className={`rounded-full px-2.5 py-1 ${KIND[k].tone}`}>
                 {KIND[k].label}

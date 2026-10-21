@@ -783,12 +783,19 @@ a {
 }
 
 /* Floating progress pop-up (e.g. while comparing roles) */
-.rk-toast {
+/* Floating pop-ups stack in one corner */
+.rk-toasts {
   position: fixed;
   right: 18px;
   bottom: 18px;
   z-index: 60;
+  display: grid;
+  gap: 10px;
   width: min(340px, calc(100vw - 36px));
+  pointer-events: none;
+}
+.rk-toast {
+  pointer-events: auto;
   border-radius: 22px;
   background: var(--black);
   color: var(--onblack);
@@ -798,7 +805,7 @@ a {
 }
 @media (max-width: 640px) {
   /* Above the compare bar's spot: just below the header pill. */
-  .rk-toast { top: 76px; bottom: auto; right: 16px; width: calc(100vw - 32px); }
+  .rk-toasts { top: 76px; bottom: auto; right: 16px; width: calc(100vw - 32px); }
 }
 .rk-toast.done {
   animation: toast-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), toast-wiggle 0.7s ease-in-out 0.1s 2;
@@ -883,4 +890,171 @@ a {
 }
 @media (prefers-reduced-motion: reduce) {
   .skel { animation: none; }
+}
+
+/* Notification bell in the header (the compact pill makes room for it) */
+.topbar.morph.is-scrolled.has-bell { max-width: 336px; }
+.bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--black2);
+  color: var(--onblack);
+  transition: background 0.2s;
+}
+.bell:hover,
+.bell[aria-expanded="true"] {
+  background: #2c2c2f;
+}
+.bell-count {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--peach);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 19px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--black);
+  animation: bell-pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+@keyframes bell-pop {
+  from { transform: scale(0.4); }
+  to { transform: scale(1); }
+}
+.bell-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: -6px;
+  z-index: 50;
+  width: min(400px, calc(100vw - 32px));
+  border-radius: 22px;
+  background: var(--black);
+  color: var(--onblack);
+  padding: 12px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -16px rgba(0, 0, 0, 0.5);
+  animation: menu-in 0.22s ease-out;
+}
+@media (max-width: 639px) {
+  /* On phones the panel spans the screen under the header pill. */
+  .bell-panel { position: fixed; top: 76px; left: 16px; right: 16px; width: auto; }
+}
+.bell-act {
+  border-radius: 999px;
+  background: var(--black2);
+  color: var(--onblack);
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.bell-act:disabled { opacity: 0.6; }
+.bell-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border-radius: 14px;
+  background: var(--black2);
+  padding: 10px 10px 10px 12px;
+}
+.bell-item.is-new { box-shadow: inset 3px 0 0 var(--peach); }
+.bell-item:hover { background: #26262a; }
+.bell-x {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  color: var(--onblack2);
+  font-size: 17px;
+  line-height: 1;
+}
+.bell-x:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .bell-count, .bell-panel { animation: none; }
+}
+
+/* Ask Rookie: chat button in the corner and its panel */
+.chat-fab {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 55;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--black);
+  color: var(--onblack);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease, bottom 0.3s ease;
+}
+.chat-fab:hover { transform: scale(1.05); }
+/* Toasts sit above the button. */
+body:has(.chat-fab) .rk-toasts { bottom: 86px; }
+/* Out of the way of the Profile save bar and the Compare bar. */
+body:has(.rk-bottom-bar) .chat-fab { bottom: 96px; }
+body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
+.chat-panel {
+  position: fixed;
+  right: 18px;
+  bottom: 86px;
+  z-index: 56;
+  display: flex;
+  flex-direction: column;
+  width: min(390px, calc(100vw - 32px));
+  height: min(600px, 70vh);
+  border-radius: 22px;
+  background: var(--frame);
+  color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line), 0 30px 60px -20px rgba(0, 0, 0, 0.35);
+  animation: dialog-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  overflow: hidden;
+}
+body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(100vh - 260px)); }
+@media (max-width: 639px) {
+  .chat-fab { right: 16px; bottom: 16px; width: 52px; height: 52px; }
+  .chat-panel { right: 16px; left: 16px; width: auto; bottom: 80px; height: calc(100dvh - 170px); }
+  /* The Profile save bar stacks taller on phones. */
+  body:has(.rk-bottom-bar) .chat-fab { bottom: 150px; }
+  body:has(.rk-bottom-bar) .chat-panel { bottom: 214px; height: calc(100dvh - 300px); }
+}
+.chat-msg {
+  max-width: 88%;
+  border-radius: 16px;
+  padding: 9px 12px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.chat-user { justify-self: end; background: var(--lilac); border-bottom-right-radius: 6px; }
+.chat-bot { justify-self: start; background: var(--tile); border-bottom-left-radius: 6px; }
+.chat-starter {
+  justify-self: start;
+  border-radius: 999px;
+  background: var(--sky);
+  padding: 7px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: left;
+}
+.chat-starter:hover { background: var(--lilac); }
+.chat-link {
+  border-radius: 999px;
+  background: var(--mint);
+  padding: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.chat-link:hover { background: var(--lilac); }
+@media (prefers-reduced-motion: reduce) {
+  .chat-panel { animation: none; }
 }

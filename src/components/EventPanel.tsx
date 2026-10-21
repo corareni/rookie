@@ -12,12 +12,18 @@ export type EventFields = {
   event_minutes: number;
   event_location: string | null;
   event_kind: "interview" | "assessment" | "other" | null;
+  /** What an "Other" event is, e.g. "Coffee chat with the recruiter". */
+  event_note?: string | null;
 };
+
+/** The event's name: the user's own words for "Other", else Interview or Assessment. */
+export const eventName = (kind: EventFields["event_kind"] | undefined, note?: string | null) =>
+  kind === "assessment" ? "Assessment" : kind === "other" ? note?.trim() || "Next step" : "Interview";
 
 const KINDS = [
   { v: "interview", label: "Interview" },
   { v: "assessment", label: "Assessment or test" },
-  { v: "other", label: "Other (call, case study, deadline)" },
+  { v: "other", label: "Other (you name it)" },
 ] as const;
 
 /** `datetime-local` wants local time without a zone: "2026-10-24T10:00". */
@@ -33,7 +39,7 @@ export function buildEvent(
   ev: EventFields,
 ): CalEvent | null {
   if (!ev.event_at) return null;
-  const kind = ev.event_kind === "assessment" ? "Assessment" : ev.event_kind === "other" ? "Next step" : "Interview";
+  const kind = eventName(ev.event_kind, ev.event_note);
   const who = [app.company ?? app.title, app.role ? titleCase(app.role) : null].filter(Boolean).join(" · ");
   return {
     uid: `${app.id}-${ev.event_kind ?? "event"}`,
@@ -69,10 +75,19 @@ export default function EventPanel({
 
   async function save() {
     const next = { ...ev, event_at: local ? new Date(local).toISOString() : null };
+    if (next.event_kind === "other" && next.event_at && !next.event_note?.trim()) return setMsg("Say what it is first, e.g. Coffee chat with the recruiter.");
+    // The note only exists for "Other" (and its column needs the latest database update).
+    const { event_note, ...fields } = next;
+    const row = next.event_kind === "other" ? { ...fields, event_note: event_note?.trim().slice(0, 120) || null } : fields;
     setBusy(true);
-    const { error } = await createClient().from("applications").update(next).eq("id", app.id);
+    const { error } = await createClient().from("applications").update(row).eq("id", app.id);
     setBusy(false);
-    if (error) return setMsg(`Couldn't save: ${error.message}`);
+    if (error)
+      return setMsg(
+        /event_note/.test(error.message)
+          ? "Naming an Other event needs the latest database update. Choose Interview or Assessment for now."
+          : `Couldn't save: ${error.message}`,
+      );
     setEv(next);
     setSaved(next);
     setMsg(next.event_at ? "Saved. Add it to your calendar below." : "Date removed.");
@@ -81,7 +96,8 @@ export default function EventPanel({
 
   const event = buildEvent(app, saved);
   const dirty = (local ? new Date(local).toISOString() : null) !== saved.event_at || ev.event_minutes !== saved.event_minutes ||
-    (ev.event_location ?? "") !== (saved.event_location ?? "") || ev.event_kind !== saved.event_kind;
+    (ev.event_location ?? "") !== (saved.event_location ?? "") || ev.event_kind !== saved.event_kind ||
+    (ev.event_kind === "other" && (ev.event_note ?? "") !== (saved.event_note ?? ""));
 
   return (
     <section id="calendar" className="mt-8 scroll-mt-20" aria-labelledby="cal-h">
@@ -147,6 +163,21 @@ export default function EventPanel({
                 />
               </div>
             </div>
+            {ev.event_kind === "other" && (
+              <div className="max-w-[520px]">
+                <label htmlFor="ev-note" className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
+                  What is it?
+                </label>
+                <input
+                  id="ev-note"
+                  className="field !py-2 !text-[14px]"
+                  maxLength={120}
+                  placeholder="e.g. Coffee chat with the recruiter"
+                  value={ev.event_note ?? ""}
+                  onChange={(e) => setEv({ ...ev, event_note: e.target.value })}
+                />
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" className="btn !py-2" disabled={busy || !dirty} onClick={save}>
                 {busy ? "Saving…" : "Save date"}

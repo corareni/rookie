@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 
 const APP_NAV = [
@@ -47,7 +48,7 @@ export default function Header({ email, name }: { email: string | null; name: st
   const [open, setOpen] = useState(false);
   const phone = useSyncExternalStore(subscribe, () => window.matchMedia(PHONE).matches, () => false);
   const nav = email ? APP_NAV : SITE_NAV;
-  const who = name ? displayName(name) : email;
+  const who = name ? displayName(name) : null;
   const active = (href: string) =>
     href === "/app"
       ? path === "/app" || path.startsWith("/app/a/")
@@ -105,7 +106,7 @@ export default function Header({ email, name }: { email: string | null; name: st
 
   return (
     <div className="sticky top-2 z-40 flex justify-center print:hidden">
-      <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""}`}>
+      <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""} ${email ? "has-bell" : ""}`}>
         <Link href={email ? "/app" : "/"} className="flex flex-none items-center no-underline" aria-label="Rookie home">
           <Wordmark className="text-[22px] leading-none sm:text-[24px]" />
         </Link>
@@ -119,13 +120,14 @@ export default function Header({ email, name }: { email: string | null; name: st
         </nav>
 
         <div className={`ml-auto flex flex-none items-center gap-2 ${keepAuth ? "" : "morph-part"}`} inert={compact && !keepAuth}>
-          {email && !phone && (
-            <span className="max-w-[200px] truncate text-[13.5px] text-[var(--onblack2)] max-lg:hidden" title={email}>
-              {who}
-            </span>
+          {who && !phone && (
+            <span className="max-w-[200px] truncate text-[13.5px] text-[var(--onblack2)] max-lg:hidden">{who}</span>
           )}
           {auth(true)}
         </div>
+
+        {/* Always visible when signed in, in the full bar and the compact pill. */}
+        {email && <NotificationBell />}
 
         <button
           type="button"
@@ -135,7 +137,8 @@ export default function Header({ email, name }: { email: string | null; name: st
           inert={!compact}
           onClick={() => setOpen((o) => !o)}
         >
-          Menu <span aria-hidden="true">{open ? "×" : "≡"}</span>
+          {/* On phones the pill is tight, so the menu button is just the icon. */}
+          <span className="max-sm:sr-only">Menu</span> <span aria-hidden="true">{open ? "×" : "≡"}</span>
         </button>
       </header>
 
@@ -156,11 +159,11 @@ export default function Header({ email, name }: { email: string | null; name: st
           </nav>
           {!keepAuth && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
-              {email && <span className="truncate text-[13px] text-[var(--onblack2)]">{who}</span>}
+              {who && <span className="truncate text-[13px] text-[var(--onblack2)]">{who}</span>}
               <span className="flex gap-2">{auth(false)}</span>
             </div>
           )}
-          {keepAuth && email && <p className="mt-3 border-t border-white/10 px-3 pt-3 text-[13px] text-[var(--onblack2)]">{who}</p>}
+          {keepAuth && who && <p className="mt-3 border-t border-white/10 px-3 pt-3 text-[13px] text-[var(--onblack2)]">{who}</p>}
         </div>
       )}
     </div>

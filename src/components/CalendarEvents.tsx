@@ -18,6 +18,8 @@ export type Draft = {
   minutes: number;
   kind: NonNullable<EventFields["event_kind"]>;
   location: string;
+  /** What an "Other" event is. */
+  note: string;
 };
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -28,7 +30,7 @@ export const toLocalInput = (d: Date) =>
 const KINDS = [
   { v: "interview", label: "Interview" },
   { v: "assessment", label: "Assessment or test" },
-  { v: "other", label: "Other (call, case study, deadline)" },
+  { v: "other", label: "Other (you name it)" },
 ] as const;
 
 
@@ -62,6 +64,7 @@ export function EventDialog({
     if (!d) return;
     if (!d.appId) return setErr("Pick the role this is for.");
     if (!d.local) return setErr("Pick a date and time.");
+    if (d.kind === "other" && !d.note.trim()) return setErr("Say what it is, e.g. Coffee chat with the recruiter.");
     setBusy(true);
     const { error } = await createClient()
       .from("applications")
@@ -70,10 +73,17 @@ export function EventDialog({
         event_minutes: d.minutes,
         event_kind: d.kind,
         event_location: d.location.trim() || null,
+        // Only "Other" has a name of its own (and the column needs the latest database update).
+        ...(d.kind === "other" ? { event_note: d.note.trim().slice(0, 120) || null } : {}),
       })
       .eq("id", d.appId);
     setBusy(false);
-    if (error) return setErr(`Couldn't save: ${error.message}`);
+    if (error)
+      return setErr(
+        /event_note/.test(error.message)
+          ? "Naming an Other event needs the latest database update. Choose Interview or Assessment for now."
+          : `Couldn't save: ${error.message}`,
+      );
     onClose();
     router.refresh();
   }
@@ -132,6 +142,21 @@ export function EventDialog({
               </select>
             </div>
           </div>
+          {d.kind === "other" && (
+            <div>
+              <label htmlFor="ce-note" className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
+                What is it?
+              </label>
+              <input
+                id="ce-note"
+                className="field !py-2 !text-[14px]"
+                maxLength={120}
+                placeholder="e.g. Coffee chat with the recruiter"
+                value={d.note}
+                onChange={(e) => set({ note: e.target.value })}
+              />
+            </div>
+          )}
           <div>
             <label htmlFor="ce-at" className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
               Date and time

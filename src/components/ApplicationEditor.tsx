@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import ProfileGate from "@/components/ProfileGate";
 import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { COLUMNS, STATUSES, deadlineText, isUrl, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
@@ -39,9 +40,12 @@ const orNull = (v: string) => (v.trim() === "" ? null : v.trim());
 export default function ApplicationEditor({
   initial,
   event = null,
+  profileReady = true,
   children,
 }: {
   initial: Application;
+  /** Applying (moving past Interested) needs a complete profile. */
+  profileReady?: boolean;
   /** The scheduled date, so a status change can offer to remove it. */
   event?: { event_at: string | null; event_kind: StatusChange["eventKind"] } | null;
   children?: React.ReactNode;
@@ -49,6 +53,7 @@ export default function ApplicationEditor({
   const router = useRouter();
   const [app, setApp] = useState(initial);
   const [pending, setPending] = useState<StatusChange | null>(null);
+  const [gate, setGate] = useState<string | null>(null);
   const [form, setForm] = useState<Form>(toForm(initial));
   // Take fresh data after a refresh (e.g. an update applied from an email), so saving never undoes it.
   const [seen, setSeen] = useState(initial);
@@ -68,6 +73,10 @@ export default function ApplicationEditor({
     e.preventDefault();
     if (form.job_url.trim() && !isUrl(form.job_url.trim())) {
       setMsg({ kind: "err", text: "The job link must start with http:// or https://" });
+      return;
+    }
+    if (form.status !== app.status && app.status === "interested" && form.status !== "interested" && !profileReady) {
+      setGate("mark this role as applied");
       return;
     }
     if (form.status !== app.status) {
@@ -239,6 +248,7 @@ export default function ApplicationEditor({
           )}
         </div>
       </form>
+      <ProfileGate what={gate} onClose={() => setGate(null)} />
       <StatusConfirm
         change={pending}
         onCancel={() => {

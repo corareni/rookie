@@ -39,6 +39,17 @@ export default function PrivacyPage() {
             itself is not saved; only the update you choose to apply is.
           </p>
           <p className="mt-2">
+            If you connect Gmail, Rookie gets read-only access: it can&apos;t send, change or delete anything. When you press
+            &quot;Check emails&quot;, it searches only for recent emails mentioning companies you applied to and sends those to
+            Gemini to read what changed. The emails aren&apos;t stored; Rookie keeps only the suggested update until you
+            apply or delete it. Disconnect any time on your Profile, or in your Google account under Security.
+          </p>
+          <p className="mt-2">
+            When you ask Rookie a question in the chat, your question, the conversation so far and a summary of your
+            board and profile go to Gemini to answer it. Chats aren&apos;t saved: they stay in your browser tab until you
+            close it or press Clear.
+          </p>
+          <p className="mt-2">
             AI can be wrong. Rookie only uses facts from your CV, but always read your documents before you send them.
           </p>
         </section>

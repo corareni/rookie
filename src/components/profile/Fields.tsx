@@ -19,10 +19,8 @@ function useEditing(version: number) {
     edit: (i: number) => setOpen((o) => [...o, i]),
     done: (i: number) => setOpen((o) => o.filter((x) => x !== i)),
     /** Keep the right entries open when one moves or is removed. */
-    moved: (a: number, b: number) =>
-      setOpen((o) => o.map((x) => (x === a ? b : x === b ? a : x))),
-    removed: (i: number) =>
-      setOpen((o) => o.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x))),
+    moved: (a: number, b: number) => setOpen((o) => o.map((x) => (x === a ? b : x === b ? a : x))),
+    removed: (i: number) => setOpen((o) => o.filter((x) => x !== i).map((x) => (x > i ? x - 1 : x))),
   };
 }
 
@@ -44,25 +42,16 @@ function ReadOnly({
         <span className="min-w-0">
           <b className="text-[15px]">{title}</b>
           {sub && (
-            <span className="block truncate text-[13px] font-light text-[var(--ink2)] sm:inline sm:pl-2">
-              {sub}
-            </span>
+            <span className="block truncate text-[13px] font-light text-[var(--ink2)] sm:inline sm:pl-2">{sub}</span>
           )}
         </span>
-        <span
-          aria-hidden="true"
-          className="flex-none text-[var(--mute)] transition-transform group-open:rotate-180"
-        >
+        <span aria-hidden="true" className="flex-none text-[var(--mute)] transition-transform group-open:rotate-180">
           ▾
         </span>
       </summary>
       <div className="grid gap-2 px-4 pb-4 text-[14px] text-[var(--ink2)]">
         {children}
-        <button
-          type="button"
-          className="pill justify-self-start !text-[13px]"
-          onClick={onEdit}
-        >
+        <button type="button" className="pill justify-self-start !text-[13px]" onClick={onEdit}>
           ✎ Edit
         </button>
       </div>
@@ -88,8 +77,7 @@ export function EntryList({
   version?: number;
 }) {
   const editing = useEditing(version);
-  const set = (i: number, patch: Partial<Entry>) =>
-    onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const set = (i: number, patch: Partial<Entry>) => onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
   const move = (i: number, d: -1 | 1) => {
     const next = [...items];
     [next[i], next[i + d]] = [next[i + d], next[i]];
@@ -105,12 +93,7 @@ export function EntryList({
           <ReadOnly
             key={i}
             title={e.org || e.role || "Untitled"}
-            sub={[
-              e.org ? e.role : "",
-              [e.start, e.end].filter(Boolean).join(" – "),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            sub={[e.org ? e.role : "", [e.start, e.end].filter(Boolean).join(" – ")].filter(Boolean).join(" · ")}
             onEdit={() => editing.edit(i)}
           >
             {e.location && <p>{e.location}</p>}
@@ -127,12 +110,7 @@ export function EntryList({
         ) : (
           <div key={i} className="grid gap-2 rounded-2xl bg-white p-4">
             <div className="grid gap-2 sm:grid-cols-2">
-              <TextInput
-                id={`${id}-${i}-org`}
-                label={orgLabel}
-                value={e.org}
-                onChange={(v) => set(i, { org: v })}
-              />
+              <TextInput id={`${id}-${i}-org`} label={orgLabel} value={e.org} onChange={(v) => set(i, { org: v })} />
               <TextInput
                 id={`${id}-${i}-role`}
                 label={roleLabel}
@@ -152,18 +130,10 @@ export function EntryList({
                   value={e.start}
                   onChange={(v) => set(i, { start: v })}
                 />
-                <TextInput
-                  id={`${id}-${i}-end`}
-                  label="To"
-                  value={e.end}
-                  onChange={(v) => set(i, { end: v })}
-                />
+                <TextInput id={`${id}-${i}-end`} label="To" value={e.end} onChange={(v) => set(i, { end: v })} />
               </div>
             </div>
-            <label
-              htmlFor={`${id}-${i}-bullets`}
-              className="text-[12px] font-bold text-[var(--ink2)]"
-            >
+            <label htmlFor={`${id}-${i}-bullets`} className="text-[12px] font-bold text-[var(--ink2)]">
               Bullet points, one per line
             </label>
             <textarea
@@ -171,26 +141,16 @@ export function EntryList({
               rows={Math.max(2, e.bullets.length + 1)}
               className="field !text-[14px]"
               value={e.bullets.join("\n")}
-              onChange={(ev) =>
-                set(i, { bullets: ev.target.value.split("\n") })
-              }
+              onChange={(ev) => set(i, { bullets: ev.target.value.split("\n") })}
             />
             <div className="flex flex-wrap gap-2 text-[13px]">
               {i > 0 && (
-                <button
-                  type="button"
-                  className="pill"
-                  onClick={() => move(i, -1)}
-                >
+                <button type="button" className="pill" onClick={() => move(i, -1)}>
                   ↑ Up
                 </button>
               )}
               {i < items.length - 1 && (
-                <button
-                  type="button"
-                  className="pill"
-                  onClick={() => move(i, 1)}
-                >
+                <button type="button" className="pill" onClick={() => move(i, 1)}>
                   ↓ Down
                 </button>
               )}
@@ -204,11 +164,7 @@ export function EntryList({
               >
                 Remove
               </button>
-              <button
-                type="button"
-                className="pill pill-done ml-auto"
-                onClick={() => editing.done(i)}
-              >
+              <button type="button" className="pill pill-done ml-auto" onClick={() => editing.done(i)}>
                 ✓ Done
               </button>
             </div>
@@ -239,34 +195,18 @@ export function ProjectList({
   version?: number;
 }) {
   const editing = useEditing(version);
-  const set = (i: number, patch: Partial<Project>) =>
-    onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+  const set = (i: number, patch: Partial<Project>) => onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
   return (
     <fieldset className="grid gap-3">
       <legend className="mb-2 text-[15px] font-bold">Projects</legend>
       {items.map((p, i) =>
         !editing.is(i) ? (
-          <ReadOnly
-            key={i}
-            title={p.name || "Untitled project"}
-            sub={p.link}
-            onEdit={() => editing.edit(i)}
-          >
-            {p.description && (
-              <p className="whitespace-pre-line">{p.description}</p>
-            )}
+          <ReadOnly key={i} title={p.name || "Untitled project"} sub={p.link} onEdit={() => editing.edit(i)}>
+            {p.description && <p className="whitespace-pre-line">{p.description}</p>}
           </ReadOnly>
         ) : (
-          <div
-            key={i}
-            className="grid gap-2 rounded-2xl bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-          >
-            <TextInput
-              id={`proj-${i}-name`}
-              label="Project"
-              value={p.name}
-              onChange={(v) => set(i, { name: v })}
-            />
+          <div key={i} className="grid gap-2 rounded-2xl bg-white p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <TextInput id={`proj-${i}-name`} label="Project" value={p.name} onChange={(v) => set(i, { name: v })} />
             <TextInput
               id={`proj-${i}-link`}
               label="Link (optional)"
@@ -315,15 +255,8 @@ export function ProjectList({
   );
 }
 
-export function LinkList({
-  items,
-  onChange,
-}: {
-  items: Link[];
-  onChange: (items: Link[]) => void;
-}) {
-  const set = (i: number, patch: Partial<Link>) =>
-    onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
+export function LinkList({ items, onChange }: { items: Link[]; onChange: (items: Link[]) => void }) {
+  const set = (i: number, patch: Partial<Link>) => onChange(items.map((e, j) => (j === i ? { ...e, ...patch } : e)));
   return (
     <fieldset className="grid gap-2">
       <legend className="mb-2 text-[15px] font-bold">Links</legend>
@@ -331,22 +264,9 @@ export function LinkList({
         GitHub, portfolio, website, LinkedIn, anything worth showing.
       </p>
       {items.map((l, i) => (
-        <div
-          key={i}
-          className="grid gap-2 sm:grid-cols-[180px_1fr_auto] sm:items-end"
-        >
-          <TextInput
-            id={`link-${i}-label`}
-            label="Label"
-            value={l.label}
-            onChange={(v) => set(i, { label: v })}
-          />
-          <TextInput
-            id={`link-${i}-url`}
-            label="URL"
-            value={l.url}
-            onChange={(v) => set(i, { url: v })}
-          />
+        <div key={i} className="grid gap-2 sm:grid-cols-[180px_1fr_auto] sm:items-end">
+          <TextInput id={`link-${i}-label`} label="Label" value={l.label} onChange={(v) => set(i, { label: v })} />
+          <TextInput id={`link-${i}-url`} label="URL" value={l.url} onChange={(v) => set(i, { url: v })} />
           <button
             type="button"
             className="pill !text-[var(--bad)]"
@@ -399,10 +319,7 @@ export function ChipList({
       {hint && <p className="text-[13px] text-[var(--ink2)]">{hint}</p>}
       <div className="mt-2 flex flex-wrap gap-2">
         {items.map((x) => (
-          <span
-            key={x}
-            className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] ${tone}`}
-          >
+          <span key={x} className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-[13px] ${tone}`}>
             {x}
             <button
               type="button"
@@ -450,18 +367,10 @@ export function TextInput({
 }) {
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="mb-1 block text-[12px] font-bold text-[var(--ink2)]"
-      >
+      <label htmlFor={id} className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
         {label}
       </label>
-      <input
-        id={id}
-        className="field !py-2 !text-[14px]"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <input id={id} className="field !py-2 !text-[14px]" value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   );
 }
@@ -481,10 +390,7 @@ export function TextArea({
 }) {
   return (
     <div>
-      <label
-        htmlFor={id}
-        className="mb-1 block text-[12px] font-bold text-[var(--ink2)]"
-      >
+      <label htmlFor={id} className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
         {label}
       </label>
       <textarea

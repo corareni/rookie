@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Application, type Status } from "@/lib/applications";
 import CalendarButtons from "@/components/CalendarButtons";
-import { buildEvent, type EventFields } from "@/components/EventPanel";
+import { buildEvent, eventName, type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
 import Dialog from "@/components/Dialog";
 import EmailUpdate from "@/components/EmailUpdate";
+import { useTasks } from "@/components/Tasks";
 import StatusConfirm, { NO_EVENT, clearedDates, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,7 +19,35 @@ const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
   { title: "Rejected or withdrawn", statuses: ["rejected", "withdrawn"], tone: "bg-[var(--badbg)] text-[var(--bad)]" },
 ];
 
-export default function ApplicationsTable({ initial, events: initialEvents = {} }: { initial: Application[]; events?: Record<string, EventFields> }) {
+const GMAIL_NOTE: Record<string, string> = {
+  cancelled: "Gmail wasn't connected: the Google window was closed or access was declined.",
+  noscope: "Gmail wasn't connected: please tick the box that lets Rookie read your emails.",
+  failed: "Gmail couldn't be connected. Please try again.",
+  unavailable: "Email checks aren't switched on here yet. Paste an email instead.",
+};
+
+export default function ApplicationsTable({
+  initial,
+  events: initialEvents = {},
+  gmail = null,
+}: {
+  initial: Application[];
+  events?: Record<string, EventFields>;
+  /** Result of connecting Gmail, from the address Google sends the user back to. */
+  gmail?: string | null;
+}) {
+  const { checkEmails, checking } = useTasks();
+  const checked = useRef(false);
+  const [gmailNote, setGmailNote] = useState(gmail && GMAIL_NOTE[gmail] ? GMAIL_NOTE[gmail] : null);
+
+  // Just connected: check straight away, then tidy the address.
+  useEffect(() => {
+    if (!gmail || checked.current) return;
+    checked.current = true;
+    if (gmail === "connected") checkEmails();
+    window.history.replaceState(null, "", "/app/applications");
+  }, [gmail, checkEmails]);
+
   const [items, setItems] = useState(initial);
   const [events, setEvents] = useState(initialEvents);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +78,12 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
     const dates = clearedDates(to, pending.dates);
     setPending(null);
     setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status: to, ...dates } : a)));
-    if (removeEvent) setEvents(({ [id]: _gone, ...rest }) => rest);
+    if (removeEvent)
+      setEvents((prev) => {
+        const rest = { ...prev };
+        delete rest[id];
+        return rest;
+      });
     const { error } = await createClient()
       .from("applications")
       .update({ status: to, ...dates, ...(removeEvent ? NO_EVENT : {}) })
@@ -69,9 +103,22 @@ export default function ApplicationsTable({ initial, events: initialEvents = {} 
           shows up here.
         </p>
         {items.length > 0 && (
-          <button type="button" className="btn mt-5 !py-2.5" onClick={() => setEmailOpen(true)}>
-            ✉ Got an email? Paste it
-          </button>
+          <span className="mt-5 flex flex-wrap gap-2">
+            <button type="button" className="btn !py-2.5" disabled={checking} onClick={checkEmails}>
+              {checking ? "Checking your emails…" : "✉ Check emails"}
+            </button>
+            <button type="button" className="btn btn-ghost !py-2.5" onClick={() => setEmailOpen(true)}>
+              Paste an email
+            </button>
+          </span>
+        )}
+        {gmailNote && (
+          <p role="status" className="mt-3 text-[14px] text-[var(--ink2)]">
+            {gmailNote}{" "}
+            <button type="button" className="font-bold underline" onClick={() => setGmailNote(null)}>
+              OK
+            </button>
+          </p>
         )}
         <div className="kpis mt-6">
           {(["submitted", "interview", "offer", "rejected"] as Status[]).map((s) => (
@@ -196,7 +243,7 @@ function Row({
         {ev?.event_at && (
           <span className="mt-2 grid gap-1.5">
             <span className="text-[13px] font-bold">
-              {ev.event_kind === "assessment" ? "Assessment" : ev.event_kind === "other" ? "Next step" : "Interview"} ·{" "}
+              {eventName(ev.event_kind, ev.event_note)} ·{" "}
               {eventLabel(ev.event_at)}
             </span>
             <CalendarButtons event={buildEvent(a, ev)!} small />

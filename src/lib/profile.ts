@@ -83,6 +83,11 @@ export function hasProfileContent(d: ProfileData) {
   return !!(d.cv_text.trim() || p.experience.length || p.education.length || p.projects.length);
 }
 
+/** Enough to apply with: some experience or education, and a name for the CV header. */
+export function profileComplete(d: ProfileData) {
+  return hasProfileContent(d) && !!d.contact.name?.trim();
+}
+
 /** Plain-text version of the profile for the AI (and for "Copy"). */
 export function profileAsText(d: ProfileData) {
   const p = d.profile;

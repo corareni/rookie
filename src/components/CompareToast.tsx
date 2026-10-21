@@ -1,8 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { createContext, useContext, useState } from "react";
-import { compareRoles } from "@/lib/ai-client";
 
 export type CompareState =
   | { state: "working"; names: string[] }
@@ -67,28 +65,3 @@ export default function CompareToast({ toast, onClose }: { toast: CompareState; 
   );
 }
 
-const Ctx = createContext<{ start: (ids: string[], names: string[]) => void; busy: boolean }>({ start: () => {}, busy: false });
-
-export const useCompare = () => useContext(Ctx);
-
-/** Lives in the /app layout, so a comparison keeps running (and its pop-up stays) while you move between pages. */
-export function CompareProvider({ children }: { children: React.ReactNode }) {
-  const [toast, setToast] = useState<CompareState | null>(null);
-
-  async function start(ids: string[], names: string[]) {
-    setToast({ state: "working", names });
-    try {
-      const id = await compareRoles(ids);
-      setToast({ state: "done", names, id });
-    } catch (e) {
-      setToast({ state: "error", names, msg: e instanceof Error ? e.message : "Couldn't compare these roles." });
-    }
-  }
-
-  return (
-    <Ctx.Provider value={{ start, busy: toast?.state === "working" }}>
-      {children}
-      {toast && <CompareToast toast={toast} onClose={() => setToast(null)} />}
-    </Ctx.Provider>
-  );
-}

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Board from "@/components/Board";
 import { COLUMNS, type Application } from "@/lib/applications";
-import { PROFILE_COLUMNS, hasProfileContent, toProfileData } from "@/lib/profile";
+import { PROFILE_COLUMNS, profileComplete, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Your board · Rookie" };
@@ -17,7 +17,7 @@ export default async function AppPage() {
     <Board
       initial={(data ?? []) as unknown as Application[]}
       loadError={error?.message ?? null}
-      hasProfile={!!profile && hasProfileContent(toProfileData(profile))}
+      hasProfile={!!profile && profileComplete(toProfileData(profile))}
     />
   );
 }

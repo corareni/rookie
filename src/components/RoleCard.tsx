@@ -17,9 +17,22 @@ type Props = {
   onSaveNotes?: (notes: string) => Promise<boolean>;
   /** Extra buttons shown first in the actions column (used on the Barriers page). */
   actions?: React.ReactNode;
+  /** Set while the profile is incomplete: applying and writing documents ask for it first. */
+  onNeedProfile?: (what: string) => void;
 };
 
-export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemove, onRetry, onMoveToBoard, onSaveNotes, actions }: Props) {
+export default function RoleCard({
+  a,
+  selected,
+  onToggleCompare,
+  onApply,
+  onRemove,
+  onRetry,
+  onMoveToBoard,
+  onSaveNotes,
+  actions,
+  onNeedProfile,
+}: Props) {
   const [confirm, setConfirm] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [notes, setNotes] = useState(a.notes ?? "");
@@ -161,7 +174,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
       <div className="grid content-start gap-2 md:w-[280px]">
         {actions && <div className="grid gap-2">{actions}</div>}
         {onApply && (
-          <button type="button" className="btn w-full !py-2.5" onClick={onApply}>
+          <button type="button" className="btn w-full !py-2.5" onClick={() => (onNeedProfile ? onNeedProfile("apply") : onApply())}>
             Mark as applied
           </button>
         )}
@@ -171,7 +184,15 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
           </button>
         )}
         <div className="grid grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-2">
-          <Link href={`/app/a/${a.id}#documents`} className="act !bg-[var(--lilac)]">
+          <Link
+            href={`/app/a/${a.id}#documents`}
+            className="act !bg-[var(--lilac)]"
+            onClick={(e) => {
+              if (!onNeedProfile) return;
+              e.preventDefault();
+              onNeedProfile("write your CV and cover letter");
+            }}
+          >
             CV and Cover Letter
           </Link>
           {onToggleCompare && (

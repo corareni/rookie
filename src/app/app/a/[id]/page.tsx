@@ -8,7 +8,8 @@ import EventPanel, { type EventFields } from "@/components/EventPanel";
 import InterviewPrep from "@/components/InterviewPrep";
 import { COLUMNS, type Application } from "@/lib/applications";
 import type { CvContent, Doc, LetterContent } from "@/lib/documents";
-import { PROFILE_COLUMNS, hasProfileContent, profileAsText, toProfileData } from "@/lib/profile";
+import { PROFILE_COLUMNS, profileAsText, profileComplete, toProfileData } from "@/lib/profile";
+import { withEventNote, type EventRow } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Role · Rookie" };
@@ -33,7 +34,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
     // Needs the Phase 4 column; if it's missing this is simply empty.
     supabase.from("applications").select("interview_prep").eq("id", id).maybeSingle(),
     // Needs the Phase 5 columns; if they're missing the panel says so.
-    supabase.from("applications").select("event_at,event_minutes,event_location,event_kind").eq("id", id).maybeSingle(),
+    withEventNote<EventRow>((c) => supabase.from("applications").select(c).eq("id", id).maybeSingle()),
   ]);
 
   if (!data) {
@@ -57,7 +58,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
   const doc = <T,>(kind: string) => (docs?.find((d) => d.kind === kind) as Doc<T>) ?? null;
 
   return (
-    <ApplicationEditor initial={a} event={(evq.data as EventFields | null) ?? null}>
+    <ApplicationEditor initial={a} event={(evq.data as EventFields | null) ?? null} profileReady={!!pd && profileComplete(pd)}>
       {(a.status === "interview" || a.status === "assessment" || evq.data?.event_at) && (
         <EventPanel
           key={a.status}
@@ -71,7 +72,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
         applicationId={a.id}
         cv={doc<CvContent>("cv")}
         letter={doc<LetterContent>("cover_letter")}
-        hasCv={!!profile && hasProfileContent(toProfileData(profile))}
+        hasCv={!!pd && profileComplete(pd)}
         canGenerate={a.job_status === "ready"}
         left={Math.max(0, DAILY_GENERATE - (count ?? 0))}
         signature={(profile?.contact as { name?: string } | null)?.name ?? ""}

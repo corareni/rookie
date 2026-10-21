@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { AiError, MODEL_FAST, generateJson } from "@/server/ai/gemini";
+import { AiError } from "@/server/ai/gemini";
+import { readEmailUpdate } from "@/server/ai/email";
 import { consumeRun, errorResponse, getUser } from "@/server/ai/limits";
-import { emailPrompt, emailSchema, emailSystem, noLongDashes, type EmailUpdate } from "@/server/ai/prompts";
 
 export const maxDuration = 60;
 
@@ -17,21 +17,9 @@ export async function POST(request: Request) {
     const { data: row } = await supabase.from("applications").select("id,title,company,role,status").eq("id", id).maybeSingle();
     if (!row) throw new AiError("Role not found.", 404);
 
-    // Counts towards the daily role-analysis allowance.
-    await consumeRun(supabase, "analyze");
+    await consumeRun(supabase, "email");
     const day = /^\d{4}-\d{2}-\d{2}$/.test(today ?? "") ? today! : new Date().toISOString().slice(0, 10);
-    const { data } = await generateJson<EmailUpdate>({
-      model: MODEL_FAST(),
-      system: emailSystem,
-      prompt: emailPrompt([row.company ?? row.title, row.role].filter(Boolean).join(", "), row.status, day, email.slice(0, 8000)),
-      schema: emailSchema,
-    });
-    const u = noLongDashes(data);
-    // Keep only well-formed dates.
-    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(u.event_at)) u.event_at = "";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(u.deadline)) u.deadline = "";
-    if (u.status === row.status) u.status = "no_change";
-    return Response.json(u);
+    return Response.json(await readEmailUpdate(row, day, email));
   } catch (e) {
     return errorResponse(e);
   }

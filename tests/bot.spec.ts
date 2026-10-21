@@ -4,7 +4,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 const DOMAIN = process.env.TEST_EMAIL_DOMAIN ?? "example.com";
-const TABLES = ["applications", "profiles", "documents", "comparisons", "ai_runs"];
+const TABLES = ["applications", "profiles", "documents", "comparisons", "ai_runs", "notifications", "gmail_connections"];
 
 const rand = () => Math.random().toString(36).slice(2, 8).toUpperCase();
 const user1 = { email: `bot-${rand().toLowerCase()}@${DOMAIN}`, password: `Test-${rand()}` };
@@ -113,7 +113,7 @@ test("no data readable without logging in", async ({ request, page }) => {
     });
     if (res.ok()) expect(await res.json(), `anon read of ${table}`).toEqual([]);
   }
-  for (const api of ["/api/analyze", "/api/compare", "/api/generate", "/api/email"]) {
+  for (const api of ["/api/analyze", "/api/compare", "/api/generate", "/api/email", "/api/chat"]) {
     const res = await request.post(api, { data: {} });
     expect(res.status(), `${api} rejects logged-out users`).toBe(401);
   }

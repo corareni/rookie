@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { useCompare } from "@/components/CompareToast";
+import { refreshNotifications, useCompare } from "@/components/Tasks";
+import ProfileGate from "@/components/ProfileGate";
 import RoleCard from "@/components/RoleCard";
 import { analyzeRole } from "@/lib/ai-client";
 import {
@@ -43,6 +44,7 @@ export default function Board({
   const [sort, setSort] = useState<Sort>("best");
   const [selected, setSelected] = useState<string[]>([]);
   const { start: startCompare, busy: comparing } = useCompare();
+  const [gate, setGate] = useState<string | null>(null);
   const [hideNudge, setHideNudge] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   // Fields stay disabled until hydration, so nothing typed early gets lost.
@@ -56,6 +58,7 @@ export default function Board({
     try {
       const updated = await analyzeRole(id);
       setItems((prev) => prev.map((a) => (a.id === id ? updated : a)));
+      refreshNotifications();
       if (updated.verdict !== "open")
         setNotice(
           `${updated.company ?? "That role"} needs your review in Barriers${updated.ai_flag === "deal_breaker" ? " (breaks a deal-breaker)" : ""}: ${updated.verdict_reason ?? ""}`,
@@ -197,7 +200,8 @@ export default function Board({
       {!hasProfile && !hideNudge && (
         <div className="mt-[var(--gap)] flex flex-wrap items-center justify-between gap-3 rounded-[var(--r)] border border-[var(--line)] px-6 py-4">
           <p className="text-[15px]">
-            <strong>Add your profile</strong> so scores, &quot;why you&quot; and your CV and letters are about you.
+            <strong>Complete your profile</strong> to apply and get your CV and cover letters: your name and some experience or
+            education. Until then you can keep adding roles.
           </p>
           <span className="flex gap-2">
             <Link href="/profile" className="btn !py-2">
@@ -308,6 +312,7 @@ export default function Board({
                 await snapshot(a);
               }}
               onRemove={() => remove(a.id)}
+              onNeedProfile={hasProfile ? undefined : setGate}
               onRetry={a.job_url ? () => runAnalysis(a.id) : undefined}
               onSaveNotes={async (notes) => {
                 const { error } = await createClient().from("applications").update({ notes }).eq("id", a.id);
@@ -345,7 +350,7 @@ export default function Board({
       </section>
 
       {selected.length > 0 && (
-        <div className="fixed inset-x-0 bottom-4 z-20 px-4">
+        <div className="rk-bottom-bar fixed inset-x-0 bottom-4 z-20 px-4">
           <div className="screen mx-auto flex max-w-[640px] flex-wrap items-center justify-between gap-3 !py-3 shadow-xl">
             <span className="text-sm">
               {selected.length} selected{selected.length < 2 ? ", pick one more" : ""}
@@ -367,6 +372,7 @@ export default function Board({
           </div>
         </div>
       )}
+      <ProfileGate what={gate} onClose={() => setGate(null)} />
     </main>
   );
 }

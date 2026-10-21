@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import ProfileGate from "@/components/ProfileGate";
 import WritingAnimation from "@/components/WritingAnimation";
 import { generateDocs, type GenerateOptions } from "@/lib/ai-client";
 import { cvAsText, letterAsText, type CvContent, type Doc, type LetterContent } from "@/lib/documents";
@@ -41,6 +42,7 @@ const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
 export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature, facts, notes }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [gate, setGate] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmRegen, setConfirmRegen] = useState(false);
   const [style, setStyle] = useState<GenerateOptions["style"]>("story");
@@ -71,8 +73,8 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     <button
       type="button"
       className="btn btn-lg"
-      disabled={busy || !hasCv || !canGenerate || left <= 0}
-      onClick={() => (exists && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
+      disabled={busy || (hasCv && (!canGenerate || left <= 0))}
+      onClick={() => (!hasCv ? setGate("write your CV and cover letter") : exists && edited && !confirmRegen ? setConfirmRegen(true) : generate())}
     >
       {busy ? "Writing…" : `${exists ? "Regenerate" : "Write"} my ${target}`}
     </button>
@@ -80,6 +82,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
 
   return (
     <section id="documents" className="mt-8 scroll-mt-4" aria-labelledby="docs-h">
+      <ProfileGate what={gate} onClose={() => setGate(null)} />
       <h2 id="docs-h" className="sec">
         <small>[02]</small> Your tailored CV and Cover Letter
       </h2>
@@ -152,7 +155,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         <p className="text-sm text-[var(--ink2)]">
           {!hasCv ? (
             <>
-              Add your CV in <Link href="/profile">Profile</Link> first.
+              Complete your <Link href="/profile">Profile</Link> first: your name and some experience or education.
             </>
           ) : !canGenerate ? (
             "Rookie needs the job details first: analyse the role above."

@@ -3,9 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Dialog from "@/components/Dialog";
+import GmailConnection from "@/components/GmailConnection";
+import { useTasks } from "@/components/Tasks";
 import { ChipList, EntryList, LinkList, ProjectList } from "@/components/profile/Fields";
 import { importCv } from "@/lib/ai-client";
-import type { BarrierRule, Contact, ProfileData, StructuredProfile } from "@/lib/profile";
+import { profileComplete, type BarrierRule, type Contact, type ProfileData, type StructuredProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/client";
 
 const MEMORY_PROMPT = `Write down everything you know about me that could help me apply for jobs and internships: my education, work and volunteering experience, projects, skills and tools, languages, achievements with numbers, what I'm good at, how I work, my interests and hobbies, my goals and the kind of roles and companies I want, and any constraints (location, visa, dates). Use short bullet points under clear headings. Only include facts you actually know about me; don't guess.`;
@@ -18,9 +20,15 @@ const CONTACT: [keyof Contact, string, string][] = [
   ["linkedin", "LinkedIn or portfolio", "url"],
 ];
 
+/** The parts of the profile a score depends on (not contact details or writing notes). */
+const scoreBasis = (d: ProfileData) => JSON.stringify([d.cv_text, d.profile, d.story_points, d.memory, d.barriers]);
+
 export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const [d, setD] = useState(initial);
   const router = useRouter();
+  const { rescore } = useTasks();
+  // What the scores were last based on; a save that changes it re-scores the open roles.
+  const scored = useRef(scoreBasis(initial));
   const [dirty, setDirty] = useState(false);
   const [version, setVersion] = useState(0);
   const [leaving, setLeaving] = useState<string | null>(null);
@@ -64,7 +72,13 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
     }
     setDirty(false);
     setVersion((v) => v + 1);
-    setMsg({ ok: true, text: "Saved. New scores and documents will use this." });
+    const basis = scoreBasis(next);
+    const rescoring = basis !== scored.current && profileComplete(next);
+    if (rescoring) {
+      scored.current = basis;
+      rescore();
+    }
+    setMsg({ ok: true, text: rescoring ? "Saved. Updating your scores with it now." : "Saved. New scores and documents will use this." });
     return true;
   }
 
@@ -390,10 +404,11 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             <textarea id="cv_text" rows={10} className="field mt-2 font-mono !text-[12.5px]" value={d.cv_text} onChange={(e) => update({ cv_text: e.target.value })} />
           </details>
         </section>
+        <GmailConnection />
       </div>
 
       {/* Save bar */}
-      <div className="fixed inset-x-0 bottom-4 z-20 px-4">
+      <div className="rk-bottom-bar fixed inset-x-0 bottom-4 z-20 px-4">
         <div className="mx-auto flex max-w-[680px] flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[18px] bg-[var(--black)] px-5 py-3.5 text-white shadow-xl max-sm:flex-col max-sm:items-stretch">
           <span role={msg && !msg.ok ? "alert" : "status"} className="min-w-0 flex-1 text-[13px] leading-snug">
             {msg ? msg.text : dirty ? "You have unsaved changes." : "Private to you. Sent to Google Gemini only to score roles and write documents."}

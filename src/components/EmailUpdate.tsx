@@ -30,13 +30,11 @@ export default function EmailUpdate({
   fixed?: boolean;
   onApplied?: (id: string, patch: Partial<Application> & Record<string, unknown>) => void;
 }) {
-  const router = useRouter();
-  const [id, setId] = useState(fixed ? roles[0]?.id ?? "" : "");
+  const [id, setId] = useState(fixed ? (roles[0]?.id ?? "") : "");
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [s, setS] = useState<Suggestion | null>(null);
-  const [pending, setPending] = useState<StatusChange | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const role = roles.find((r) => r.id === id);
 
@@ -53,49 +51,6 @@ export default function EmailUpdate({
     } finally {
       setBusy(false);
     }
-  }
-
-  const newStatus = s && s.status !== "no_change" ? (s.status as Status) : null;
-  const hasEvent = !!s?.event_at && s.event_kind !== "none";
-
-  function apply() {
-    if (!s || !role) return;
-    if (newStatus) {
-      setPending({
-        name: nameOf(role),
-        from: role.status,
-        to: newStatus,
-        // A new date from the email replaces the old one, so only offer removal when there's none.
-        eventAt: hasEvent ? null : role.event_at ?? null,
-        eventKind: role.event_kind ?? null,
-        dates: role,
-      });
-    } else save(false);
-  }
-
-  async function save(removeEvent: boolean) {
-    if (!s || !role) return;
-    setPending(null);
-    const patch: Record<string, unknown> = {};
-    if (newStatus) Object.assign(patch, { status: newStatus }, clearedDates(newStatus, role));
-    if (removeEvent) Object.assign(patch, NO_EVENT);
-    if (hasEvent) {
-      Object.assign(patch, {
-        event_at: new Date(s.event_at).toISOString(),
-        event_kind: s.event_kind,
-        event_minutes: Math.min(720, Math.max(5, s.event_minutes || 60)),
-        event_location: s.event_location || null,
-      });
-    }
-    if (s.next_step) patch.next_step = s.next_step;
-    if (s.deadline) patch.deadline = s.deadline;
-    const { error } = await createClient().from("applications").update(patch).eq("id", role.id);
-    if (error) return setErr(`Couldn't save: ${error.message}`);
-    setDone(`Updated ${nameOf(role)}.`);
-    setS(null);
-    setText("");
-    onApplied?.(role.id, patch);
-    router.refresh();
   }
 
   return (
@@ -116,7 +71,10 @@ export default function EmailUpdate({
         </div>
       )}
       <div>
-        <label htmlFor={`em-text-${fixed ? id : "any"}`} className="mb-1 block text-[12px] font-bold text-[var(--ink2)]">
+        <label
+          htmlFor={`em-text-${fixed ? id : "any"}`}
+          className="mb-1 block text-[12px] font-bold text-[var(--ink2)]"
+        >
           Paste the email
         </label>
         <textarea
@@ -149,43 +107,118 @@ export default function EmailUpdate({
       )}
 
       {s && role && (
-        <div className="grid gap-3 rounded-2xl bg-white p-4" role="status">
-          <p className="text-[15px]">
-            <b>{nameOf(role)}:</b> {s.summary || "Nothing new in this email."}
-          </p>
-          {s.found && (newStatus || hasEvent || s.next_step || s.deadline) ? (
-            <>
-              <ul className="grid gap-1 text-[14px] text-[var(--ink2)]">
-                {newStatus && (
-                  <li>
-                    Status: {label(role.status)} → <b className="text-[var(--ink)]">{label(newStatus)}</b>
-                  </li>
-                )}
-                {hasEvent && (
-                  <li>
-                    {s.event_kind === "assessment" ? "Assessment" : s.event_kind === "other" ? "Next step" : "Interview"}:{" "}
-                    <b className="text-[var(--ink)]">{eventLabel(new Date(s.event_at).toISOString())}</b>
-                    {s.event_location && ` · ${s.event_location}`}
-                  </li>
-                )}
-                {s.next_step && <li>Next step: {s.next_step}</li>}
-                {s.deadline && <li>Deadline: {formatDate(s.deadline)}</li>}
-              </ul>
-              <span className="flex flex-wrap gap-2">
-                <button type="button" className="btn !py-2" onClick={apply}>
-                  Apply
-                </button>
-                <button type="button" className="btn btn-ghost !py-2" onClick={() => setS(null)}>
-                  Dismiss
-                </button>
-              </span>
-            </>
-          ) : (
-            <p className="text-[13px] text-[var(--ink2)]">No update found for this role, so nothing changes.</p>
-          )}
-        </div>
+        <SuggestionCard
+          role={role}
+          s={s}
+          onDismiss={() => setS(null)}
+          onDone={(patch) => {
+            setDone(`Updated ${nameOf(role)}.`);
+            setS(null);
+            setText("");
+            onApplied?.(role.id, patch);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** What an email changes for one role, with Apply (through the status confirmation) and Dismiss. */
+export function SuggestionCard({
+  role,
+  s,
+  onDone,
+  onDismiss,
+}: {
+  role: EmailRole;
+  s: Suggestion;
+  onDone: (patch: Partial<Application> & Record<string, unknown>) => void;
+  onDismiss: () => void;
+}) {
+  const router = useRouter();
+  const [pending, setPending] = useState<StatusChange | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const newStatus = s.status !== "no_change" ? (s.status as Status) : null;
+  const hasEvent = !!s.event_at && s.event_kind !== "none";
+
+  function apply() {
+    if (newStatus) {
+      setPending({
+        name: nameOf(role),
+        from: role.status,
+        to: newStatus,
+        // A new date from the email replaces the old one, so only offer removal when there's none.
+        eventAt: hasEvent ? null : (role.event_at ?? null),
+        eventKind: role.event_kind ?? null,
+        dates: role,
+      });
+    } else save(false);
+  }
+
+  async function save(removeEvent: boolean) {
+    setPending(null);
+    const patch: Record<string, unknown> = {};
+    if (newStatus) Object.assign(patch, { status: newStatus }, clearedDates(newStatus, role));
+    if (removeEvent) Object.assign(patch, NO_EVENT);
+    if (hasEvent) {
+      Object.assign(patch, {
+        event_at: new Date(s.event_at).toISOString(),
+        event_kind: s.event_kind,
+        event_minutes: Math.min(720, Math.max(5, s.event_minutes || 60)),
+        event_location: s.event_location || null,
+      });
+    }
+    if (s.next_step) patch.next_step = s.next_step;
+    if (s.deadline) patch.deadline = s.deadline;
+    const { error } = await createClient().from("applications").update(patch).eq("id", role.id);
+    if (error) return setErr(`Couldn't save: ${error.message}`);
+    onDone(patch);
+    router.refresh();
+  }
+
+  return (
+    <>
+      <div className="grid gap-3 rounded-2xl bg-white p-4" role="status">
+        <p className="text-[15px]">
+          <b>{nameOf(role)}:</b> {s.summary || "Nothing new in this email."}
+        </p>
+        {s.found && (newStatus || hasEvent || s.next_step || s.deadline) ? (
+          <>
+            <ul className="grid gap-1 text-[14px] text-[var(--ink2)]">
+              {newStatus && (
+                <li>
+                  Status: {label(role.status)} → <b className="text-[var(--ink)]">{label(newStatus)}</b>
+                </li>
+              )}
+              {hasEvent && (
+                <li>
+                  {s.event_kind === "assessment" ? "Assessment" : s.event_kind === "other" ? "Next step" : "Interview"}:{" "}
+                  <b className="text-[var(--ink)]">{eventLabel(new Date(s.event_at).toISOString())}</b>
+                  {s.event_location && ` · ${s.event_location}`}
+                </li>
+              )}
+              {s.next_step && <li>Next step: {s.next_step}</li>}
+              {s.deadline && <li>Deadline: {formatDate(s.deadline)}</li>}
+            </ul>
+            <span className="flex flex-wrap gap-2">
+              <button type="button" className="btn !py-2" onClick={apply}>
+                Apply
+              </button>
+              <button type="button" className="btn btn-ghost !py-2" onClick={onDismiss}>
+                Dismiss
+              </button>
+            </span>
+          </>
+        ) : (
+          <p className="text-[13px] text-[var(--ink2)]">No update found for this role, so nothing changes.</p>
+        )}
+      </div>
+      {err && (
+        <p role="alert" className="alert">
+          {err}
+        </p>
       )}
       <StatusConfirm change={pending} onCancel={() => setPending(null)} onConfirm={save} />
-    </div>
+    </>
   );
 }

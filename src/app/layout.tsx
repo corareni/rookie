@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import ChatBubble from "@/components/ChatBubble";
 import Header from "@/components/Header";
+import { TasksProvider } from "@/components/Tasks";
 import { site } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
@@ -28,16 +30,21 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // Show the name from the user's CV and letter header, falling back to their email.
+  // The name from the user's profile (CV header), else from their Google account. No name yet: show none,
+  // it appears once they add their CV.
   const { data: profile } = user ? await supabase.from("profiles").select("contact").maybeSingle() : { data: null };
-  const name = ((profile?.contact as { name?: string } | null)?.name ?? "").trim();
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string };
+  const name = ((profile?.contact as { name?: string } | null)?.name || meta.full_name || meta.name || "").trim();
 
   return (
     <html lang="en" className={`${jakarta.variable} antialiased`}>
       <body>
         <div className="frame print:m-0 print:rounded-none print:p-0">
-          <Header email={user?.email ?? null} name={name || null} />
-          <div className="wrap pt-4 pb-6">{children}</div>
+          <TasksProvider>
+            <Header email={user?.email ?? null} name={name || null} />
+            <div className="wrap pt-4 pb-6">{children}</div>
+            {user && <ChatBubble />}
+          </TasksProvider>
         </div>
       </body>
     </html>
