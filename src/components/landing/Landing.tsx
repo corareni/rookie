@@ -6,6 +6,7 @@ import Reveal from "@/components/Reveal";
 import StepScroller from "@/components/landing/StepScroller";
 import { site } from "@/lib/site";
 import Arrow from "@/components/Arrow";
+import { LIMITS, PLAN_LABEL, PLAN_PASSES, PLAN_PRICE, type Plan } from "@/lib/plans";
 
 const FEATURES = [
   { t: "Honest scores", d: ["Out of 10,", "for you"], tone: "bg-[var(--lilac)]" },
@@ -92,6 +93,27 @@ function CompetitionChart() {
     </svg>
   );
 }
+
+/** What each plan includes, read from the real limits so the landing page never drifts from the app. */
+function planLines(p: Plan) {
+  const l = LIMITS[p];
+  const n = (k: keyof typeof l) => l[k].month;
+  const lines = [
+    `${n("analyze")} role scores a month`,
+    n("generate") === 1 ? "1 CV and cover letter a month" : `${n("generate")} CVs and cover letters a month`,
+    `${n("chat")} messages to rookie${n("deep") ? `, plus ${n("deep")} deep answers` : ""}`,
+  ];
+  if (n("interview")) lines.push(`${n("interview")} interview preps and ${n("compare")} role comparisons`);
+  if (n("email")) lines.push("Email updates from up to 3 inboxes");
+  lines.push("Board, calendar and library, unlimited");
+  return lines;
+}
+
+const PLAN_CARDS: { p: Plan; tone: string; tag: string }[] = [
+  { p: "free", tone: "", tag: "Try it" },
+  { p: "basic", tone: "tile-lilac", tag: "Steady applying" },
+  { p: "premium", tone: "tile-mint", tag: "Recruiting season" },
+];
 
 export default function Landing({ signedIn }: { signedIn: boolean }) {
   const cta = signedIn ? { href: "/app", label: "Open your board" } : { href: "/signup", label: "Sign up free" };
@@ -339,10 +361,60 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
         </div>
       </Reveal>
 
+      {/* Plans */}
+      <section id="plans" aria-labelledby="plans-h" className="mt-28 scroll-mt-6 lg:mt-40">
+        <h2 id="plans-h" className="text-[clamp(30px,4vw,48px)] leading-none tracking-[-0.03em]">
+          Plans. <span className="font-light">Start free, upgrade for the busy months.</span>
+        </h2>
+        <p className="mt-5 max-w-[620px] text-[16px] text-[var(--ink2)]">
+          Free works today. Basic and Premium open soon: join the waiting list from your Profile and we&apos;ll let you know
+          first.
+        </p>
+        <div className="puzzle mt-10">
+          {PLAN_CARDS.map(({ p, tone, tag }, i) => (
+            <Reveal as="article" key={p} delay={i * 80} className={`tile ${tone} span-4 flex flex-col justify-between gap-8`}>
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="cap">{tag}</span>
+                  <span className="chip bg-white text-[var(--ink)]">{p === "free" ? "Available now" : "Coming soon"}</span>
+                </div>
+                <h3 className="mt-4 text-[24px] tracking-tight">{PLAN_LABEL[p]}</h3>
+                <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+                  <span className="text-[clamp(40px,4.6vw,56px)] font-bold leading-none tracking-[-0.04em]">{PLAN_PRICE[p].split(" ")[0]}</span>
+                  <span className="text-[15px] text-[var(--ink2)]">{p === "free" ? "forever" : "a month"}</span>
+                </p>
+                <p className="mt-1 text-[13px] text-[var(--ink2)]">{PLAN_PASSES[p]}</p>
+                <ul className="mt-6 grid gap-2.5 text-[15px]">
+                  {planLines(p).map((t) => (
+                    <li key={t} className="flex gap-2.5">
+                      <span aria-hidden="true" className="mt-[7px] h-1.5 w-1.5 flex-none rounded-full bg-[var(--ink)]" />
+                      <span>{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              {p === "free" ? (
+                <Link href={cta.href} className="btn self-start">
+                  {cta.label}
+                </Link>
+              ) : (
+                <Link href={signedIn ? "/profile#waitlist" : "/signup"} className="btn btn-ghost self-start bg-white">
+                  {signedIn ? "Join the waiting list" : "Sign up, then join the list"}
+                </Link>
+              )}
+            </Reveal>
+          ))}
+        </div>
+        <p className="mt-6 text-[14px] text-[var(--ink2)]">
+          <b className="text-[var(--ink)]">Careers services:</b> rookie for your whole university from €5 per student a year,
+          with Basic for every student. Prices include VAT.
+        </p>
+      </section>
+
       {/* Call to action, on white */}
       <section aria-labelledby="start-h" className="mx-auto max-w-[760px] px-2 py-28 text-center lg:py-40">
         <Reveal>
-          <span className="chip-tag">Free for students and graduates</span>
+          <span className="chip-tag">Free to start for students and graduates</span>
           <h2 id="start-h" className="mt-7 text-[clamp(36px,5vw,64px)] leading-[1.02] tracking-[-0.035em]">
             Your next application <span className="font-light">starts here.</span>
           </h2>

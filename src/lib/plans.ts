@@ -3,6 +3,8 @@ export type Plan = "free" | "basic" | "premium";
 export const PLANS: Plan[] = ["free", "basic", "premium"];
 export const PLAN_LABEL: Record<Plan, string> = { free: "Free", basic: "Basic", premium: "Premium" };
 export const PLAN_PRICE: Record<Plan, string> = { free: "€0", basic: "€9.99 a month", premium: "€19.99 a month" };
+/** Cheaper ways to pay, from the pricing proposal. Shown on the landing page. */
+export const PLAN_PASSES: Record<Plan, string> = { free: "No card needed", basic: "or €29.99 for a 4-month season", premium: "or €59.99 a season · €149.99 a year" };
 export const isPlan = (p: unknown): p is Plan => PLANS.includes(p as Plan);
 
 /** Every kind of AI run logged in ai_runs. `deep` is an assistant answer on the smarter model. */

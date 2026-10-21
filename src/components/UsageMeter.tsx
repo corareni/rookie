@@ -45,7 +45,10 @@ export default function UsageMeter({ plan, used, resets }: { plan: Plan; used: R
         {PLANS.filter((p) => p !== "free")
           .map((p) => `${PLAN_LABEL[p]} ${PLAN_PRICE[p]}`)
           .join(" · ")}
-        . Upgrades and top-ups are coming soon; your board, calendar and library never lock.
+        . Upgrades and top-ups are coming soon; your board, calendar and library never lock.{" "}
+        <a href="#waitlist" className="font-bold">
+          Join the waiting list →
+        </a>
       </p>
       {/* TODO(billing): Stripe Checkout goes here: an "Upgrade" button per plan (monthly, season pass, yearly) and top-up
           packs, posting to a server route that creates the Checkout session. A Stripe webhook (service role key, server

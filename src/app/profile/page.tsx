@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import Arrow from "@/components/Arrow";
 import TourAgain from "@/components/TourAgain";
 import UsageMeter from "@/components/UsageMeter";
+import Waitlist, { type WaitlistEntry } from "@/components/Waitlist";
 import { getPlan, monthResets, monthUsage } from "@/server/ai/limits";
 
 export const metadata: Metadata = { title: "Profile · rookie" };
@@ -21,12 +22,15 @@ export default async function ProfilePage() {
     docs,
     plan,
     used,
+    waitlist,
   ] = await Promise.all([
     supabase.auth.getUser(),
     supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
     supabase.from("library_files").select("id,name,path,kind,size,created_at").eq("kind", "other").order("created_at", { ascending: false }),
     getPlan(supabase),
     monthUsage(supabase),
+    // Errors until schema-phase9.sql has run; the box then says the list opens soon.
+    supabase.from("waitlist").select("plan,wants,note,created_at").maybeSingle(),
   ]);
 
   return (
@@ -74,6 +78,8 @@ export default async function ProfilePage() {
       </section>
 
       <UsageMeter plan={plan} used={used} resets={monthResets()} />
+
+      <Waitlist initial={(waitlist.data as WaitlistEntry | null) ?? null} ready={!waitlist.error} />
 
       <section className="tile mt-[var(--gap)]" aria-labelledby="delete-h">
         <h2 id="delete-h" className="text-[18px]">
