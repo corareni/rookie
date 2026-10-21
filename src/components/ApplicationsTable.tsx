@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { STATUSES, daysUntil, deadlineText, formatDate, type Application, type Status } from "@/lib/applications";
+import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 
 const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
@@ -99,7 +99,7 @@ function Row({ a, onSave }: { a: Application; onSave: (p: Partial<Application>) 
         <Link href={`/app/a/${a.id}`} className="text-[16px] font-bold no-underline hover:underline">
           {a.company ?? a.title}
         </Link>
-        {a.company && <p className="text-[14px] text-[var(--ink2)]">{a.role ?? a.title}</p>}
+        {a.company && <p className="text-[15px] font-light text-[var(--ink)]">{titleCase(a.role ?? a.title)}</p>}
         {(a.status === "interview" || a.status === "assessment") && (
           <Link href={`/app/a/${a.id}#interview`} className="act mt-2 !min-h-[32px] !text-[12.5px]">
             Practise questions

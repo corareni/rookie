@@ -13,7 +13,7 @@ export default async function LibraryPage() {
     supabase.from("documents").select("application_id,kind,updated_at").order("updated_at", { ascending: false }),
     supabase.from("applications").select("id,company,role,title,status"),
     supabase.from("saved_documents").select("id,application_id,label,kind,created_at").order("created_at", { ascending: false }),
-    supabase.from("library_files").select("id,name,path,kind,size,created_at,text").order("created_at", { ascending: false }),
+    supabase.from("library_files").select("id,name,path,kind,size,created_at").order("created_at", { ascending: false }),
   ]);
 
   // Group the current CV and letter per application.
@@ -37,7 +37,7 @@ export default async function LibraryPage() {
       userId={user!.id}
       current={[...byApp.values()]}
       saved={(saved.data ?? []) as SavedDoc[]}
-      files={((files.data ?? []) as (LibraryFile & { text: string })[]).map(({ text, ...f }) => ({ ...f, hasText: !!text }))}
+      files={(files.data ?? []) as LibraryFile[]}
       ready={!saved.error && !files.error}
     />
   );

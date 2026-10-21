@@ -107,3 +107,21 @@ export function isoInDays(n: number) {
   d.setDate(d.getDate() + n);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
+
+const SMALL = new Set(["a", "an", "and", "as", "at", "by", "for", "in", "of", "on", "or", "the", "to", "with", "via", "de", "y"]);
+
+/** "software engineer, summer intern" -> "Software Engineer, Summer Intern" (acronyms like "UK" or "AI" stay). */
+export function titleCase(s: string | null | undefined) {
+  if (!s) return "";
+  let first = true;
+  return s.replace(/[\p{L}\p{N}][\p{L}\p{N}'’&.]*/gu, (w) => {
+    const out =
+      w.length > 1 && w === w.toUpperCase()
+        ? w
+        : !first && SMALL.has(w.toLowerCase())
+          ? w.toLowerCase()
+          : w.charAt(0).toUpperCase() + w.slice(1);
+    first = false;
+    return out;
+  });
+}

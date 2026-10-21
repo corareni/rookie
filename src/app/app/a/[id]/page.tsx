@@ -64,6 +64,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
         left={Math.max(0, DAILY_GENERATE - (count ?? 0))}
         signature={(profile?.contact as { name?: string } | null)?.name ?? ""}
         facts={[...new Set(facts)].slice(0, 80)}
+        notes={a.notes ?? ""}
       />
       {(a.status === "interview" || a.status === "assessment") && (
         <InterviewPrep

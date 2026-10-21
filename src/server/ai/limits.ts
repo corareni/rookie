@@ -42,8 +42,13 @@ export async function getUser(supabase: SupabaseClient) {
 }
 
 export async function getProfile(supabase: SupabaseClient): Promise<Profile | null> {
-  const { data } = await supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle();
-  return data ? toProfileData(data) : null;
+  const [{ data }, { data: docs }] = await Promise.all([
+    supabase.from("profiles").select(PROFILE_COLUMNS).maybeSingle(),
+    supabase.from("library_files").select("name,text").eq("kind", "other").order("created_at", { ascending: false }).limit(3),
+  ]);
+  if (!data) return null;
+  const documents = (docs ?? []).filter((d) => d.text).map((d) => `${d.name}:\n${d.text.slice(0, 4000)}`);
+  return { ...toProfileData(data), documents };
 }
 
 export function errorResponse(e: unknown) {

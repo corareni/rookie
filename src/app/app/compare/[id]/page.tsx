@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import DeleteComparison from "@/components/DeleteComparison";
+import { titleCase } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Comparison · Rookie" };
@@ -129,7 +130,7 @@ export default async function ComparisonPage({ params }: PageProps<"/app/compare
                 {i === 0 ? " · Best pick" : ""}
               </p>
               <p className="mt-1 text-[20px] font-bold">{a?.company ?? a?.title}</p>
-              <p className={`text-[14px] ${i === 0 ? "text-[var(--onblack2)]" : "text-[var(--ink2)]"}`}>{a?.role}</p>
+              <p className={`text-[14px] ${i === 0 ? "text-[var(--onblack2)]" : "text-[var(--ink2)]"}`}>{titleCase(a?.role)}</p>
               <p className="mt-4">
                 <span className="text-[40px] font-semibold leading-none">{role.score}</span>
                 <span className={`text-sm ${i === 0 ? "text-[var(--onblack2)]" : "text-[var(--mute)]"}`}> /10 fit</span>              </p>

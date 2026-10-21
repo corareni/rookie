@@ -29,6 +29,9 @@ export function aboutBlock(p: Profile | null) {
     p.cv_text.trim() ? `<cv>\n${p.cv_text.trim()}\n</cv>` : "",
     p.story_points.length ? `<story>\n${p.story_points.map((s) => `- ${s}`).join("\n")}\n</story>` : "",
     p.memory.trim() ? `<memory>\n${p.memory.trim().slice(0, 8000)}\n</memory>` : "",
+    p.documents?.length
+      ? `<profile>\nDocuments the candidate uploaded (transcripts, certificates). Facts in them are true; use them where relevant:\n${p.documents.join("\n---\n")}\n</profile>`
+      : "",
   ].filter(Boolean);
   return parts.length ? parts.join("\n") : NO_PROFILE;
 }

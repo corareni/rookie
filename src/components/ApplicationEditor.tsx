@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { COLUMNS, STATUSES, deadlineText, isUrl, type Application, type Status } from "@/lib/applications";
+import { COLUMNS, STATUSES, deadlineText, isUrl, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 
 type Form = {
@@ -16,7 +16,6 @@ type Form = {
   role: string;
   location: string;
   job_url: string;
-  notes: string;
 };
 
 const toForm = (a: Application): Form => ({
@@ -30,7 +29,6 @@ const toForm = (a: Application): Form => ({
   role: a.role ?? "",
   location: a.location ?? "",
   job_url: a.job_url ?? "",
-  notes: a.notes,
 });
 
 const orNull = (v: string) => (v.trim() === "" ? null : v.trim());
@@ -66,7 +64,6 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
         role: orNull(form.role),
         location: orNull(form.location),
         job_url: orNull(form.job_url),
-        notes: form.notes,
       })
       .eq("id", app.id)
       .select(COLUMNS)
@@ -90,17 +87,23 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
     window.location.assign("/app");
   }
 
-  const headline = app.role && app.company ? `${app.role} @ ${app.company}` : app.title;
+  const analysed = !!(app.role && app.company);
 
   return (
     <main className="mx-auto max-w-[860px] pb-16">
       <Link href="/app" className="text-sm font-semibold">
         ← Board
       </Link>
-      <h1 className="mt-3 text-[clamp(26px,5vw,40px)] font-medium leading-tight tracking-[-0.03em] break-anywhere">
-        {headline}
+      <h1 className="mt-3 text-[clamp(26px,5vw,40px)] leading-tight tracking-[-0.03em] break-anywhere">
+        {analysed ? (
+          <>
+            {app.company} <span className="font-light">{titleCase(app.role)}</span>
+          </>
+        ) : (
+          app.title
+        )}
       </h1>
-      {headline !== app.title && <p className="mt-1 text-sm text-[var(--mute)] break-anywhere">{app.title}</p>}
+      {analysed && <p className="mt-1 text-sm text-[var(--mute)] break-anywhere">{app.title}</p>}
       <div className="mt-3 flex flex-wrap gap-2 text-sm">
         {app.deadline && <span className="chip chip-mute">{deadlineText(app.deadline)}</span>}
         {app.job_url && (
@@ -161,9 +164,7 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
           </div>
         </fieldset>
 
-        <Field label="Notes" id="notes">
-          <textarea id="notes" rows={5} className="field" value={form.notes} onChange={set("notes")} />
-        </Field>
+
 
         {msg && (
           <p role={msg.kind === "err" ? "alert" : "status"} className={msg.kind === "err" ? "alert" : "chip chip-good !py-2 !px-4"}>

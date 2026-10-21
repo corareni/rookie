@@ -18,6 +18,8 @@ type Props = {
   signature: string;
   /** Every fact in the user's profile, so they can pick what to feature. */
   facts: string[];
+  /** The user's own notes for this role (also editable on the board card). */
+  notes: string;
 };
 
 const STYLES: { v: GenerateOptions["style"]; label: string; hint: string }[] = [
@@ -36,7 +38,7 @@ const LENGTHS: { v: GenerateOptions["length"]; label: string }[] = [
   { v: "long", label: "Long · ~400" },
 ];
 
-export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature, facts }: Props) {
+export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc, hasCv, canGenerate, left, signature, facts, notes }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +83,8 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
       <h2 id="docs-h" className="sec">
         <small>[02]</small> Your tailored CV and cover letter
       </h2>
+
+      <RoleNotes applicationId={applicationId} initial={notes} />
 
       <div className="card mt-3 grid gap-5">
         <fieldset>
@@ -442,5 +446,45 @@ function LetterEditor({ id, doc, signature }: { id: string; doc: NonNullable<Doc
         msg={msg}
       />
     </article>
+  );
+}
+
+/** Notes for this role; Rookie uses them when writing the CV and cover letter. */
+function RoleNotes({ applicationId, initial }: { applicationId: string; initial: string }) {
+  const [notes, setNotes] = useState(initial);
+  const [saved, setSaved] = useState(initial);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  async function save() {
+    setSaving(true);
+    const { error } = await createClient().from("applications").update({ notes }).eq("id", applicationId);
+    setSaving(false);
+    setMsg(error ? `Couldn't save: ${error.message}` : "Saved. Rookie will use these notes.");
+    if (!error) setSaved(notes);
+  }
+  return (
+    <div className="tile tile-butter mt-3 grid gap-2">
+      <label htmlFor="role-notes" className="text-[15px] font-bold">
+        Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and cover letter</span>
+      </label>
+      <textarea
+        id="role-notes"
+        rows={3}
+        className="field !text-[14px]"
+        placeholder="e.g. Met their recruiter at the IE career fair. Mention my n8n automation project. They value teamwork."
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" className="btn !py-2" disabled={saving || notes === saved} onClick={save}>
+          {saving ? "Saving…" : "Save notes"}
+        </button>
+        {msg && (
+          <span role="status" className="text-[13px] text-[var(--ink2)]">
+            {msg}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }

@@ -360,11 +360,11 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
 
       {/* Save bar */}
       <div className="fixed inset-x-0 bottom-4 z-20 px-4">
-        <div className="mx-auto flex max-w-[640px] flex-wrap items-center justify-between gap-3 rounded-full bg-[var(--black)] py-2 pr-2 pl-5 text-white shadow-xl">
-          <span role={msg && !msg.ok ? "alert" : "status"} className="text-[13px]">
+        <div className="mx-auto flex max-w-[680px] flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-[18px] bg-[var(--black)] px-5 py-3.5 text-white shadow-xl max-sm:flex-col max-sm:items-stretch">
+          <span role={msg && !msg.ok ? "alert" : "status"} className="min-w-0 flex-1 text-[13px] leading-snug">
             {msg ? msg.text : dirty ? "You have unsaved changes." : "Private to you. Sent to Google Gemini only to score roles and write documents."}
           </span>
-          <button type="button" className="pillbtn pillbtn-mint" disabled={saving} onClick={() => save()}>
+          <button type="button" className="pillbtn pillbtn-mint justify-center max-sm:w-full" disabled={saving} onClick={() => save()}>
             {saving ? "Saving…" : "Save profile"}
           </button>
         </div>

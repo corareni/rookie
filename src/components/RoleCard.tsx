@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { daysUntil, deadlineText, initials, scoreTone, type Application } from "@/lib/applications";
+import { daysUntil, deadlineText, initials, scoreTone, titleCase, type Application } from "@/lib/applications";
 
 type Props = {
   a: Application;
@@ -37,7 +37,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
           <>
             <h3 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-[22px] font-bold leading-tight tracking-[-0.02em]">{a.company}</span>
-              <span className="text-[16px] text-[var(--ink2)]">{a.role}</span>
+              <span className="text-[17px] font-light text-[var(--ink)]">{titleCase(a.role)}</span>
               {a.score && <span className={`score score-${scoreTone(a.score)}`}>{a.score}/10</span>}
             </h3>
             <Link href={`/app/a/${a.id}`} className="mt-1 block truncate text-xs text-[var(--mute)] no-underline hover:underline">
@@ -170,11 +170,11 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
           </button>
         )}
         <div className="grid grid-cols-2 gap-2">
-          <Link href={`/app/a/${a.id}#documents`} className="act">
-            CV + letter
+          <Link href={`/app/a/${a.id}#documents`} className="act !bg-[var(--lilac)]">
+            CV and Cover Letter
           </Link>
           {onToggleCompare && (
-            <button type="button" className="act" aria-pressed={!!selected} onClick={onToggleCompare}>
+            <button type="button" className="act !bg-[var(--peach)] aria-pressed:!bg-[var(--lilac)]" aria-pressed={!!selected} onClick={onToggleCompare}>
               {selected ? "✓ Comparing" : "+ Compare"}
             </button>
           )}
@@ -184,8 +184,8 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             </button>
           )}
           {a.job_url && (
-            <a href={a.job_url} target="_blank" rel="noopener noreferrer" className="act">
-              Listing ↗
+            <a href={a.job_url} target="_blank" rel="noopener noreferrer" className="act gap-1.5">
+              Listing <span aria-hidden="true">↗</span>
             </a>
           )}
         </div>

@@ -30,6 +30,8 @@ export type ProfileData = {
   barriers: BarrierRule[];
   writing_notes: string;
   contact: Contact;
+  /** Text of uploaded transcripts and other documents (server side only). */
+  documents?: string[];
 };
 
 export const PROFILE_COLUMNS = "cv_text,profile,story_points,memory,barriers,writing_notes,contact,story,rules";
