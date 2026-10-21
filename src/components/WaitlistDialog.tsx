@@ -27,6 +27,17 @@ export default function WaitlistDialog({ signedIn }: { signedIn: boolean }) {
     return () => window.removeEventListener(OPEN, show);
   }, [signedIn]);
 
+  // Opens with a soft rise and fade (CSS); closing plays a short fade first, then the dialog really closes.
+  const [closing, setClosing] = useState(false);
+  const close = () => {
+    if (closing) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setOpen(false);
+    setClosing(true);
+    setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+    }, 260);
+  };
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -37,13 +48,13 @@ export default function WaitlistDialog({ signedIn }: { signedIn: boolean }) {
   return (
     <dialog
       ref={ref}
-      className="rk-dialog rk-dialog-waitlist outline-none"
+      className={`rk-dialog rk-dialog-waitlist outline-none ${closing ? "is-closing" : ""}`}
       aria-label="Waiting list"
       onCancel={(e) => {
         e.preventDefault();
-        setOpen(false);
+        close();
       }}
-      onClick={(e) => e.target === ref.current && setOpen(false)}
+      onClick={(e) => e.target === ref.current && close()}
     >
       {open &&
         (data ? (
@@ -53,7 +64,7 @@ export default function WaitlistDialog({ signedIn }: { signedIn: boolean }) {
             ready={data.ready}
             signedIn={signedIn}
             variant="dialog"
-            onClose={() => setOpen(false)}
+            onClose={close}
           />
         ) : (
           <p className="p-9 text-[15px] font-bold" role="status">

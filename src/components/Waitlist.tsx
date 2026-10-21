@@ -121,7 +121,7 @@ export default function Waitlist({
         <div className="max-w-[640px]">
           <span className="chip bg-white text-[var(--ink)]">Coming soon</span>
           <h2 id={`waitlist-h-${variant}`} className="mt-3 text-[clamp(30px,4vw,44px)] leading-[1.02] tracking-[-0.03em]">
-            Waiting list. <span className="font-light">Be first for Basic and Premium.</span>
+            <span className="block">Waiting list.</span> <span className="block font-light">Be first for Basic and Premium.</span>
           </h2>
           <p className="mt-3 text-[15px] text-[var(--ink2)]">
             Paid plans aren&apos;t open yet. Join the list and tell us what you&apos;d use most, and we&apos;ll let you know when

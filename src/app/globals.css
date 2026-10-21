@@ -1667,7 +1667,7 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
   border: 0;
   border-radius: 10px;
   padding: 8px 14px;
-  background: var(--sky);
+  background: var(--mint);
   color: var(--ink);
   font-size: 13px;
   font-weight: 700;
@@ -1675,8 +1675,8 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
   cursor: pointer;
   transition: transform 0.2s ease, background 0.2s ease, max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1), opacity 0.3s ease 0.15s, margin 0.6s ease, padding 0.6s ease;
 }
-.waitlist-btn:hover { background: #c6dff8; transform: translateY(-1px); }
-.waitlist-btn:focus-visible, .menu-waitlist:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.waitlist-btn:hover { background: #cdeedb; transform: translateY(-1px); }
+.waitlist-btn:focus-visible, .menu-waitlist:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
 .is-compact .waitlist-btn { margin-left: 0; }
 .menu-waitlist {
   display: grid;
@@ -1686,18 +1686,35 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
   border: 0;
   border-radius: 14px;
   padding: 12px 14px;
-  background: var(--sky);
+  background: var(--mint);
   color: var(--ink);
   text-align: left;
   cursor: pointer;
   transition: background 0.2s ease;
 }
-.menu-waitlist:hover { background: #c6dff8; }
+.menu-waitlist:hover { background: #cdeedb; }
 .menu-waitlist b { font-size: 15px; }
 .menu-waitlist span { font-size: 12.5px; color: var(--ink2); }
 
 /* The waiting list itself, on the Profile page and in its pop-up. */
 .rk-dialog-waitlist { width: min(820px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); background: var(--mint); overflow-y: auto; }
+/* A slower, softer entrance than the small dialogs: fade, rise and settle; the backdrop fades with it. */
+.rk-dialog-waitlist[open] { animation: waitlist-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rk-dialog-waitlist[open]::backdrop { animation: waitlist-fade 0.45s ease both; }
+.rk-dialog-waitlist.is-closing { animation: waitlist-out 0.26s cubic-bezier(0.4, 0, 1, 1) both; }
+.rk-dialog-waitlist.is-closing::backdrop { animation: waitlist-fade 0.26s ease reverse both; }
+@keyframes waitlist-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+@keyframes waitlist-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(14px) scale(0.98); }
+}
+@keyframes waitlist-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .rk-dialog-waitlist[open], .rk-dialog-waitlist[open]::backdrop, .rk-dialog-waitlist.is-closing, .rk-dialog-waitlist.is-closing::backdrop { animation: none; }
+}
 .waitlist-plan {
   display: grid;
   gap: 4px;

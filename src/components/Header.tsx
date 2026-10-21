@@ -195,7 +195,7 @@ export default function Header({
 
         {/* In the full bar only; once it shrinks, the same button sits in the menu. */}
         <button type="button" className="waitlist-btn morph-part max-xl:hidden" inert={compact} onClick={openWaitlist}>
-          Join the waitlist
+          Join the waitlist!
         </button>
 
         <nav ref={navRef} aria-label="Main" className="topnav has-pill morph-part ml-auto" inert={compact}>
@@ -293,7 +293,7 @@ export default function Header({
               openWaitlist();
             }}
           >
-            <b>Join the waitlist</b>
+            <b>Join the waitlist!</b>
             <span>Basic and Premium are coming soon</span>
           </button>
           {!keepAuth && (
