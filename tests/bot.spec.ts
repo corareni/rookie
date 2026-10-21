@@ -92,6 +92,35 @@ test("a second user cannot see the first user's item", async ({ browser }) => {
   await ctx.close();
 });
 
+test("RLS: the second user can't read, change or delete the first user's row through the API", async ({ request }) => {
+  const token = async (u: typeof user1) => {
+    const res = await request.post(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      headers: { apikey: KEY },
+      data: { email: u.email, password: u.password },
+    });
+    expect(res.ok(), `sign in ${u.email}`).toBeTruthy();
+    return ((await res.json()) as { access_token: string }).access_token;
+  };
+  const rest = (jwt: string) => ({ apikey: KEY, Authorization: `Bearer ${jwt}`, Prefer: "return=representation" });
+  const q = `${SUPABASE_URL}/rest/v1/applications?title=eq.${encodeURIComponent(itemText)}`;
+  const [a, b] = [await token(user1), await token(user2)];
+
+  // The first user sees their own row, so the checks below are meaningful.
+  const own = (await (await request.get(`${q}&select=id,title`, { headers: rest(a) })).json()) as { id: string }[];
+  expect(own).toHaveLength(1);
+  const byId = `${SUPABASE_URL}/rest/v1/applications?id=eq.${own[0].id}`;
+
+  expect(await (await request.get(`${byId}&select=*`, { headers: rest(b) })).json(), "read by id").toEqual([]);
+  expect(await (await request.get(`${SUPABASE_URL}/rest/v1/applications?select=id`, { headers: rest(b) })).json(), "read all").toEqual([]);
+  expect(await (await request.patch(byId, { headers: rest(b), data: { notes: "hacked" } })).json(), "update").toEqual([]);
+  expect(await (await request.delete(byId, { headers: rest(b) })).json(), "delete").toEqual([]);
+
+  // Still there and unchanged for its owner.
+  const after = (await (await request.get(`${byId}&select=notes`, { headers: rest(a) })).json()) as { notes: string }[];
+  expect(after).toHaveLength(1);
+  expect(after[0].notes).not.toBe("hacked");
+});
+
 test("pasting a URL saves it immediately", async ({ browser }) => {
   const { ctx, page } = await freshPage(browser);
   await page.goto("/login");
