@@ -36,3 +36,5 @@ Work in phases: Phase 1 (everything the bot grades) must be deployed and passing
 ## UI rules
 - Close and delete buttons: never type "×". Use `<CloseIcon />` (`src/components/CloseIcon.tsx`, drawn lines, exactly centred)
   inside a button that centres its content (`grid place-items-center` with a fixed size).
+- rookie the bot: always keep the contrast. On light backgrounds use a black circle with `<RookieBot />` (white lines);
+  on dark backgrounds a white circle with `<RookieBot dark={false} />` (black lines).

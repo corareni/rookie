@@ -351,12 +351,13 @@ export default function ChatBubble({ userId }: { userId: string }) {
           />
           <header className="chat-head flex items-center justify-between gap-2 px-4 py-3">
             <span className="flex min-w-0 items-center gap-2.5">
-              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-[var(--black2)]" aria-hidden="true">
-                <RookieBot size={30} />
+              {/* Contrast rule: on the black header rookie sits in a white circle; on light pages, in a black one. */}
+              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-white" aria-hidden="true">
+                <RookieBot size={30} dark={false} />
               </span>
               <span className="min-w-0">
-                <b className="text-[17px] tracking-[-0.02em] text-[var(--lilac)]">
-                  rookie<span className="text-white">.</span>
+                <b className="text-[17px] tracking-[-0.02em] text-white">
+                  rookie<span className="text-[var(--lilac)]">.</span>
                 </b>
                 <span className="block truncate text-[12px] text-[var(--onblack2)]">
                   {showHistory ? "Your earlier chats" : "Your application helper"}
@@ -492,7 +493,11 @@ export default function ChatBubble({ userId }: { userId: string }) {
   );
 }
 
-/** rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
+/**
+ * rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish.
+ * Always keep the contrast: `dark` (white lines on a black circle) on light backgrounds, `dark={false}` (black
+ * lines on a white circle) on dark ones.
+ */
 export function RookieBot({ size = 46, dark = true }: { size?: number; dark?: boolean }) {
   const line = dark ? "#ffffff" : "#0b0b0c";
   return (
