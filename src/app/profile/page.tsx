@@ -33,7 +33,8 @@ export default async function ProfilePage() {
           </h1>
           <p className="mt-4 max-w-[600px] text-[16px] text-[var(--ink2)]">
             rookie scores roles for you, flags the ones that clash with your barriers, and writes your CV and cover letters,
-            all from what you add here. Signed in as <span className="break-anywhere">{user?.email}</span>.
+            all from what you add here.
+            <b className="mt-2 block break-anywhere text-[var(--ink)]">Signed in as {user?.email}</b>
           </p>
         </div>
         <span className="flex items-center gap-3">

@@ -103,7 +103,17 @@ export default function ChatBubble({ userId }: { userId: string }) {
   // The panel stays mounted while it shrinks back into the bubble.
   const [shown, setShown] = useState(false);
   const [quiet, setQuiet] = useState(false);
-  const [greeted, setGreeted] = useState(false);
+  // The bubble shows once on arrival and whenever the cursor is on rookie.
+  const [hovering, setHovering] = useState(false);
+  const [hello, setHello] = useState(false);
+  useEffect(() => {
+    const on = setTimeout(() => setHello(true), 1200);
+    const off = setTimeout(() => setHello(false), 6500);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
+  }, []);
   const [quip, setQuip] = useState(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const openChat = () => {
@@ -269,8 +279,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
       data-y={side.y}
       style={pos ? { right: pos.right, bottom: pos.bottom, ["--room" as string]: `${side.room}px` } : undefined}
     >
-      {!open && !quiet && (
-        <span className={`chat-name ${greeted ? "is-hover" : ""}`} aria-hidden="true">
+      {!open && (
+        <span className={`chat-name ${(hello || hovering) && !quiet ? "is-shown" : ""}`} aria-hidden="true">
           <b>
             Hi, I&apos;m rookie<span className="text-[var(--lilac)]">.</span>
           </b>
@@ -284,11 +294,14 @@ export default function ChatBubble({ userId }: { userId: string }) {
         aria-expanded={open}
         aria-controls="chat-panel"
         onPointerEnter={() => {
+          setHovering(true);
           if (quiet) return;
-          setGreeted(true);
           setQuip((q) => (q + 1 + Math.floor(Math.random() * (QUIPS.length - 1))) % QUIPS.length);
         }}
-        onPointerLeave={() => setQuiet(false)}
+        onPointerLeave={() => {
+          setHovering(false);
+          setQuiet(false);
+        }}
         // A tap opens or closes; a drag moves rookie (keyboard still opens with Enter or Space).
         onPointerDown={(e) => {
           const r = dock.current!.getBoundingClientRect();

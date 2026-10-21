@@ -1187,18 +1187,33 @@ body:has(.chat-dock) .rk-toasts { bottom: 86px; }
   pointer-events: none;
   opacity: 0;
   box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.5);
-  animation: bot-hello 6s ease 1.2s 1 both;
-  transition: opacity 0.25s ease;
+  /* Blows up out of rookie's corner with a little spring, and shrinks back into it. */
+  transform: scale(0.35);
+  transform-origin: 100% 100%;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s ease-in;
 }
+.chat-name.is-shown {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.55s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+.chat-dock[data-x="right"] .chat-name { transform-origin: 0 100%; }
+.chat-dock[data-y="down"] .chat-name { transform-origin: 100% 0; }
+.chat-dock[data-x="right"][data-y="down"] .chat-name { transform-origin: 0 0; }
 .chat-dock[data-x="right"] .chat-name { right: auto; left: calc(100% + 12px); border-radius: 16px 16px 16px 4px; }
 .chat-dock[data-y="down"] .chat-name { bottom: auto; top: 4px; }
 .chat-name b { font-size: 13px; font-weight: 700; }
 .chat-name span { font-size: 12px; font-weight: 300; line-height: 1.35; color: var(--onblack2); }
-.chat-dock:has(.chat-fab:hover) .chat-name { opacity: 1; animation: none; }
 @keyframes bot-hello {
-  0%, 100% { opacity: 0; }
-  8%, 88% { opacity: 1; }
+  0%, 100% { opacity: 0; transform: scale(0.35); }
+  7% { opacity: 1; transform: scale(1.06); }
+  11%, 88% { opacity: 1; transform: scale(1); }
 }
+
 /* The chat grows out of the bubble's corner (black, small) into the white chat, and shrinks back on close. */
 .chat-panel {
   position: absolute;
