@@ -179,7 +179,7 @@ export default function RoleCard({ a, selected, onToggleCompare, onApply, onRemo
             </button>
           )}
           {onSaveNotes && (
-            <button type="button" className="act" aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)}>
+            <button type="button" className="act aria-expanded:!bg-[var(--sky)]" aria-expanded={notesOpen} onClick={() => setNotesOpen((o) => !o)}>
               {notes.trim() ? "✎ Notes" : "+ Notes"}
             </button>
           )}

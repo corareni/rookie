@@ -23,10 +23,10 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Refreshes the session cookie; must run before any redirect decision.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refreshes the session cookie; must run before any redirect decision. getClaims checks the signed
+  // token locally (ES256 keys), so page switches don't wait for a round trip to Supabase Auth.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const path = request.nextUrl.pathname;
   const isProtected = PROTECTED.some((p) => path === p || path.startsWith(p + "/"));

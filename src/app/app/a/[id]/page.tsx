@@ -56,9 +56,10 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
   const doc = <T,>(kind: string) => (docs?.find((d) => d.kind === kind) as Doc<T>) ?? null;
 
   return (
-    <ApplicationEditor initial={a}>
+    <ApplicationEditor initial={a} event={(evq.data as EventFields | null) ?? null}>
       {(a.status === "interview" || a.status === "assessment" || evq.data?.event_at) && (
         <EventPanel
+          key={a.status}
           app={a}
           ready={!evq.error}
           initial={(evq.data as EventFields | null) ?? { event_at: null, event_minutes: 60, event_location: null, event_kind: null }}

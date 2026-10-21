@@ -1,6 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import Dialog from "@/components/Dialog";
 import { ChipList, EntryList, LinkList, ProjectList } from "@/components/profile/Fields";
 import { importCv } from "@/lib/ai-client";
 import type { BarrierRule, Contact, ProfileData, StructuredProfile } from "@/lib/profile";
@@ -18,7 +20,10 @@ const CONTACT: [keyof Contact, string, string][] = [
 
 export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const [d, setD] = useState(initial);
+  const router = useRouter();
   const [dirty, setDirty] = useState(false);
+  const [version, setVersion] = useState(0);
+  const [leaving, setLeaving] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [importing, setImporting] = useState(false);
@@ -31,6 +36,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
   const update = (patch: Partial<ProfileData>) => {
     setD((x) => ({ ...x, ...patch }));
     setDirty(true);
+    setMsg(null);
   };
   const updateProfile = (patch: Partial<StructuredProfile>) => update({ profile: { ...d.profile, ...patch } });
 
@@ -52,10 +58,37 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
         { onConflict: "user_id" },
       );
     setSaving(false);
-    if (error) return setMsg({ ok: false, text: `Couldn't save: ${error.message}` });
+    if (error) {
+      setMsg({ ok: false, text: `Couldn't save: ${error.message}` });
+      return false;
+    }
     setDirty(false);
+    setVersion((v) => v + 1);
     setMsg({ ok: true, text: "Saved. New scores and documents will use this." });
+    return true;
   }
+
+  // Unsaved changes: ask before following a link inside Rookie, and let the browser warn on reload or close.
+  useEffect(() => {
+    if (!dirty) return;
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href]");
+      if (!(a instanceof HTMLAnchorElement) || a.target === "_blank" || a.hasAttribute("download")) return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname === location.pathname) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setLeaving(url.pathname + url.search + url.hash);
+    };
+    const onUnload = (e: BeforeUnloadEvent) => e.preventDefault();
+    document.addEventListener("click", onClick, true);
+    window.addEventListener("beforeunload", onUnload);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener("beforeunload", onUnload);
+    };
+  }, [dirty]);
 
   /** Story points and barriers save as soon as you add or remove one. */
   async function saveNow(patch: Partial<ProfileData>) {
@@ -168,16 +201,17 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             </h2>
             <p className="mt-1 text-[14px] text-[var(--ink2)]">Rookie only ever uses facts from here, never anything made up.</p>
           </div>
-          <EntryList label="Work experience" orgLabel="Company" roleLabel="Role" items={p.experience} onChange={(v) => updateProfile({ experience: v })} />
-          <EntryList label="Education" orgLabel="School or university" roleLabel="Degree" items={p.education} onChange={(v) => updateProfile({ education: v })} />
+          <EntryList label="Work experience" orgLabel="Company" roleLabel="Role" items={p.experience} onChange={(v) => updateProfile({ experience: v })} version={version} />
+          <EntryList label="Education" orgLabel="School or university" roleLabel="Degree" items={p.education} onChange={(v) => updateProfile({ education: v })} version={version} />
           <EntryList
             label="Volunteering"
             orgLabel="Organisation"
             roleLabel="Role"
             items={p.volunteering}
             onChange={(v) => updateProfile({ volunteering: v })}
+            version={version}
           />
-          <ProjectList items={p.projects} onChange={(v) => updateProfile({ projects: v })} />
+          <ProjectList items={p.projects} onChange={(v) => updateProfile({ projects: v })} version={version} />
           <div className="grid gap-6 md:grid-cols-2">
             <ChipList label="Skills" hint="Tools, methods, programming languages." items={p.skills} onChange={(v) => updateProfile({ skills: v })} tone="bg-[var(--lilac)]" />
             <ChipList label="Languages" hint="e.g. German (Native), Spanish (B1)" items={p.languages} onChange={(v) => updateProfile({ languages: v })} tone="bg-[var(--sky)]" />
@@ -369,6 +403,38 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
           </button>
         </div>
       </div>
+
+      <Dialog
+        open={!!leaving}
+        title="Save your changes?"
+        onCancel={() => setLeaving(null)}
+        actions={[
+          { label: "Stay here", tone: "ghost", onClick: () => setLeaving(null) },
+          {
+            label: "Leave without saving",
+            tone: "ghost",
+            onClick: () => {
+              const to = leaving!;
+              setDirty(false);
+              setLeaving(null);
+              router.push(to);
+            },
+          },
+          {
+            label: saving ? "Saving…" : "Save and continue",
+            onClick: async () => {
+              const to = leaving!;
+              if (await save()) {
+                setLeaving(null);
+                router.push(to);
+              }
+            },
+          },
+        ]}
+      >
+        <p>You&apos;ve changed your profile without saving. If you leave now, those changes are lost.</p>
+        {msg && !msg.ok && <p className="mt-2 font-bold text-[var(--bad)]">{msg.text}</p>}
+      </Dialog>
     </div>
   );
 }

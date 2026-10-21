@@ -56,5 +56,9 @@ export default async function CalendarPage() {
     });
   }
 
-  return <CalendarView items={items} />;
+  const roles = ((data ?? []) as Row[])
+    .map((a) => ({ id: a.id, name: [a.company ?? a.title, a.role].filter(Boolean).join(" · ") }))
+    .sort((x, y) => x.name.localeCompare(y.name));
+
+  return <CalendarView items={items} roles={roles} />;
 }

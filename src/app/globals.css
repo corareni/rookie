@@ -758,3 +758,97 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .drift { animation: none; }
 }
+
+/* Confirmation pop-up */
+.rk-dialog {
+  margin: auto;
+  width: min(540px, calc(100vw - 32px));
+  border: 0;
+  border-radius: 22px;
+  background: var(--frame);
+  color: var(--ink);
+  padding: 0;
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.35);
+}
+.rk-dialog[open] {
+  animation: dialog-in 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.rk-dialog::backdrop {
+  background: rgba(11, 11, 12, 0.35);
+  backdrop-filter: blur(2px);
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Floating progress pop-up (e.g. while comparing roles) */
+.rk-toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  width: min(340px, calc(100vw - 36px));
+  border-radius: 22px;
+  background: var(--black);
+  color: var(--onblack);
+  padding: 16px 18px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 24px 50px -20px rgba(0, 0, 0, 0.55);
+  animation: toast-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), toast-float 3.2s ease-in-out 0.45s infinite;
+}
+@media (max-width: 640px) {
+  /* Above the compare bar's spot: just below the header pill. */
+  .rk-toast { top: 76px; bottom: auto; right: 16px; width: calc(100vw - 32px); }
+}
+.rk-toast.done {
+  animation: toast-in 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), toast-wiggle 0.7s ease-in-out 0.1s 2;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes toast-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(-0.6deg); }
+}
+@keyframes toast-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-2deg); }
+  75% { transform: rotate(2deg); }
+}
+.rk-dots span {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 5px;
+  border-radius: 50%;
+  animation: dot-bounce 1s ease-in-out infinite;
+}
+.rk-dots span:nth-child(1) { background: var(--lilac); }
+.rk-dots span:nth-child(2) { background: var(--mint); animation-delay: 0.15s; }
+.rk-dots span:nth-child(3) { background: var(--peach); animation-delay: 0.3s; }
+.rk-dots span:nth-child(4) { background: var(--sky); animation-delay: 0.45s; }
+@keyframes dot-bounce {
+  0%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-7px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rk-dialog[open], .rk-toast, .rk-toast.done, .rk-dots span { animation: none; }
+}
+
+/* Profile entries: read-only toggles */
+.entry summary::-webkit-details-marker { display: none; }
+.pill.pill-done { background: var(--mint); border-color: var(--mint); font-weight: 700; }
+
+/* Loading placeholder while a page's data arrives */
+.skel {
+  background: linear-gradient(100deg, var(--tile) 30%, var(--frame) 50%, var(--tile) 70%) 0 0 / 300% 100%;
+  animation: skel 1.4s ease-in-out infinite;
+}
+@keyframes skel {
+  from { background-position: 100% 0; }
+  to { background-position: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel { animation: none; }
+}

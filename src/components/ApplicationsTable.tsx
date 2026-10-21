@@ -6,6 +6,7 @@ import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Applicat
 import CalendarButtons from "@/components/CalendarButtons";
 import { buildEvent, type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
+import StatusConfirm, { NO_EVENT, type StatusChange } from "@/components/StatusConfirm";
 import { createClient } from "@/lib/supabase/client";
 
 const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
@@ -15,13 +16,28 @@ const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
   { title: "Rejected or withdrawn", statuses: ["rejected", "withdrawn"], tone: "bg-[var(--badbg)] text-[var(--bad)]" },
 ];
 
-export default function ApplicationsTable({ initial, events = {} }: { initial: Application[]; events?: Record<string, EventFields> }) {
+export default function ApplicationsTable({ initial, events: initialEvents = {} }: { initial: Application[]; events?: Record<string, EventFields> }) {
   const [items, setItems] = useState(initial);
+  const [events, setEvents] = useState(initialEvents);
   const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<(StatusChange & { id: string }) | null>(null);
 
   async function save(id: string, p: Partial<Application>) {
     setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...p } : a)));
     const { error } = await createClient().from("applications").update(p).eq("id", id);
+    if (error) setError(`Couldn't save: ${error.message}`);
+  }
+
+  async function changeStatus(removeEvent: boolean) {
+    if (!pending) return;
+    const { id, to } = pending;
+    setPending(null);
+    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, status: to } : a)));
+    if (removeEvent) setEvents(({ [id]: _gone, ...rest }) => rest);
+    const { error } = await createClient()
+      .from("applications")
+      .update({ status: to, ...(removeEvent ? NO_EVENT : {}) })
+      .eq("id", id);
     if (error) setError(`Couldn't save: ${error.message}`);
   }
 
@@ -82,18 +98,44 @@ export default function ApplicationsTable({ initial, events = {} }: { initial: A
                   <span>{rows.length}</span>
                 </h2>
                 {rows.map((a) => (
-                  <Row key={a.id} a={a} ev={events[a.id]} onSave={(p) => save(a.id, p)} />
+                  <Row
+                    key={a.id}
+                    a={a}
+                    ev={events[a.id]}
+                    onSave={(p) => save(a.id, p)}
+                    onStatus={(to) =>
+                      setPending({
+                        id: a.id,
+                        name: a.company ?? a.title,
+                        from: a.status,
+                        to,
+                        eventAt: events[a.id]?.event_at ?? null,
+                        eventKind: events[a.id]?.event_kind ?? null,
+                      })
+                    }
+                  />
                 ))}
               </section>
             );
           })}
         </div>
       )}
+      <StatusConfirm change={pending} onCancel={() => setPending(null)} onConfirm={changeStatus} />
     </main>
   );
 }
 
-function Row({ a, ev, onSave }: { a: Application; ev?: EventFields; onSave: (p: Partial<Application>) => void }) {
+function Row({
+  a,
+  ev,
+  onSave,
+  onStatus,
+}: {
+  a: Application;
+  ev?: EventFields;
+  onSave: (p: Partial<Application>) => void;
+  onStatus: (s: Status) => void;
+}) {
   const [next, setNext] = useState(a.next_step ?? "");
   const days = a.deadline ? daysUntil(a.deadline) : null;
   return (
@@ -138,7 +180,7 @@ function Row({ a, ev, onSave }: { a: Application; ev?: EventFields; onSave: (p: 
         <span className="sr-only">Status for {a.company ?? a.title}</span>
         <select
           value={a.status}
-          onChange={(e) => onSave({ status: e.target.value as Status })}
+          onChange={(e) => onStatus(e.target.value as Status)}
           className="pill w-full !py-2"
         >
           {STATUSES.map((s) => (

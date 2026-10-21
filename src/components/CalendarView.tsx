@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import CalendarButtons from "@/components/CalendarButtons";
+import { EventDetails, EventDialog, toLocalInput, type Draft } from "@/components/CalendarEvents";
 import { buildEvent } from "@/components/EventPanel";
 import { titleCase } from "@/lib/applications";
 
@@ -25,7 +26,7 @@ const KIND: Record<CalItem["kind"], { label: string; tone: string }> = {
   scheduled: { label: "Scheduled", tone: "bg-[var(--sky)]" },
   interview: { label: "Interview stage", tone: "bg-[var(--lilac)]" },
   assessment: { label: "Assessment stage", tone: "bg-[var(--butter)]" },
-  applied: { label: "Applied", tone: "bg-[var(--mint)]" },
+  applied: { label: "Applied", tone: "bg-[var(--tile2)]" },
   deadline: { label: "Deadline", tone: "bg-[var(--peach)]" },
   offer: { label: "Offer", tone: "bg-[var(--goodbg)]" },
 };
@@ -38,8 +39,28 @@ const scheduledLabel = (i: CalItem) => (i.eventKind === "assessment" ? "Assessme
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 /** Month grid plus a "coming up" list: when you applied, deadlines, stages reached and scheduled interviews or tests. */
-export default function CalendarView({ items }: { items: CalItem[] }) {
+export default function CalendarView({ items, roles = [] }: { items: CalItem[]; roles?: { id: string; name: string }[] }) {
   const today = localDay(new Date());
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [open, setOpen] = useState<CalItem | null>(null);
+  const taken = Object.fromEntries(items.filter((i) => i.kind === "scheduled").map((i) => [i.appId, i.at!]));
+
+  /** New event on a given day (9:00), or at the next full hour. */
+  const add = (day?: Date) => {
+    const at = day ? new Date(day.getFullYear(), day.getMonth(), day.getDate(), 9) : new Date(Date.now() + 3600_000);
+    if (!day) at.setMinutes(0, 0, 0);
+    setDraft({ appId: "", local: toLocalInput(at), minutes: 60, kind: "interview", location: "" });
+  };
+  const edit = (i: CalItem) => {
+    setOpen(null);
+    setDraft({
+      appId: i.appId,
+      local: toLocalInput(new Date(i.at!)),
+      minutes: i.minutes ?? 60,
+      kind: i.eventKind ?? "interview",
+      location: i.location ?? "",
+    });
+  };
   const [month, setMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -85,8 +106,8 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
               Every date. <em>At a glance.</em>
             </h1>
             <p className="mt-4 max-w-[540px] text-[16px] text-[var(--ink2)]">
-              When you applied and where, which deadlines are coming, and when your interviews and assessments are. Set a
-              date and time on any role at Interview or Assessment to see it here.
+              When you applied and where, which deadlines are coming, and when your interviews and assessments are. Press
+              ＋ to add an event, or click one to edit or delete it.
             </p>
           </div>
         </section>
@@ -118,6 +139,9 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
               <b>{monthName.split(" ")[0]}</b> <span className="font-light">{monthName.split(" ")[1]}</span>
             </h2>
             <span className="flex gap-1.5">
+              <button type="button" className="act !min-h-[34px] !px-3 !bg-[var(--black)] !text-[var(--onblack)]" onClick={() => add()}>
+                ＋ Add event
+              </button>
               <button type="button" className="act !min-h-[34px] !px-3" aria-label="Previous month" onClick={() => shift(-1)}>
                 ←
               </button>
@@ -144,20 +168,41 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
                   key={key}
                   role="gridcell"
                   aria-label={`${d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}`}
-                  className={`min-h-[96px] min-w-0 rounded-[12px] p-1.5 ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
+                  className={`group min-h-[96px] min-w-0 rounded-[12px] p-1.5 ${other ? "bg-transparent opacity-45" : "bg-white"} ${key === today ? "ring-2 ring-[var(--ink)]" : ""}`}
                 >
-                  <p className={`text-[12px] ${key === today ? "font-bold" : "text-[var(--ink2)]"}`}>{d.getDate()}</p>
+                  <p className="flex items-center justify-between">
+                    <span className={`text-[12px] ${key === today ? "font-bold" : "text-[var(--ink2)]"}`}>{d.getDate()}</span>
+                    <button
+                      type="button"
+                      className="grid size-5 place-items-center rounded-full text-[13px] leading-none text-[var(--ink2)] opacity-0 transition-opacity group-hover:opacity-100 hover:bg-[var(--sky)] focus-visible:opacity-100"
+                      aria-label={`Add an event on ${d.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`}
+                      onClick={() => add(d)}
+                    >
+                      ＋
+                    </button>
+                  </p>
                   <ul className="mt-1 grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
                     {list.slice(0, 3).map((i, n) => (
                       <li key={n} className="min-w-0">
-                        <Link
-                          href={`/app/a/${i.appId}${i.kind === "scheduled" ? "#calendar" : ""}`}
-                          className={`block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight no-underline ${KIND[i.kind].tone}`}
-                          title={`${i.kind === "scheduled" ? scheduledLabel(i) : KIND[i.kind].label}: ${i.company}`}
-                        >
-                          {i.at && <b>{timeOf(i)} </b>}
-                          {i.company}
-                        </Link>
+                        {i.kind === "scheduled" ? (
+                          <button
+                            type="button"
+                            className={`block w-full truncate rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight ${KIND[i.kind].tone}`}
+                            title={`${scheduledLabel(i)}: ${i.company}`}
+                            onClick={() => setOpen(i)}
+                          >
+                            <b>{timeOf(i)} </b>
+                            {i.company}
+                          </button>
+                        ) : (
+                          <Link
+                            href={`/app/a/${i.appId}`}
+                            className={`block truncate rounded-md px-1.5 py-0.5 text-[11px] leading-tight no-underline ${KIND[i.kind].tone}`}
+                            title={`${KIND[i.kind].label}: ${i.company}`}
+                          >
+                            {i.company}
+                          </Link>
+                        )}
                       </li>
                     ))}
                     {list.length > 3 && <li className="px-1 text-[11px] text-[var(--mute)]">+{list.length - 3} more</li>}
@@ -177,12 +222,21 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
 
         {/* Coming up (and the whole view on phones) */}
         <section className="tile tile-sky span-4 grid min-w-0 content-start gap-3" aria-labelledby="next-h">
-          <h2 id="next-h" className="text-[20px] tracking-tight">
-            <b>Coming up</b> <span className="font-light">next</span>
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="next-h" className="text-[20px] tracking-tight">
+              <b>Coming up</b> <span className="font-light">next</span>
+            </h2>
+            <button
+              type="button"
+              className="act !min-h-[34px] !px-3 !bg-[var(--black)] !text-[var(--onblack)] md:hidden"
+              onClick={() => add()}
+            >
+              ＋ Add event
+            </button>
+          </div>
           {upcoming.length === 0 && (
             <p className="text-[14px] text-[var(--ink2)]">
-              Nothing scheduled. Open a role at Interview or Assessment and set its date and time.
+              Nothing scheduled. Press ＋ to add an interview or assessment.
             </p>
           )}
           <ul className="grid gap-2">
@@ -210,6 +264,16 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
                   </Link>
                   {i.location && <span className="text-[12.5px] text-[var(--ink2)]">{i.location}</span>}
                   {event && <CalendarButtons event={event} small />}
+                  {event && (
+                    <span className="flex gap-3 text-[12.5px]">
+                      <button type="button" className="font-bold text-[var(--ink2)] hover:text-[var(--ink)]" onClick={() => edit(i)}>
+                        Edit
+                      </button>
+                      <button type="button" className="font-bold text-[var(--mute)] hover:text-[var(--bad)]" onClick={() => setOpen(i)}>
+                        Delete
+                      </button>
+                    </span>
+                  )}
                 </li>
               );
             })}
@@ -229,7 +293,13 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
                     <span className={`flex-none rounded-full px-2 py-0.5 text-[11px] ${KIND[i.kind].tone}`}>
                       {i.kind === "scheduled" ? scheduledLabel(i) : KIND[i.kind].label}
                     </span>
-                    <span className="min-w-0 truncate font-bold">{i.company}</span>
+                    {i.kind === "scheduled" ? (
+                      <button type="button" className="min-w-0 truncate text-left font-bold underline" onClick={() => setOpen(i)}>
+                        {i.company}
+                      </button>
+                    ) : (
+                      <span className="min-w-0 truncate font-bold">{i.company}</span>
+                    )}
                   </li>
                 ))}
               {inMonth.length === 0 && <li className="text-[13px] text-[var(--ink2)]">Nothing this month.</li>}
@@ -245,6 +315,8 @@ export default function CalendarView({ items }: { items: CalItem[] }) {
           </div>
         </section>
       </div>
+      <EventDialog draft={draft} roles={roles} taken={taken} onClose={() => setDraft(null)} />
+      <EventDetails item={open} onClose={() => setOpen(null)} onEdit={edit} />
     </main>
   );
 }

@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import StatusConfirm, { NO_EVENT, type StatusChange } from "@/components/StatusConfirm";
 import { COLUMNS, STATUSES, deadlineText, isUrl, titleCase, type Application, type Status } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/client";
 
@@ -33,8 +35,19 @@ const toForm = (a: Application): Form => ({
 
 const orNull = (v: string) => (v.trim() === "" ? null : v.trim());
 
-export default function ApplicationEditor({ initial, children }: { initial: Application; children?: React.ReactNode }) {
+export default function ApplicationEditor({
+  initial,
+  event = null,
+  children,
+}: {
+  initial: Application;
+  /** The scheduled date, so a status change can offer to remove it. */
+  event?: { event_at: string | null; event_kind: StatusChange["eventKind"] } | null;
+  children?: React.ReactNode;
+}) {
+  const router = useRouter();
   const [app, setApp] = useState(initial);
+  const [pending, setPending] = useState<StatusChange | null>(null);
   const [form, setForm] = useState<Form>(toForm(initial));
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
@@ -43,12 +56,27 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  async function save(e: React.FormEvent) {
+  function submit(e: React.FormEvent) {
     e.preventDefault();
     if (form.job_url.trim() && !isUrl(form.job_url.trim())) {
       setMsg({ kind: "err", text: "The job link must start with http:// or https://" });
       return;
     }
+    if (form.status !== app.status) {
+      setPending({
+        name: app.company ?? app.title,
+        from: app.status,
+        to: form.status,
+        eventAt: event?.event_at ?? null,
+        eventKind: event?.event_kind ?? null,
+      });
+      return;
+    }
+    save(false);
+  }
+
+  async function save(removeEvent: boolean) {
+    setPending(null);
     setSaving(true);
     setMsg(null);
     const { data, error } = await createClient()
@@ -64,6 +92,7 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
         role: orNull(form.role),
         location: orNull(form.location),
         job_url: orNull(form.job_url),
+        ...(removeEvent ? NO_EVENT : {}),
       })
       .eq("id", app.id)
       .select(COLUMNS)
@@ -76,6 +105,8 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
     setApp(data as unknown as Application);
     setForm(toForm(data as unknown as Application));
     setMsg({ kind: "ok", text: "Saved." });
+    // The date, interview practice and calendar sections depend on the status.
+    if (data && (data as unknown as Application).status !== app.status) router.refresh();
   }
 
   async function remove() {
@@ -118,7 +149,7 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
       <h2 className="sec mt-8">
         <small>[03]</small> Tracking details
       </h2>
-      <form onSubmit={save} className="card mt-3 grid gap-5">
+      <form onSubmit={submit} className="card mt-3 grid gap-5">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Status" id="status">
             <select id="status" className="field" value={form.status} onChange={set("status")}>
@@ -193,6 +224,14 @@ export default function ApplicationEditor({ initial, children }: { initial: Appl
           )}
         </div>
       </form>
+      <StatusConfirm
+        change={pending}
+        onCancel={() => {
+          setPending(null);
+          setForm((f) => ({ ...f, status: app.status }));
+        }}
+        onConfirm={save}
+      />
     </main>
   );
 }

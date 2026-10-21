@@ -1,3 +1,5 @@
+import { CompareProvider } from "@/components/CompareToast";
+
 export default function AppLayout({ children }: LayoutProps<"/app">) {
-  return children;
+  return <CompareProvider>{children}</CompareProvider>;
 }

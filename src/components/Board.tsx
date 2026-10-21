@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
+import { useCompare } from "@/components/CompareToast";
 import RoleCard from "@/components/RoleCard";
-import { analyzeRole, compareRoles } from "@/lib/ai-client";
+import { analyzeRole } from "@/lib/ai-client";
 import {
   APPLIED_STATUSES,
   COLUMNS,
@@ -28,7 +28,6 @@ export default function Board({
   loadError: string | null;
   hasProfile: boolean;
 }) {
-  const router = useRouter();
   // A read that was interrupted (e.g. the page was closed) shows as failed, so it can be retried.
   const [items, setItems] = useState<Application[]>(() =>
     initial.map((a) =>
@@ -43,7 +42,7 @@ export default function Board({
   const [track, setTrack] = useState<string | null>(null);
   const [sort, setSort] = useState<Sort>("best");
   const [selected, setSelected] = useState<string[]>([]);
-  const [comparing, setComparing] = useState(false);
+  const { start: startCompare, busy: comparing } = useCompare();
   const [hideNudge, setHideNudge] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   // Fields stay disabled until hydration, so nothing typed early gets lost.
@@ -126,16 +125,11 @@ export default function Board({
     setSelected((s) => s.filter((x) => x !== id));
   }
 
-  async function compare() {
-    setComparing(true);
-    setNotice(null);
-    try {
-      const id = await compareRoles(selected);
-      router.push(`/app/compare/${id}`);
-    } catch (e) {
-      setNotice(e instanceof Error ? e.message : "Couldn't compare these roles.");
-      setComparing(false);
-    }
+  // Comparing runs in the background: a pop-up shows progress and links to the result, without leaving the page.
+  function compare() {
+    const names = selected.map((id) => items.find((a) => a.id === id)).map((a) => a?.company ?? a?.title ?? "Role");
+    startCompare(selected, names);
+    setSelected([]);
   }
 
   const open = useMemo(() => items.filter((a) => a.status === "interested" && a.verdict === "open"), [items]);

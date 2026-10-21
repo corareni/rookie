@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import CalendarButtons from "@/components/CalendarButtons";
 import { titleCase } from "@/lib/applications";
@@ -56,6 +57,7 @@ export default function EventPanel({
   initial: EventFields;
   ready: boolean;
 }) {
+  const router = useRouter();
   const [ev, setEv] = useState<EventFields>({
     ...initial,
     event_kind: initial.event_kind ?? (app.status === "assessment" ? "assessment" : app.status === "interview" ? "interview" : "other"),
@@ -74,6 +76,7 @@ export default function EventPanel({
     setEv(next);
     setSaved(next);
     setMsg(next.event_at ? "Saved. Add it to your calendar below." : "Date removed.");
+    router.refresh();
   }
 
   const event = buildEvent(app, saved);
