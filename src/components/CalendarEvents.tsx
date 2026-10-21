@@ -314,7 +314,7 @@ export function EventDetails({ item, onClose, onEdit }: { item: CalItem | null; 
               </p>
             )}
             <p>
-              <b>Delete the whole role</b> removes {item.company} from Rookie: its board card, CV and cover letter
+              <b>Delete the whole role</b> removes {item.company} from rookie: its board card, CV and cover letter
               drafts, notes and every date. Copies saved in your Library stay. This can&apos;t be undone.
             </p>
             {scheduled && <p className="text-[13px]">If you added it to Google or Apple Calendar, delete it there as well.</p>}

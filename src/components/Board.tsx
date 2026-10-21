@@ -173,7 +173,7 @@ export default function Board({
               Your applications. <em>One clear board.</em>
             </h1>
             <p className="mt-4 max-w-[520px] text-[16px] text-[var(--ink2)]">
-              Paste any job link. Rookie reads it, gives you an <b className="text-[var(--ink)]">honest score out of 10</b>{" "}
+              Paste any job link. rookie reads it, gives you an <b className="text-[var(--ink)]">honest score out of 10</b>{" "}
               and writes a tailored CV and cover letter when you&apos;re ready.
             </p>
           </div>

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LibraryView, { type CurrentDoc, type LibraryFile } from "@/components/LibraryView";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Library · Rookie" };
+export const metadata: Metadata = { title: "Library · rookie" };
 
 export default async function LibraryPage() {
   const supabase = await createClient();

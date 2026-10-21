@@ -3,7 +3,7 @@ import Link from "next/link";
 import DeleteComparison from "@/components/DeleteComparison";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Compare · Rookie" };
+export const metadata: Metadata = { title: "Compare · rookie" };
 
 type Row = { id: string; created_at: string; result: { bestPick: string; ranking: string[] }; application_ids: string[] };
 
@@ -26,7 +26,7 @@ export default async function ComparePage() {
           Which one <em>first?</em>
         </h1>
         <p className="mt-4 max-w-[560px] text-[16px] text-[var(--ink2)]">
-          On the <Link href="/app">Board</Link>, press <strong>+ Compare</strong> on 2 to 4 roles. Rookie lines them up side by
+          On the <Link href="/app">Board</Link>, press <strong>+ Compare</strong> on 2 to 4 roles. rookie lines them up side by
           side, picks the best one for you and tells you what would change its mind.
         </p>
       </section>

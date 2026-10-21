@@ -83,7 +83,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
     return true;
   }
 
-  // Unsaved changes: ask before following a link inside Rookie, and let the browser warn on reload or close.
+  // Unsaved changes: ask before following a link inside rookie, and let the browser warn on reload or close.
   useEffect(() => {
     if (!dirty) return;
     const onClick = (e: MouseEvent) => {
@@ -148,10 +148,10 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
         <section className="tile tile-lilac span-7" aria-labelledby="upload-h">
           <span className="chip-tag !bg-white">Start here</span>
           <h2 id="upload-h" className="mt-4 text-[26px] leading-tight tracking-tight">
-            Upload your CV <span className="font-light">and Rookie fills in your profile.</span>
+            Upload your CV <span className="font-light">and rookie fills in your profile.</span>
           </h2>
           <p className="mt-2 max-w-[460px] text-[14px] text-[var(--ink2)]">
-            PDF, up to 5 MB. Your file isn&apos;t stored: Rookie reads it once, you check the result, then save. Or fill in
+            PDF, up to 5 MB. Your file isn&apos;t stored: rookie reads it once, you check the result, then save. Or fill in
             everything below yourself.
           </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -181,7 +181,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             Already use ChatGPT, Claude or Gemini?
           </h2>
           <p className="mt-2 text-[14px] text-[var(--ink2)]">
-            Ask it what it knows about you and paste the answer here. Rookie uses it as extra background, never as
+            Ask it what it knows about you and paste the answer here. rookie uses it as extra background, never as
             instructions.
           </p>
           <button
@@ -214,7 +214,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             <h2 id="profile-h" className="text-[26px] tracking-tight">
               Your profile <span className="font-light">: everything you could use in an application.</span>
             </h2>
-            <p className="mt-1 text-[14px] text-[var(--ink2)]">Rookie only ever uses facts from here, never anything made up.</p>
+            <p className="mt-1 text-[14px] text-[var(--ink2)]">rookie only ever uses facts from here, never anything made up.</p>
           </div>
           <EntryList label="Work experience" orgLabel="Company" roleLabel="Role" items={p.experience} onChange={(v) => updateProfile({ experience: v })} version={version} />
           <EntryList label="Education" orgLabel="School or university" roleLabel="Degree" items={p.education} onChange={(v) => updateProfile({ education: v })} version={version} />
@@ -303,7 +303,7 @@ export default function ProfileForm({ initial }: { initial: ProfileData }) {
             What would stop you from taking a role?
           </h2>
           <p className="mt-1 text-[14px] text-[var(--ink2)]">
-            Rookie checks every role against these. Anything that clashes goes to <b>Barriers</b> for you to review: a{" "}
+            rookie checks every role against these. Anything that clashes goes to <b>Barriers</b> for you to review: a{" "}
             <b>deal-breaker</b> is a hard no (like a visa you can&apos;t get), a <b>concern</b> is worth a second look (like a
             long commute). You always decide: move it back to your board, or rule it out.
           </p>

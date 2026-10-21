@@ -130,7 +130,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
           ? "Open the bell to review and apply them."
           : r.roles
             ? `Checked ${r.roles} application${r.roles > 1 ? "s" : ""}${r.emails ? ` and ${r.emails} email${r.emails > 1 ? "s" : ""}` : ""}. Nothing changes your status.`
-            : "Mark a role as applied first: Rookie checks emails about your applications.",
+            : "Mark a role as applied first: rookie checks emails about your applications.",
         done: true,
       });
       refreshNotifications();
@@ -200,19 +200,19 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       >
         {gmailHelp === "unavailable" ? (
           <p>
-            Rookie can&apos;t connect to Gmail here yet. Until it can, paste an email into &quot;Got an email?&quot; on the
-            Applications page and Rookie reads it the same way.
+            rookie can&apos;t connect to Gmail here yet. Until it can, paste an email into &quot;Got an email?&quot; on the
+            Applications page and rookie reads it the same way.
           </p>
         ) : (
           <div className="grid gap-2">
             {gmailHelp === "expired" && <p className="font-bold text-[var(--ink)]">Your Gmail connection ran out. Connect it again to keep checking.</p>}
-            <p>Rookie looks for emails about the companies you applied to and suggests status updates. How it works:</p>
+            <p>rookie looks for emails about the companies you applied to and suggests status updates. How it works:</p>
             <ol className="list-decimal pl-5">
               <li>Press Connect Gmail and pick your Google account.</li>
               <li>
-                Google may say the app isn&apos;t verified yet. Press <b>Advanced</b>, then <b>Go to Rookie</b>.
+                Google may say the app isn&apos;t verified yet. Press <b>Advanced</b>, then <b>Go to rookie</b>.
               </li>
-              <li>Allow Rookie to read your emails. It can&apos;t send, change or delete anything.</li>
+              <li>Allow rookie to read your emails. It can&apos;t send, change or delete anything.</li>
             </ol>
             <p className="text-[13px]">
               Only emails mentioning your applications are read, by Google Gemini, and they aren&apos;t stored. Disconnect any

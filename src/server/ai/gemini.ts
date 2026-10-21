@@ -38,7 +38,7 @@ function mapError(e: unknown): never {
   if (e instanceof AiError) throw e;
   const msg = e instanceof Error ? e.message : String(e);
   if (/429|503|RESOURCE_EXHAUSTED|UNAVAILABLE|high demand|overloaded|quota|rate|abort/i.test(msg))
-    throw new AiError("Rookie is busy, try again in a minute.", 429);
+    throw new AiError("rookie is busy, try again in a minute.", 429);
   console.error("Gemini error:", msg);
   throw new AiError("The AI couldn't finish this one. Try again.", 502);
 }

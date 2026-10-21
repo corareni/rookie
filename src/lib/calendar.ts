@@ -34,7 +34,7 @@ export function icsText(e: CalEvent) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Rookie//Applications//EN",
+    "PRODID:-//rookie//Applications//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",

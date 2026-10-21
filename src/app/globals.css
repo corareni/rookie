@@ -261,28 +261,88 @@ a {
   .topbar.morph, .morph-part, .menu-btn { transition: none !important; }
 }
 .menu-panel {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -16px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 18px 40px -16px rgba(0, 0, 0, 0.5);
   background: var(--black);
   color: var(--onblack);
   border-radius: 22px;
   padding: 10px;
-  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.5);
-  animation: menu-in 0.22s ease-out;
+  /* Closed: tucked up under the pill and invisible; it glides open and closed. */
+  transform-origin: 50% 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.96);
+  clip-path: inset(0 0 100% 0 round 22px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    clip-path 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 0s linear 0.45s;
+}
+.menu-panel.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  clip-path: inset(0 0 0 0 round 22px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.5s cubic-bezier(0.22, 0.8, 0.24, 1),
+    clip-path 0.5s cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 0s;
 }
 .menu-link {
+  position: relative;
+  z-index: 1;
   display: block;
   padding: 10px 14px;
   border-radius: 14px;
   font-size: 15px;
   text-decoration: none;
+  transition: color 0.3s ease, background 0.2s ease;
 }
-.menu-link:hover {
+.menu-link:hover:not([data-on]) {
   background: var(--black2);
 }
-.menu-link[aria-current="page"] {
-  background: var(--lilac);
+.menu-link[data-on] {
   color: var(--ink);
   font-weight: 700;
+}
+/* The lilac pill slides between menu items, like in the full header. */
+.menu-pill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  border-radius: 14px;
+  background: var(--lilac);
+}
+.menu-pill.is-moving {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    height 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+/* Menu icon: two lines, "=" when closed, swinging into "×" when open. */
+.menu-icon {
+  position: relative;
+  display: inline-block;
+  width: 13px;
+  height: 9px;
+  margin-left: 2px;
+}
+.menu-icon span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.6px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+.menu-icon span:first-child { top: 0; }
+.menu-icon span:last-child { bottom: 0; }
+.menu-icon.is-open span:first-child { transform: translateY(3.7px) rotate(45deg); }
+.menu-icon.is-open span:last-child { transform: translateY(-3.7px) rotate(-45deg); }
+@media (prefers-reduced-motion: reduce) {
+  .menu-panel, .menu-panel.is-open, .menu-pill.is-moving, .menu-icon span { transition: none; }
 }
 @keyframes menu-in {
   from { opacity: 0; transform: translateY(-6px); }
@@ -1013,46 +1073,57 @@ a {
   .bell-count, .bell-panel { animation: none; }
 }
 
-/* Ask Rookie: chat button in the corner and its panel */
-.chat-fab {
+/* Ask rookie: chat button in the corner and its panel */
+/* rookie's dock: bottom right by default, or wherever the user dragged him. Bubble and chat open towards
+   the free side (data-x: which way the chat extends; data-y: up or down). */
+.chat-dock {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 55;
-  display: grid;
-  place-items: center;
+  /* Above the page, below the header and its menu. */
+  z-index: 45;
   width: 56px;
   height: 56px;
+}
+body:has(.rk-bottom-bar) .chat-dock:not(.is-placed) { bottom: 96px; }
+body:has(.chat-dock:not(.is-placed)) .rk-toasts { bottom: 86px; }
+body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
+.chat-fab {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
   background: var(--black);
   color: var(--onblack);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12), 0 14px 30px -10px rgba(0, 0, 0, 0.5);
-  transition: transform 0.2s ease, bottom 0.3s ease;
+  touch-action: none;
+  cursor: grab;
+  transition: transform 0.2s ease, background 0.3s ease;
 }
+.chat-fab:active { cursor: grabbing; }
 .chat-fab:hover { transform: scale(1.05); }
-/* Closed: Rookie on a white circle. Open: a black circle with a centred close icon. */
+/* Closed: rookie on a white circle. Open: a black circle with a centred close icon. */
 .chat-fab:not(.is-open) {
   background: var(--frame);
   box-shadow: 0 0 0 1px var(--line), 0 14px 30px -12px rgba(0, 0, 0, 0.35);
 }
-.bot { overflow: visible; animation: bot-float 4s ease-in-out infinite; }
-.bot-antenna { transform-box: fill-box; transform-origin: 50% 100%; animation: bot-antenna 3s ease-in-out infinite; }
+/* rookie only moves when the cursor is on him; at rest he just blinks now and then. */
+.bot { overflow: visible; }
+.bot-antenna { transform-box: fill-box; transform-origin: 50% 100%; }
 .bot-eyes { transform-box: fill-box; transform-origin: center; animation: bot-blink 5s ease-in-out infinite; }
 .chat-fab:hover .bot,
 .chat-fab:focus-visible .bot { animation: bot-nod 1.2s ease-in-out infinite; }
 .chat-fab:hover .bot-eyes { animation: bot-look 1.2s ease-in-out infinite; }
-@keyframes bot-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1.5px); }
-}
+.chat-fab:hover .bot-antenna { animation: bot-antenna 0.9s ease-in-out infinite; }
 @keyframes bot-nod {
   0%, 100% { transform: rotate(0deg); }
   30% { transform: rotate(-7deg); }
   60% { transform: rotate(4deg); }
 }
 @keyframes bot-antenna {
-  0%, 100% { transform: rotate(-6deg); }
-  50% { transform: rotate(6deg); }
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
 }
 @keyframes bot-blink {
   0%, 92%, 100% { transform: scaleY(1); }
@@ -1063,11 +1134,11 @@ a {
   40% { transform: translateX(-1px); }
   70% { transform: translateX(1px); }
 }
-/* A name tag that says who Rookie is: once on arrival, and again on hover. */
+/* The speech bubble: says who rookie is once on arrival, and again on hover. Still, no wiggle. */
 .chat-name {
   position: absolute;
-  right: calc(100% + 12px);
   bottom: 4px;
+  right: calc(100% + 12px);
   display: grid;
   gap: 2px;
   width: 230px;
@@ -1080,38 +1151,31 @@ a {
   opacity: 0;
   box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.5);
   animation: bot-hello 6s ease 1.2s 1 both;
-  transition: opacity 0.2s;
+  transition: opacity 0.25s ease;
 }
+.chat-dock[data-x="right"] .chat-name { right: auto; left: calc(100% + 12px); border-radius: 16px 16px 16px 4px; }
+.chat-dock[data-y="down"] .chat-name { bottom: auto; top: 4px; }
 .chat-name b { font-size: 13px; font-weight: 700; }
 .chat-name span { font-size: 12px; font-weight: 300; line-height: 1.35; color: var(--onblack2); }
-.chat-fab:hover .chat-name { opacity: 1; animation: none; }
+.chat-dock:has(.chat-fab:hover) .chat-name { opacity: 1; animation: none; }
 @keyframes bot-hello {
-  0%, 100% { opacity: 0; transform: translateX(6px); }
-  8%, 88% { opacity: 1; transform: none; }
+  0%, 100% { opacity: 0; }
+  8%, 88% { opacity: 1; }
 }
-@media (max-width: 639px) {
-  .chat-name { width: 200px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .bot, .bot-antenna, .bot-eyes, .chat-fab:hover .bot, .chat-fab:hover .bot-eyes, .chat-name { animation: none; }
-}
-/* Toasts sit above the button. */
-body:has(.chat-fab) .rk-toasts { bottom: 86px; }
-/* Out of the way of the Profile save bar and the Compare bar. */
-body:has(.rk-bottom-bar) .chat-fab { bottom: 96px; }
-body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
+/* The chat grows out of the bubble's corner (black, small) into the white chat, and shrinks back on close. */
 .chat-panel {
-  position: fixed;
-  right: 18px;
-  bottom: 86px;
-  z-index: 56;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 12px);
   display: flex;
   width: min(390px, calc(100vw - 32px));
   height: min(600px, 70vh);
-  /* The outer layer floats gently (and holds still while you use it)... */
-  animation: chat-float 3.6s ease-in-out 1.25s infinite;
+  --origin: 100% 100%;
 }
-/* ...the card inside springs in and wiggles once, like the compare pop-up. */
+.chat-dock.is-placed .chat-panel { height: min(600px, 70vh, var(--room)); }
+.chat-dock[data-x="right"] .chat-panel { right: auto; left: 0; --origin: 0 100%; }
+.chat-dock[data-y="down"] .chat-panel { bottom: auto; top: calc(100% + 12px); --origin: 100% 0; }
+.chat-dock[data-x="right"][data-y="down"] .chat-panel { --origin: 0 0; }
 .chat-card {
   display: flex;
   flex: 1;
@@ -1121,33 +1185,41 @@ body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
   background: var(--frame);
   color: var(--ink);
   box-shadow: 0 0 0 1px var(--line), 0 30px 60px -20px rgba(0, 0, 0, 0.35);
-  transform-origin: 100% 100%;
-  animation: chat-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.3) both, toast-wiggle 0.7s ease-in-out 0.55s 1;
+  transform-origin: var(--origin);
+  animation: chat-grow 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
   overflow: hidden;
 }
-@keyframes chat-in {
-  from { opacity: 0; transform: translateY(26px) scale(0.86); }
-  to { opacity: 1; transform: none; }
+.chat-card > * { animation: chat-content 0.35s ease 0.2s both; }
+.chat-panel.is-closing .chat-card { animation: chat-shrink 0.38s cubic-bezier(0.5, 0, 0.75, 0) both; }
+.chat-panel.is-closing .chat-card > * { animation: chat-content-out 0.15s ease both; }
+@keyframes chat-grow {
+  0% { transform: scale(0.42, 0.16); background: var(--black); border-radius: 40px; opacity: 0.6; }
+  45% { background: var(--black); }
+  100% { transform: none; background: var(--frame); border-radius: 22px; opacity: 1; }
 }
-@keyframes chat-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+@keyframes chat-shrink {
+  0% { transform: none; background: var(--frame); opacity: 1; }
+  55% { background: var(--black); }
+  100% { transform: scale(0.42, 0.16); background: var(--black); border-radius: 40px; opacity: 0; }
 }
-/* Holds still while you use it. */
-.chat-panel:hover,
-.chat-panel:focus-within { animation-play-state: paused; }
-.chat-avatar .bot { animation: bot-float 4s ease-in-out infinite; }
-.chat-row { animation: toast-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
-@media (prefers-reduced-motion: reduce) {
-  .chat-panel, .chat-card, .chat-avatar .bot, .chat-row { animation: none; }
+@keyframes chat-content {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(100vh - 260px)); }
+@keyframes chat-content-out {
+  to { opacity: 0; }
+}
 @media (max-width: 639px) {
-  .chat-fab { right: 16px; bottom: 16px; width: 52px; height: 52px; }
-  .chat-panel { right: 16px; left: 16px; width: auto; bottom: 80px; height: calc(100dvh - 170px); }
-  /* The Profile save bar stacks taller on phones. */
-  body:has(.rk-bottom-bar) .chat-fab { bottom: 150px; }
-  body:has(.rk-bottom-bar) .chat-panel { bottom: 214px; height: calc(100dvh - 300px); }
+  .chat-dock { right: 16px; bottom: 16px; width: 52px; height: 52px; }
+  .chat-name { width: 200px; }
+  /* On phones the chat uses the width of the screen, under the header. */
+  .chat-panel,
+  .chat-dock.is-placed .chat-panel { position: fixed; left: 16px; right: 16px; top: 84px; bottom: auto; width: auto; height: calc(100dvh - 180px); }
+  body:has(.rk-bottom-bar) .chat-dock:not(.is-placed) { bottom: 150px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bot-eyes, .chat-fab:hover .bot, .chat-fab:hover .bot-eyes, .chat-fab:hover .bot-antenna, .chat-name,
+  .chat-card, .chat-card > *, .chat-panel.is-closing .chat-card { animation: none; }
 }
 .chat-msg {
   max-width: 88%;
@@ -1182,7 +1254,7 @@ body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(10
   .chat-panel { animation: none; }
 }
 
-/* Ask Rookie: header tools and the chat history list */
+/* Ask rookie: header tools and the chat history list */
 .chat-tool {
   border-radius: 999px;
   background: var(--tile);

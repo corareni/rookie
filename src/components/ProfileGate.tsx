@@ -23,7 +23,7 @@ export default function ProfileGate({ what, onClose }: { what: string | null; on
       ]}
     >
       <p>
-        Before you {what}, Rookie needs your name and at least some experience or education. That&apos;s what your CV and
+        Before you {what}, rookie needs your name and at least some experience or education. That&apos;s what your CV and
         cover letter are built from, and it makes every score about you.
       </p>
       <p className="mt-2">

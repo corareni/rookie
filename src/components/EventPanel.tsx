@@ -47,7 +47,7 @@ export function buildEvent(
     start: new Date(ev.event_at),
     minutes: ev.event_minutes || 60,
     location: ev.event_location,
-    details: [app.next_step ? `Next step: ${app.next_step}` : "", app.job_url ? `Job ad: ${app.job_url}` : "", "Added from Rookie"]
+    details: [app.next_step ? `Next step: ${app.next_step}` : "", app.job_url ? `Job ad: ${app.job_url}` : "", "Added from rookie"]
       .filter(Boolean)
       .join("\n"),
   };

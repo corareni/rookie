@@ -1,6 +1,6 @@
 import "server-only";
 
-/** Read-only Gmail access: Rookie can search and read emails, never send, change or delete them. */
+/** Read-only Gmail access: rookie can search and read emails, never send, change or delete them. */
 export const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 
 export const gmailConfigured = () => !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);

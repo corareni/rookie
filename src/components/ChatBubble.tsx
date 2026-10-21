@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { useHydrated } from "@/lib/use-hydrated";
 import CloseIcon from "@/components/CloseIcon";
 
 type Msg = { role: "user" | "assistant"; text: string; links?: { label: string; href: string }[] };
@@ -10,6 +11,14 @@ const STARTERS = ["Which role should I focus on this week?", "How do I prepare f
 /** Chat history lives in this browser only, per signed-in user, and is cleared on log out. */
 export const CHAT_STORE = "rookie-chats";
 const MAX_CHATS = 20;
+const BOT_POS = "rookie-bot-position";
+const storedPos = (): { right: number; bottom: number } | null => {
+  try {
+    return JSON.parse(localStorage.getItem(BOT_POS) ?? "null");
+  } catch {
+    return null;
+  }
+};
 
 type Chat = { id: string; title: string; updated: string; msgs: Msg[] };
 
@@ -69,13 +78,42 @@ function Answer({ text }: { text: string }) {
 }
 
 /**
- * "Ask Rookie": a round button in the corner of every page that opens a chat. It answers from your own board
+ * "Ask rookie": a round button in the corner of every page that opens a chat. It answers from your own board
  * and profile and links you to the right page; it doesn't change anything. Earlier chats are kept in this
  * browser (History) until you log out.
  */
 export default function ChatBubble({ userId }: { userId: string }) {
   const key = `${CHAT_STORE}:${userId}`;
   const [open, setOpen] = useState(false);
+  // The panel stays mounted while it shrinks back into the bubble.
+  const [shown, setShown] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openChat = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setShown(true);
+    setOpen(true);
+  };
+  const closeChat = () => {
+    setOpen(false);
+    closeTimer.current = setTimeout(() => setShown(false), 380);
+  };
+
+  // Where rookie sits: bottom right by default; drag him anywhere and he stays there.
+  // Read from this browser only after the page is ready, so the first paint matches the server.
+  const hydrated = useHydrated();
+  const [moved, setPos] = useState<{ right: number; bottom: number } | null | undefined>(undefined);
+  const pos = moved !== undefined ? moved : hydrated ? storedPos() : null;
+  const drag = useRef<{ x: number; y: number; right: number; bottom: number; moved: boolean } | null>(null);
+  const dock = useRef<HTMLDivElement>(null);
+  const clamp = (p: { right: number; bottom: number }) => ({
+    right: Math.min(Math.max(8, p.right), window.innerWidth - 64),
+    bottom: Math.min(Math.max(8, p.bottom), window.innerHeight - 64),
+  });
+  useEffect(() => {
+    const fit = () => setPos((p) => (p ? clamp(p) : p === undefined ? storedPos() && clamp(storedPos()!) : p));
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, []);
   const [chats, setChats] = useState<Chat[]>(() => readChats(key));
   // The chat on screen; null is a fresh one that's saved once you ask something.
   const [current, setCurrent] = useState<string | null>(() => readChats(key)[0]?.id ?? null);
@@ -130,7 +168,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
   useEffect(() => {
     if (!open) return;
     input.current?.focus();
-    const esc = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && closeChat();
     document.addEventListener("keydown", esc);
     return () => document.removeEventListener("keydown", esc);
   }, [open]);
@@ -161,31 +199,75 @@ export default function ChatBubble({ userId }: { userId: string }) {
     }
   }
 
+  // Open towards the free side: if rookie sits on the left, the chat opens to the right, and so on.
+  const vw = typeof window === "undefined" ? 1440 : window.innerWidth;
+  const vh = typeof window === "undefined" ? 900 : window.innerHeight;
+  const side = pos
+    ? {
+        x: pos.right + 28 > vw / 2 ? "right" : "left",
+        y: pos.bottom + 28 > vh / 2 ? "down" : "up",
+        room: Math.round((pos.bottom + 28 > vh / 2 ? pos.bottom - 12 : vh - pos.bottom - 56 - 12) - 12),
+      }
+    : { x: "left", y: "up", room: 0 };
+
   return (
-    <>
+    <div
+      ref={dock}
+      className={`chat-dock ${pos ? "is-placed" : ""} ${open ? "is-open" : ""}`}
+      data-x={side.x}
+      data-y={side.y}
+      style={pos ? { right: pos.right, bottom: pos.bottom, ["--room" as string]: `${side.room}px` } : undefined}
+    >
+      {!open && (
+        <span className="chat-name" aria-hidden="true">
+          <b>
+            Hi, I&apos;m rookie<span className="text-[var(--lilac)]">.</span>
+          </b>
+          <span>Questions or doubts about a role, your CV or an interview? Ask me, I know your board.</span>
+        </span>
+      )}
       <button
         type="button"
         className={`chat-fab ${open ? "is-open" : ""}`}
-        aria-label={open ? "Close the chat with Rookie" : "Chat with Rookie, your application helper"}
+        aria-label={open ? "Close the chat with rookie" : "Chat with rookie, your application helper. Drag to move."}
         aria-expanded={open}
         aria-controls="chat-panel"
-        onClick={() => setOpen((o) => !o)}
+        // A tap opens or closes; a drag moves rookie (keyboard still opens with Enter or Space).
+        onPointerDown={(e) => {
+          const r = dock.current!.getBoundingClientRect();
+          drag.current = { x: e.clientX, y: e.clientY, right: window.innerWidth - r.right, bottom: window.innerHeight - r.bottom, moved: false };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          const d = drag.current;
+          if (!d) return;
+          const dx = e.clientX - d.x;
+          const dy = e.clientY - d.y;
+          if (!d.moved && Math.hypot(dx, dy) < 6) return;
+          d.moved = true;
+          setPos(clamp({ right: d.right - dx, bottom: d.bottom - dy }));
+        }}
+        onPointerUp={() => {
+          const d = drag.current;
+          drag.current = null;
+          if (!d) return;
+          if (!d.moved) return open ? closeChat() : openChat();
+          try {
+            if (pos) localStorage.setItem(BOT_POS, JSON.stringify(pos));
+          } catch {
+            // ignore
+          }
+        }}
+        onPointerCancel={() => (drag.current = null)}
+        onClick={(e) => {
+          if (e.detail === 0) (open ? closeChat : openChat)();
+        }}
       >
-        {open ? (
-          <CloseIcon size={18} />
-        ) : (
-          <RookieBot />
-        )}
-        {!open && (
-          <span className="chat-name" aria-hidden="true">
-            <b>Hi, I&apos;m Rookie</b>
-            <span>Questions or doubts about a role, your CV or an interview? Ask me, I know your board.</span>
-          </span>
-        )}
+        {open ? <CloseIcon size={18} /> : <RookieBot />}
       </button>
 
-      {open && (
-        <section id="chat-panel" className="chat-panel" role="dialog" aria-label="Ask Rookie">
+      {shown && (
+        <section id="chat-panel" className={`chat-panel ${open ? "" : "is-closing"}`} role="dialog" aria-label="Ask rookie">
           <div className="chat-card">
           <header className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
             <span className="flex min-w-0 items-center gap-2.5">
@@ -193,7 +275,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
                 <RookieBot size={30} />
               </span>
               <span className="min-w-0">
-                <b className="text-[16px]">Rookie</b>
+                <b className="text-[16px]">rookie</b>
                 <span className="block truncate text-[12px] text-[var(--mute)]">
                   {showHistory ? "Your earlier chats" : "Your application helper"}
                 </span>
@@ -262,7 +344,7 @@ export default function ChatBubble({ userId }: { userId: string }) {
                   {!!m.links?.length && (
                     <span className="mt-2.5 flex flex-wrap gap-1.5">
                       {m.links.map((l) => (
-                        <Link key={l.href + l.label} href={l.href} className="chat-link" onClick={() => setOpen(false)}>
+                        <Link key={l.href + l.label} href={l.href} className="chat-link" onClick={closeChat}>
                           {l.label} →
                         </Link>
                       ))}
@@ -324,11 +406,11 @@ export default function ChatBubble({ userId }: { userId: string }) {
           </div>
         </section>
       )}
-    </>
+    </div>
   );
 }
 
-/** Rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
+/** rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
 function RookieBot({ size = 46 }: { size?: number }) {
   return (
     <svg className="bot" viewBox="0 0 48 48" width={size} height={size} aria-hidden="true">

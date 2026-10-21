@@ -6,7 +6,7 @@ import { PROFILE_COLUMNS, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import Arrow from "@/components/Arrow";
 
-export const metadata: Metadata = { title: "Profile · Rookie" };
+export const metadata: Metadata = { title: "Profile · rookie" };
 
 export default async function ProfilePage() {
   const supabase = await createClient();
@@ -31,7 +31,7 @@ export default async function ProfilePage() {
             About you. <em>Once, then every application.</em>
           </h1>
           <p className="mt-4 max-w-[600px] text-[16px] text-[var(--ink2)]">
-            Rookie scores roles for you, flags the ones that clash with your barriers, and writes your CV and cover letters,
+            rookie scores roles for you, flags the ones that clash with your barriers, and writes your CV and cover letters,
             all from what you add here. Signed in as <span className="break-anywhere">{user?.email}</span>.
           </p>
         </div>
@@ -57,8 +57,8 @@ export default async function ProfilePage() {
               <b>Upload transcripts</b> <span className="font-light">and other documents.</span>
             </>
           }
-          hint="University or school transcripts, certificates, references: anything that backs up your application. Rookie reads them once and can use facts like grades or modules in your CV and letters. PDF or Word, up to 10 MB, private to you."
-          successText="Saved. Rookie can now use facts from this document."
+          hint="University or school transcripts, certificates, references: anything that backs up your application. rookie reads them once and can use facts like grades or modules in your CV and letters. PDF or Word, up to 10 MB, private to you."
+          successText="Saved. rookie can now use facts from this document."
         />
       </section>
 

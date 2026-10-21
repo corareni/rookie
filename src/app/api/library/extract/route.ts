@@ -8,7 +8,7 @@ export const maxDuration = 60;
 
 /**
  * Reads the text of an uploaded letter or CV (already in the user's private storage folder),
- * so Rookie can use your own letters as a style reference. PDFs via Gemini, Word files locally.
+ * so rookie can use your own letters as a style reference. PDFs via Gemini, Word files locally.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();

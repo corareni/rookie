@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import CloseIcon from "@/components/CloseIcon";
 import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 
@@ -44,6 +43,7 @@ const subscribe = (cb: () => void) => {
 
 export default function Header({ email, name }: { email: string | null; name: string | null }) {
   const path = usePathname();
+  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -74,6 +74,14 @@ export default function Header({ email, name }: { email: string | null; name: st
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, [selected, scrolled, phone]);
+
+  // The same sliding pill in the compact menu, moving up and down.
+  const menuRef = useRef<HTMLElement>(null);
+  const [menuPill, setMenuPill] = useState<{ top: number; height: number; moved: boolean } | null>(null);
+  useLayoutEffect(() => {
+    const el = menuRef.current?.querySelector<HTMLElement>(`a[data-href="${selected}"]`);
+    setMenuPill((p) => (el ? { top: el.offsetTop, height: el.offsetHeight, moved: !!p } : null));
+  }, [selected, open, scrolled, phone]);
 
   // One bar that morphs: past the top it narrows into a centred pill; back at the top it widens again.
   useEffect(() => {
@@ -138,9 +146,9 @@ export default function Header({ email, name }: { email: string | null; name: st
     );
 
   return (
-    <div className="sticky top-2 z-40 flex justify-center print:hidden">
+    <div className="sticky top-2 z-50 flex justify-center print:hidden">
       <header className={`topbar morph ${scrolled ? "is-scrolled" : ""} ${compact ? "is-compact" : ""} ${email ? "has-bell" : ""}`}>
-        <Link href={email ? "/app" : "/"} className="flex flex-none items-center no-underline" aria-label="Rookie home">
+        <Link href={email ? "/app" : "/"} className="flex flex-none items-center no-underline" aria-label="rookie home">
           <Wordmark className="text-[22px] leading-none sm:text-[24px]" />
         </Link>
 
@@ -185,20 +193,48 @@ export default function Header({ email, name }: { email: string | null; name: st
           onClick={() => setOpen((o) => !o)}
         >
           {/* On phones the pill is tight, so the menu button is just the icon. */}
-          <span className="max-sm:sr-only">Menu</span> {open ? <CloseIcon size={11} /> : <span aria-hidden="true">≡</span>}
+          <span className="max-sm:sr-only">Menu</span>
+          {/* Two lines that swing from "=" into "×" and back. */}
+          <span className={`menu-icon ${open ? "is-open" : ""}`} aria-hidden="true">
+            <span />
+            <span />
+          </span>
         </button>
       </header>
 
-      {open && compact && (
-        <div id="compact-menu" className="menu-panel absolute top-[calc(100%+8px)] w-[min(420px,calc(100vw-32px))]">
-          <nav aria-label="Main" className="grid gap-1">
+      {/* Always there in the compact header, so it can glide open and closed. */}
+      {compact && (
+        <div
+          id="compact-menu"
+          className={`menu-panel absolute top-[calc(100%+8px)] w-[min(420px,calc(100vw-32px))] ${open ? "is-open" : ""}`}
+          inert={!open}
+        >
+          <nav ref={menuRef} aria-label="Main" className="relative grid gap-1">
+            {menuPill && (
+              <span
+                aria-hidden="true"
+                className={`menu-pill ${menuPill.moved ? "is-moving" : ""}`}
+                style={{ transform: `translateY(${menuPill.top}px)`, height: menuPill.height }}
+              />
+            )}
             {nav.map((n) => (
               <Link
                 key={n.href}
                 href={n.href}
+                data-href={n.href}
+                data-on={selected === n.href ? "" : undefined}
                 aria-current={active(n.href) ? "page" : undefined}
                 className="menu-link"
-                onClick={() => setOpen(false)}
+                onClick={(e) => {
+                  if (n.href.includes("#") || e.metaKey || e.ctrlKey || e.shiftKey) return setOpen(false);
+                  // Let the pill glide to it first, then change page and let the menu close.
+                  e.preventDefault();
+                  setPending(n.href);
+                  setTimeout(() => {
+                    router.push(n.href);
+                    setOpen(false);
+                  }, 260);
+                }}
               >
                 {n.label}
               </Link>

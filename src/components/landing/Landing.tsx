@@ -16,7 +16,7 @@ const FEATURES = [
 
 const HOW = [
   { n: "01", t: "Build your profile", k: "once.", d: "Upload your CV or fill it in. Add your story, your skills and the barriers that matter to you.", tone: "tile-lilac", span: "span-7" },
-  { n: "02", t: "Paste a job link", k: "for every role.", d: "Rookie reads the listing and gives an honest score with why you fit and the catch.", tone: "tile-mint", span: "span-5" },
+  { n: "02", t: "Paste a job link", k: "for every role.", d: "rookie reads the listing and gives an honest score with why you fit and the catch.", tone: "tile-mint", span: "span-5" },
   { n: "03", t: "Apply", k: "with confidence.", d: "A tailored CV and cover letter for that company, from your own facts, as one-page PDF or Word files.", tone: "tile-peach", span: "span-5" },
   { n: "04", t: "Track", k: "until the offer.", d: "Assessments, interviews, practice questions and next steps for every application on one board.", tone: "tile-sky", span: "span-7" },
 ];
@@ -113,7 +113,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
               Getting a job is harder than ever. <span className="font-light">Your applications don&apos;t have to be too.</span>
             </h1>
             <p className="mt-5 max-w-[540px] text-[17px] leading-relaxed text-[var(--ink2)]">
-              For students and graduates applying to internships and first jobs. Rookie scores every role you find out of
+              For students and graduates applying to internships and first jobs. rookie scores every role you find out of
               10, writes a tailored CV and cover letter from your real experience, and tracks every application in one
               place.
             </p>
@@ -182,7 +182,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           <h2 id="journey" className="text-[clamp(30px,4vw,52px)] leading-none tracking-[-0.03em]">
             From first link <span className="font-light">to first day.</span>
           </h2>
-          <p className="mt-3 text-[16px] text-[var(--ink2)]">Six steps, one place. Scroll to see each part of Rookie.</p>
+          <p className="mt-3 text-[16px] text-[var(--ink2)]">Six steps, one place. Scroll to see each part of rookie.</p>
         </Reveal>
         <StepScroller />
       </section>
@@ -239,7 +239,7 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           </h2>
           <p className="text-[15px] leading-relaxed text-white/80 lg:pt-2">
             The average internship posting now gets 109 applications; in tech it&apos;s 273, in finance 192. Sending the
-            same CV everywhere doesn&apos;t cut it, and tailoring by hand takes hours. Rookie helps you pick the roles worth
+            same CV everywhere doesn&apos;t cut it, and tailoring by hand takes hours. rookie helps you pick the roles worth
             it and makes each application fit.
           </p>
         </div>

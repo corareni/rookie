@@ -29,7 +29,7 @@ export default function GmailConnection() {
     <section className="tile tile-butter span-12 flex flex-wrap items-center justify-between gap-4" aria-labelledby="gmail-h">
       <div className="max-w-[640px]">
         <h2 id="gmail-h" className="text-[18px]">
-          <b>Gmail</b> <span className="font-light">: let Rookie spot replies from companies</span>
+          <b>Gmail</b> <span className="font-light">: let rookie spot replies from companies</span>
         </h2>
         <p className="mt-1 text-[14px] text-[var(--ink2)]">
           {!st
@@ -37,10 +37,10 @@ export default function GmailConnection() {
             : !st.configured
               ? "Email checks aren't switched on here yet. You can still paste an email on the Applications page."
               : st.connected
-                ? `Connected${st.email ? ` as ${st.email}` : ""}. Rookie only reads emails that mention companies you applied to, never sends or changes anything.${
+                ? `Connected${st.email ? ` as ${st.email}` : ""}. rookie only reads emails that mention companies you applied to, never sends or changes anything.${
                     st.lastChecked ? ` Last checked ${new Date(st.lastChecked).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}.` : ""
                   }`
-                : "Read-only access. Rookie looks for emails about your applications and suggests status updates in the bell. You approve every change."}
+                : "Read-only access. rookie looks for emails about your applications and suggests status updates in the bell. You approve every change."}
         </p>
       </div>
       {st?.configured && (

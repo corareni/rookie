@@ -8,7 +8,7 @@ const STEPS = [
   {
     t: "Find",
     k: "a role.",
-    d: "Paste any job link: a company careers page, Greenhouse, Lever, Workday and more. Rookie reads the listing and fills in company, role, location, timing and deadline. If a site blocks reading, paste the description instead.",
+    d: "Paste any job link: a company careers page, Greenhouse, Lever, Workday and more. rookie reads the listing and fills in company, role, location, timing and deadline. If a site blocks reading, paste the description instead.",
   },
   {
     t: "Decide",

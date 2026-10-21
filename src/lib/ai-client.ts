@@ -1,7 +1,7 @@
 import type { Contact, StructuredProfile } from "@/lib/profile";
 import type { Application } from "@/lib/applications";
 
-/** Calls Rookie's own server routes; the AI key never reaches the browser. */
+/** Calls rookie's own server routes; the AI key never reaches the browser. */
 async function post<T>(path: string, body: object): Promise<T> {
   const res = await fetch(path, {
     method: "POST",

@@ -4,7 +4,7 @@ import { COLUMNS, type Application } from "@/lib/applications";
 import { PROFILE_COLUMNS, profileComplete, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Your board · Rookie" };
+export const metadata: Metadata = { title: "Your board · rookie" };
 
 export default async function AppPage() {
   const supabase = await createClient();

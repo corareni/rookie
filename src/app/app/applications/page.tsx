@@ -5,7 +5,7 @@ import { APPLIED_STATUSES, COLUMNS, type Application } from "@/lib/applications"
 import { withEventNote } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Applications · Rookie" };
+export const metadata: Metadata = { title: "Applications · rookie" };
 
 export default async function ApplicationsPage({ searchParams }: PageProps<"/app/applications">) {
   const supabase = await createClient();

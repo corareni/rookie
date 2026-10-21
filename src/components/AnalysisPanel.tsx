@@ -30,7 +30,7 @@ export default function AnalysisPanel({ a }: { a: Application }) {
     <section className="card mt-4" aria-labelledby="analysis">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="analysis" className="sec">
-          <small>[01]</small> Rookie&apos;s take
+          <small>[01]</small> rookie&apos;s take
         </h2>
         {analysed && a.score && <span className={`score score-${scoreTone(a.score)}`}>{a.score}/10</span>}
       </div>
@@ -64,8 +64,8 @@ export default function AnalysisPanel({ a }: { a: Application }) {
           {a.job_status === "reading"
             ? "Reading the listing…"
             : a.job_status === "failed"
-              ? "Rookie couldn't read the job page (sites like LinkedIn and Workday often block it). Paste the job description below instead."
-              : "Paste the job description below, or add a job link above, and Rookie will score it for you."}
+              ? "rookie couldn't read the job page (sites like LinkedIn and Workday often block it). Paste the job description below instead."
+              : "Paste the job description below, or add a job link above, and rookie will score it for you."}
         </p>
       )}
 

@@ -66,7 +66,7 @@ export async function GET(request: Request, ctx: { params: Promise<{ appId: stri
   }
 
   const company = (doc as { label?: string }).label || app?.company || app?.title || "Application";
-  const name = fileSafe(`${c.name || "Rookie"} - ${spec.label} - ${company}`) + file.slice(file.indexOf("."));
+  const name = fileSafe(`${c.name || "rookie"} - ${spec.label} - ${company}`) + file.slice(file.indexOf("."));
   return new Response(new Uint8Array(body), {
     headers: {
       "Content-Type": spec.type,

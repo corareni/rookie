@@ -3,7 +3,7 @@ import AuthForm from "@/components/AuthForm";
 import { googleEnabled } from "@/lib/google-auth";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Sign up · Rookie" };
+export const metadata: Metadata = { title: "Sign up · rookie" };
 
 export default async function SignupPage({ searchParams }: PageProps<"/signup">) {
   const supabase = await createClient();

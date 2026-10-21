@@ -3,7 +3,7 @@ import BarriersBoard from "@/components/BarriersBoard";
 import { COLUMNS, type Application } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Barriers · Rookie" };
+export const metadata: Metadata = { title: "Barriers · rookie" };
 
 export default async function BarriersPage() {
   const supabase = await createClient();

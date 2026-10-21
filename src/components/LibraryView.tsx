@@ -49,7 +49,7 @@ export default function LibraryView({
             Every document. <em>Always there.</em>
           </h1>
           <p className="mt-4 max-w-[560px] text-[16px] text-[var(--ink2)]">
-            Your tailored CVs and cover letters for every application, and your own letters for Rookie to learn your
+            Your tailored CVs and cover letters for every application, and your own letters for rookie to learn your
             voice from. Download any of them as PDF or Word.
           </p>
         </section>
@@ -139,10 +139,10 @@ export default function LibraryView({
                 <b>Upload a letter</b> <span className="font-light">you wrote before.</span>
               </>
             }
-            hint="Rookie uses your own cover letters as a reference for your tone and structure, never as facts. PDF or Word, up to 10 MB. Only you can see your files."
+            hint="rookie uses your own cover letters as a reference for your tone and structure, never as facts. PDF or Word, up to 10 MB. Only you can see your files."
             query={query}
             successText="Saved."
-            letterText="Saved. Rookie will use it as a style reference for new letters."
+            letterText="Saved. rookie will use it as a style reference for new letters."
           />
         </div>
       </section>

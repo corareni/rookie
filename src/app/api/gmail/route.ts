@@ -19,7 +19,7 @@ export async function GET() {
   }
 }
 
-/** Disconnect: revoke Rookie's access at Google and forget the key. */
+/** Disconnect: revoke rookie's access at Google and forget the key. */
 export async function DELETE() {
   const supabase = await createClient();
   try {

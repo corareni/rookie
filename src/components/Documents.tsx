@@ -91,7 +91,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
 
       <div className="card mt-3 grid gap-5">
         <fieldset>
-          <legend className="label">What should Rookie write?</legend>
+          <legend className="label">What should rookie write?</legend>
           <div className="mt-1 inline-grid grid-cols-3 gap-1 rounded-[14px] bg-white p-1 max-sm:grid-cols-1">
             {WHICH.map((o) => (
               <button key={o.v} type="button" className="act !bg-transparent aria-pressed:!bg-[var(--lilac)]" aria-pressed={which === o.v} onClick={() => setWhich(o.v)}>
@@ -130,7 +130,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         {facts.length > 0 && (
           <details className="rounded-2xl bg-white p-4">
             <summary className="cursor-pointer text-[14px] font-bold">
-              Choose what to include <span className="font-light text-[var(--ink2)]">(optional: otherwise Rookie picks the best facts)</span>
+              Choose what to include <span className="font-light text-[var(--ink2)]">(optional: otherwise rookie picks the best facts)</span>
               {picked.length > 0 && <span className="chip chip-good ml-2">{picked.length} picked</span>}
             </summary>
             <ul className="mt-3 grid max-h-[320px] gap-1.5 overflow-y-auto pr-1">
@@ -158,7 +158,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
               Complete your <Link href="/profile">Profile</Link> first: your name and some experience or education.
             </>
           ) : !canGenerate ? (
-            "Rookie needs the job details first: analyse the role above."
+            "rookie needs the job details first: analyse the role above."
           ) : (
             `${left} of 6 left today. Only facts from your profile, and the CV always fits one page.`
           )}
@@ -184,7 +184,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
         (cvDoc.content?.header ? (
           <CvEditor key={JSON.stringify(cvDoc.content)} id={applicationId} doc={cvDoc} />
         ) : (
-          <p className="card mt-4 text-[14px]">This CV was made with an older version of Rookie. Press Regenerate to get the new layout.</p>
+          <p className="card mt-4 text-[14px]">This CV was made with an older version of rookie. Press Regenerate to get the new layout.</p>
         ))}
       {letterDoc && (
         <LetterEditor key={JSON.stringify(letterDoc.content)} id={applicationId} doc={letterDoc} signature={signature} />
@@ -457,7 +457,7 @@ function LetterEditor({ id, doc, signature }: { id: string; doc: NonNullable<Doc
   );
 }
 
-/** Notes for this role; Rookie uses them when writing the CV and cover letter. */
+/** Notes for this role; rookie uses them when writing the CV and cover letter. */
 function RoleNotes({ applicationId, initial }: { applicationId: string; initial: string }) {
   const [notes, setNotes] = useState(initial);
   const [saved, setSaved] = useState(initial);
@@ -467,13 +467,13 @@ function RoleNotes({ applicationId, initial }: { applicationId: string; initial:
     setSaving(true);
     const { error } = await createClient().from("applications").update({ notes }).eq("id", applicationId);
     setSaving(false);
-    setMsg(error ? `Couldn't save: ${error.message}` : "Saved. Rookie will use these notes.");
+    setMsg(error ? `Couldn't save: ${error.message}` : "Saved. rookie will use these notes.");
     if (!error) setSaved(notes);
   }
   return (
     <div className="tile tile-butter mt-3 grid gap-2">
       <label htmlFor="role-notes" className="text-[15px] font-bold">
-        Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and Cover Letter</span>
+        Your notes for this role <span className="font-light text-[var(--ink2)]">: used when rookie writes your CV and Cover Letter</span>
       </label>
       <textarea
         id="role-notes"

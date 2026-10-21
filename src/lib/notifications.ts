@@ -5,7 +5,7 @@ const DAY = 86_400_000;
 /**
  * Adds reminders for deadlines in the next 3 days and interviews or tests in the next 2 days, each only once
  * (a deleted reminder stays deleted), then returns the bell's list. Runs in the browser with the user's own
- * session, so opening a page never calls Rookie's /api routes.
+ * session, so opening a page never calls rookie's /api routes.
  */
 export async function loadNotifications(supabase: SupabaseClient) {
   const now = Date.now();

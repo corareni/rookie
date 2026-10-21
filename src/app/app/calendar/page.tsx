@@ -3,7 +3,7 @@ import CalendarView, { type CalItem } from "@/components/CalendarView";
 import { withEventNote } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Calendar · Rookie" };
+export const metadata: Metadata = { title: "Calendar · rookie" };
 
 type Row = {
   id: string;

@@ -4,7 +4,7 @@ import { useEffect, useId, useRef } from "react";
 
 export type DialogAction = { label: string; onClick: () => void; tone?: "primary" | "danger" | "ghost" };
 
-/** A small modal in the Rookie style: title, message, and a row of actions. Escape or the backdrop cancels. */
+/** A small modal in the rookie style: title, message, and a row of actions. Escape or the backdrop cancels. */
 export default function Dialog({
   open,
   title,

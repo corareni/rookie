@@ -41,7 +41,7 @@ export async function consumeRun(supabase: SupabaseClient, kind: Kind, cost = 1)
   }
   const globalCap = Number(process.env.AI_GLOBAL_DAILY_LIMIT || 400);
   const { data: total } = await supabase.rpc("ai_runs_today_global");
-  if (Number(total ?? 0) + cost > globalCap) throw new AiError("Rookie has hit today's AI limit. Back tomorrow.", 429);
+  if (Number(total ?? 0) + cost > globalCap) throw new AiError("rookie has hit today's AI limit. Back tomorrow.", 429);
   await supabase.from("ai_runs").insert(Array.from({ length: cost }, () => ({ kind })));
 }
 

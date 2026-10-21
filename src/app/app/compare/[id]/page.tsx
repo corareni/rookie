@@ -5,7 +5,7 @@ import { titleCase } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
 import Arrow from "@/components/Arrow";
 
-export const metadata: Metadata = { title: "Comparison · Rookie" };
+export const metadata: Metadata = { title: "Comparison · rookie" };
 
 type Role = {
   id: string;

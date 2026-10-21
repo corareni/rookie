@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
 
-export const metadata: Metadata = { title: "Privacy · Rookie" };
+export const metadata: Metadata = { title: "Privacy · rookie" };
 
 export default function PrivacyPage() {
   return (
@@ -18,40 +18,40 @@ export default function PrivacyPage() {
           <ul className="mt-2 list-disc pl-5">
             <li>Your email address and a securely hashed password (handled by Supabase Auth).</li>
             <li>
-              If you sign in with Google: your name, email address and profile picture from your Google account. Rookie
+              If you sign in with Google: your name, email address and profile picture from your Google account. rookie
               never sees your Google password.
             </li>
             <li>The applications you add: title, job link, company, role, location, dates, status and notes.</li>
             <li>Your profile, if you add one: your experience, education, skills and other details, your story points, your barriers, any AI memory you paste in, and contact details. An uploaded CV file is read once and never stored; only the text you keep is saved.</li>
-            <li>The AI analyses, comparisons, CVs and cover letters Rookie writes for you.</li>
+            <li>The AI analyses, comparisons, CVs and cover letters rookie writes for you.</li>
           </ul>
         </section>
         <section>
           <h2 className="text-lg font-semibold text-[var(--ink)]">AI (Google Gemini)</h2>
           <p className="mt-2">
-            When you add a job link, compare roles or ask for a CV and cover letter, Rookie sends the job link or text and
+            When you add a job link, compare roles or ask for a CV and cover letter, rookie sends the job link or text and
             your profile to Google&apos;s Gemini API to do the work. This only happens when you use those features. Under
             Google&apos;s Gemini API terms, for users in the EU, EEA, Switzerland and the UK, Google doesn&apos;t use this
             content to improve its products. The AI key stays on our server and never reaches your browser.
           </p>
           <p className="mt-2">
-            If you paste an email from a company, Rookie sends that email text to Gemini once to read what changed. The email
+            If you paste an email from a company, rookie sends that email text to Gemini once to read what changed. The email
             itself is not saved; only the update you choose to apply is.
           </p>
           <p className="mt-2">
-            If you connect Gmail, Rookie gets read-only access: it can&apos;t send, change or delete anything. When you press
+            If you connect Gmail, rookie gets read-only access: it can&apos;t send, change or delete anything. When you press
             &quot;Check emails&quot;, it searches only for recent emails mentioning companies you applied to and sends those to
-            Gemini to read what changed. The emails aren&apos;t stored; Rookie keeps only the suggested update until you
+            Gemini to read what changed. The emails aren&apos;t stored; rookie keeps only the suggested update until you
             apply or delete it. Disconnect any time on your Profile, or in your Google account under Security.
           </p>
           <p className="mt-2">
-            When you ask Rookie a question in the chat, your question, the conversation so far and a summary of your
-            board and profile go to Gemini to answer it. Rookie doesn&apos;t store your chats on its servers: your chat
+            When you ask rookie a question in the chat, your question, the conversation so far and a summary of your
+            board and profile go to Gemini to answer it. rookie doesn&apos;t store your chats on its servers: your chat
             history is kept only in this browser, so you can go back to earlier questions, and it&apos;s deleted when you
             log out. You can also delete any chat from History.
           </p>
           <p className="mt-2">
-            AI can be wrong. Rookie only uses facts from your CV, but always read your documents before you send them.
+            AI can be wrong. rookie only uses facts from your CV, but always read your documents before you send them.
           </p>
         </section>
         <section>

@@ -37,7 +37,7 @@ export default function BarriersBoard({ initial }: { initial: Application[] }) {
             Worth a second look. <em>You decide.</em>
           </h1>
           <p className="mt-4 max-w-[560px] text-[16px] text-[var(--ink2)]">
-            Rookie checks every role against the barriers in your <Link href="/profile">profile</Link>. Roles that clash land
+            rookie checks every role against the barriers in your <Link href="/profile">profile</Link>. Roles that clash land
             here first. Move them back to your board, or rule them out. Ruled-out roles can go to the bin, and the bin only
             empties when you say so.
           </p>

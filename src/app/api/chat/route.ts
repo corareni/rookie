@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 type Msg = { role: "user" | "assistant"; text: string };
 
-/** "Ask Rookie": answers questions using the user's own board and profile. Changes nothing; links to pages. */
+/** "Ask rookie": answers questions using the user's own board and profile. Changes nothing; links to pages. */
 export async function POST(request: Request) {
   const supabase = await createClient();
   try {
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
       schema: chatSchema,
     });
     const reply = noLongDashes(data);
-    // Only links inside Rookie, and only to roles that exist.
+    // Only links inside rookie, and only to roles that exist.
     const ids = new Set((roles ?? []).map((r) => r.id));
     const links = (reply.links ?? [])
       .filter((l) => /^\/(app|profile)(\/|$|#)/.test(l.href) && !/[\s<>"']/.test(l.href))

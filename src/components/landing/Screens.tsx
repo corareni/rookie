@@ -1,4 +1,4 @@
-// Phone screens for the landing page, in Rookie's own look: light screen, grey tiles, pastel accents.
+// Phone screens for the landing page, in rookie's own look: light screen, grey tiles, pastel accents.
 // Companies are real, the data is an illustration (labelled "Example"); letter badges, never logos.
 
 const COMPANIES = {

@@ -12,7 +12,7 @@ import { PROFILE_COLUMNS, profileAsText, profileComplete, toProfileData } from "
 import { withEventNote, type EventRow } from "@/lib/event-columns";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Role · Rookie" };
+export const metadata: Metadata = { title: "Role · rookie" };
 
 const DAILY_GENERATE = 6;
 
@@ -89,7 +89,7 @@ export default async function ApplicationPage({ params }: PageProps<"/app/a/[id]
       {(
         <section id="email" className="mt-8 scroll-mt-20" aria-labelledby="email-h">
           <h2 id="email-h" className="sec">
-            <small>[ ]</small> Got an email? <span className="font-light text-[var(--mute)]">· Rookie updates the status for you</span>
+            <small>[ ]</small> Got an email? <span className="font-light text-[var(--mute)]">· rookie updates the status for you</span>
           </h2>
           <div className="tile tile-butter mt-3">
             <EmailUpdate

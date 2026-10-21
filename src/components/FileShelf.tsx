@@ -12,7 +12,7 @@ const kindLabel = (k: string) => (k === "cover_letter" ? "Cover Letter" : k === 
 
 /**
  * Upload, download and delete files in the user's private storage folder.
- * Rookie reads each file's text once, so it can use letters for tone and documents (like transcripts) as facts.
+ * rookie reads each file's text once, so it can use letters for tone and documents (like transcripts) as facts.
  */
 export default function FileShelf({
   userId,
@@ -79,7 +79,7 @@ export default function FileShelf({
       body: JSON.stringify({ id: data.id }),
     });
     setBusy(false);
-    setMsg(res.ok ? { ok: true, text: kind === "cover_letter" && letterText ? letterText : successText } : { ok: true, text: "Saved. (Rookie couldn't read its text, so it won't use it for writing.)" });
+    setMsg(res.ok ? { ok: true, text: kind === "cover_letter" && letterText ? letterText : successText } : { ok: true, text: "Saved. (rookie couldn't read its text, so it won't use it for writing.)" });
     if (input.current) input.current.value = "";
   }
 

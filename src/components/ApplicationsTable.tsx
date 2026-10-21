@@ -21,7 +21,7 @@ const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
 
 const GMAIL_NOTE: Record<string, string> = {
   cancelled: "Gmail wasn't connected: the Google window was closed or access was declined.",
-  noscope: "Gmail wasn't connected: please tick the box that lets Rookie read your emails.",
+  noscope: "Gmail wasn't connected: please tick the box that lets rookie read your emails.",
   failed: "Gmail couldn't be connected. Please try again.",
   unavailable: "Email checks aren't switched on here yet. Paste an email instead.",
 };
@@ -196,7 +196,7 @@ export default function ApplicationsTable({
         onCancel={() => setEmailOpen(false)}
         actions={[{ label: "Close", tone: "ghost", onClick: () => setEmailOpen(false) }]}
       >
-        <p className="mb-3">Paste it and Rookie suggests the new status, interview date and next step.</p>
+        <p className="mb-3">Paste it and rookie suggests the new status, interview date and next step.</p>
         {emailOpen && (
           <EmailUpdate
             roles={items.map((a) => ({ ...a, event_at: events[a.id]?.event_at ?? null, event_kind: events[a.id]?.event_kind ?? null }))}

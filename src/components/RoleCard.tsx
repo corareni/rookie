@@ -143,7 +143,7 @@ export default function RoleCard({
         {notesOpen && onSaveNotes && (
           <div className="mt-3 grid gap-2 rounded-2xl bg-white p-3">
             <label htmlFor={`notes-${a.id}`} className="text-[13px] font-bold">
-              Your notes for this role <span className="font-light text-[var(--ink2)]">: used when Rookie writes your CV and letter</span>
+              Your notes for this role <span className="font-light text-[var(--ink2)]">: used when rookie writes your CV and letter</span>
             </label>
             <textarea
               id={`notes-${a.id}`}
