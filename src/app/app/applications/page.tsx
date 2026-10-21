@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ApplicationsTable from "@/components/ApplicationsTable";
 import type { EventFields } from "@/components/EventPanel";
-import { APPLIED_STATUSES, COLUMNS, type Application } from "@/lib/applications";
+import { APPLIED_STATUSES, COLUMNS, gmailLink, type Application } from "@/lib/applications";
 import { withEventNote } from "@/lib/event-columns";
 import { PROFILE_COLUMNS, readsEmails, toProfileData } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
@@ -35,10 +35,7 @@ export default async function ApplicationsPage({ searchParams }: PageProps<"/app
       mail?: { id?: string; account?: string | null } | null;
     } | null;
     if (!n.application_id || !d?.applied || fromEmail[n.application_id]) continue;
-    // Gmail opens a message by its id; authuser picks the right account if several are signed in.
-    const link = d.mail?.id
-      ? `https://mail.google.com/mail/u/${d.mail.account ? `?authuser=${encodeURIComponent(d.mail.account)}` : "0/"}#all/${d.mail.id}`
-      : null;
+    const link = gmailLink(d.mail);
     fromEmail[n.application_id] = { at: n.created_at, summary: d.suggestion?.summary ?? "", status: d.suggestion?.status ?? "", link };
   }
 

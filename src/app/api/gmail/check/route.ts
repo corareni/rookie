@@ -1,3 +1,4 @@
+import { gmailLink } from "@/lib/applications";
 import { createClient } from "@/lib/supabase/server";
 import { hasChanges, readEmailUpdate } from "@/server/ai/email";
 import { AiError, MODEL_FAST, generateJson } from "@/server/ai/gemini";
@@ -90,6 +91,11 @@ export async function POST(request: Request) {
       const newest = [...msgs].sort((a, b) => b.date.localeCompare(a.date))[0];
       return newest ? { id: newest.id, account: newest.account } : null;
     };
+    // What changed on which role, for the summary on the Applications page.
+    type Change = { id: string; company: string; status: string; next: string; link: string | null; account: string | null };
+    const changes: Change[] = [];
+    const change = (id: string, company: string | null, status: string, next: string | null | undefined, mail: { id: string; account: string | null } | null) =>
+      changes.push({ id, company: company || "New application", status: LABEL[status] ?? status, next: next ?? "", link: gmailLink(mail), account: mail?.account ?? null });
     let emails = 0;
     let updates = 0;
     let applied = 0;
@@ -138,7 +144,10 @@ export async function POST(request: Request) {
             if (u.next_step) patch.next_step = u.next_step;
             if (u.deadline) patch.deadline = u.deadline;
             const { error } = await supabase.from("applications").update(patch).eq("id", r.id);
-            if (!error) applied++;
+            if (!error) {
+              applied++;
+              change(r.id, r.company, u.status, u.next_step, mailRef(found));
+            }
             await notify(supabase, {
               key: `email:${r.id}:${found.map((m) => m.id).sort().join(",")}`.slice(0, 300),
               kind: "email",
@@ -215,7 +224,10 @@ export async function POST(request: Request) {
             const patch = updatePatch(status, f, tzOffset);
             const { error } = await supabase.from("applications").update(patch).eq("id", known.id);
             updates++;
-            if (!error) applied++;
+            if (!error) {
+              applied++;
+              change(known.id, known.company, status, (patch as { next_step?: string }).next_step, ref);
+            }
             await notify(supabase, {
               key: `email:${known.id}:${m.id}`,
               kind: "email",
@@ -241,6 +253,7 @@ export async function POST(request: Request) {
           if (error || !created) continue;
           added++;
           if (missing.length) needsInfo++;
+          change(created.id, row.company, status, (row as { next_step?: string }).next_step, ref);
           await notify(supabase, {
             key: `email:new:${m.id}`,
             kind: "email",
@@ -264,7 +277,7 @@ export async function POST(request: Request) {
         l.a,
       );
     }
-    return Response.json({ state: "done", roles: list.length, emails, updates, applied, added, needsInfo, limited, accounts: live.length, expired });
+    return Response.json({ state: "done", roles: list.length, emails, updates, applied, added, needsInfo, limited, accounts: live.length, expired, changes });
   } catch (e) {
     return errorResponse(e);
   }

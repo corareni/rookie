@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { STATUSES, daysUntil, deadlineText, formatDate, titleCase, type Application, type Status } from "@/lib/applications";
-import CalendarButtons from "@/components/CalendarButtons";
-import { buildEvent, eventName, type EventFields } from "@/components/EventPanel";
+import { STATUSES, daysUntil, formatDate, titleCase, type Application, type Status } from "@/lib/applications";
+import CloseIcon from "@/components/CloseIcon";
+import { type EventFields } from "@/components/EventPanel";
 import { eventLabel } from "@/lib/calendar";
 import Arrow from "@/components/Arrow";
 import Dialog from "@/components/Dialog";
@@ -27,6 +27,21 @@ const GROUPS: { title: string; statuses: Status[]; tone: string }[] = [
   { title: "Submitted, waiting to hear back", statuses: ["submitted"], tone: "bg-[var(--card2)] text-[var(--ink)]" },
   { title: "Rejected or withdrawn", statuses: ["rejected", "withdrawn"], tone: "bg-[var(--badbg)] text-[var(--bad)]" },
 ];
+
+/** Six columns from large screens up; below that each row stacks. */
+const COLS = "lg:grid-cols-[minmax(0,1.75fr)_76px_150px_minmax(0,1.1fr)_minmax(0,1.5fr)_36px]";
+
+/** What the latest email about a role says, in a word. */
+const MAIL_STATE: Record<string, string> = {
+  submitted: "Confirmed",
+  assessment: "Replied",
+  interview: "Replied",
+  offer: "Replied",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+};
+
+type Mail = { at: string; summary: string; status: string; link: string | null };
 
 const GMAIL_NOTE: Record<string, string> = {
   cancelled: "Gmail wasn't connected: the Google window was closed or access was declined.",
@@ -51,7 +66,7 @@ export default function ApplicationsTable({
   /** Roles whose current stage was set automatically from an email. */
   fromEmail?: Record<string, { at: string; summary: string; status: string; link: string | null }>;
 }) {
-  const { checkEmails, checking } = useTasks();
+  const { checkEmails, checking, emailResults, clearEmailResults } = useTasks();
   const checked = useRef(false);
   const [gmailNote, setGmailNote] = useState(gmail && GMAIL_NOTE[gmail] ? GMAIL_NOTE[gmail] : null);
 
@@ -146,6 +161,49 @@ export default function ApplicationsTable({
             </button>
           </p>
         )}
+        {emailResults && (
+          <div role="status" className="mt-5 rounded-[22px] border border-[var(--good)] bg-white px-5 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-[15px] font-bold">
+                Updated {emailResults.changes.length} application{emailResults.changes.length > 1 ? "s" : ""}.
+              </p>
+              <button
+                type="button"
+                aria-label="Close"
+                className="grid size-7 flex-none place-items-center rounded-full text-[var(--mute)] hover:bg-[var(--card)] hover:text-[var(--ink)]"
+                onClick={clearEmailResults}
+              >
+                <CloseIcon size={11} />
+              </button>
+            </div>
+            <ul className="mt-2 grid list-disc gap-1.5 pl-5 text-[14px]">
+              {emailResults.changes.map((c, i) => (
+                <li key={`${c.id}-${i}`}>
+                  <Link href={`/app/a/${c.id}`} className="font-bold no-underline hover:underline">
+                    {c.company}
+                  </Link>
+                  <span className="text-[var(--ink2)]">
+                    : {c.status}
+                    {c.next && ` · ${c.next}`}
+                  </span>
+                  {c.link && (
+                    <>
+                      <span className="text-[12.5px] text-[var(--mute)]"> · {emailResults.accounts > 1 && c.account ? c.account : "Gmail"} · </span>
+                      <a href={c.link} target="_blank" rel="noopener noreferrer" className="font-bold">
+                        Open email <Arrow />
+                      </a>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {emailResults.review > 0 && (
+              <p className="mt-2 text-[13px] text-[var(--ink2)]">
+                {emailResults.review} more email{emailResults.review > 1 ? "s" : ""} to review in the bell.
+              </p>
+            )}
+          </div>
+        )}
         <div className="kpis mt-6">
           {(["submitted", "interview", "offer", "rejected"] as Status[]).map((s) => (
             <div key={s} className={`kpi ${KPI_TONE[s]}`}>
@@ -175,8 +233,8 @@ export default function ApplicationsTable({
         </div>
       ) : (
         <div className="card mt-6 !p-0 overflow-hidden">
-          <div className="hidden grid-cols-[1.6fr_90px_160px_1.3fr] gap-4 px-6 pt-5 pb-2 md:grid">
-            {["Company", "Applied", "Status", "Next"].map((h) => (
+          <div className={`hidden gap-4 px-7 pt-6 pb-2 lg:grid ${COLS}`}>
+            {["Company", "Applied", "Status", "Email", "Next"].map((h) => (
               <span key={h} className="cap">
                 {h}
               </span>
@@ -196,7 +254,7 @@ export default function ApplicationsTable({
                     key={a.id}
                     a={a}
                     ev={events[a.id]}
-                    mail={fromEmail[a.id]?.status === a.status ? fromEmail[a.id] : undefined}
+                    mail={fromEmail[a.id]}
                     onSave={(p) => save(a.id, p)}
                     onRemove={() => setRemoving(a)}
                     onStatus={(to) =>
@@ -250,6 +308,22 @@ export default function ApplicationsTable({
   );
 }
 
+/** "Due Fri 23 Oct, 09:22 · 2 days left": the next date that matters for this role, coloured by how close it is. */
+function dueLine(a: Application, ev?: EventFields) {
+  const at = ev?.event_at ?? null;
+  const day = at ? `${new Date(at).getFullYear()}-${String(new Date(at).getMonth() + 1).padStart(2, "0")}-${String(new Date(at).getDate()).padStart(2, "0")}` : a.deadline;
+  if (!day) return null;
+  const n = daysUntil(day);
+  if (n < -1) return null;
+  const when = at
+    ? eventLabel(at)
+    : new Date(`${day}T12:00:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  const verb = at && ev?.event_kind === "interview" ? "Interview" : "Due";
+  const left = n < 0 ? "yesterday" : n === 0 ? "today" : n === 1 ? "1 day left" : `${n} days left`;
+  const tone = n <= 2 ? "text-[var(--bad)]" : n <= 5 ? "text-[var(--warn)]" : "text-[var(--good)]";
+  return { text: `${verb} ${when}`, left, tone };
+}
+
 function Row({
   a,
   ev,
@@ -260,72 +334,45 @@ function Row({
 }: {
   a: Application;
   ev?: EventFields;
-  mail?: { at: string; summary: string; link: string | null };
+  mail?: Mail;
   onSave: (p: Partial<Application>) => void;
   onStatus: (s: Status) => void;
   onRemove: () => void;
 }) {
   const [next, setNext] = useState(a.next_step ?? "");
-  const days = a.deadline ? daysUntil(a.deadline) : null;
+  const due = dueLine(a, ev);
+  const name = a.company ?? a.title;
+  // Where this stage came from: the calendar note, the email that set it, or the user.
+  const note = ev?.event_note || (mail && mail.status === a.status && mail.summary) || (mail ? "Updated by you" : "Added by you");
+  const state = mail ? (MAIL_STATE[mail.status] ?? "Email") : null;
   return (
-    <div className="grid gap-3 border-b border-[var(--line)] px-3 py-4 last:border-0 md:grid-cols-[1.6fr_90px_160px_1.3fr] md:items-start md:gap-4">
-      {/* Applied, Status and Next sit on one line at the top of the row, however tall the company column gets. */}
-      <div className="min-w-0 md:pt-2">
-        <Link href={`/app/a/${a.id}`} className="text-[16px] font-bold no-underline hover:underline">
-          {a.company ?? a.title}
+    <div className={`grid gap-3 border-b border-[var(--line)] px-3 py-5 last:border-0 lg:items-center lg:gap-4 ${COLS}`}>
+      <div className="min-w-0">
+        <Link href={`/app/a/${a.id}`} className="text-[17px] font-bold tracking-tight no-underline hover:underline">
+          {name}
         </Link>
         {a.company && <p className="text-[15px] font-light text-[var(--ink)]">{titleCase(a.role ?? a.title)}</p>}
-        {mail && (
-          <div className="mt-2 grid max-w-[520px] gap-1 rounded-2xl bg-[var(--butter)]/60 px-3 py-2">
-            <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
-              <b>From an email · {formatDate(mail.at.slice(0, 10))}</b>
-              {mail.link && (
-                <a href={mail.link} target="_blank" rel="noopener noreferrer" className="font-bold">
-                  Open email <Arrow />
-                </a>
-              )}
-            </p>
-            {mail.summary && <p className="text-[13px] leading-snug text-[var(--ink2)]">{mail.summary}</p>}
-          </div>
-        )}
-        {(a.status === "interview" || a.status === "assessment") && (
-          <span className="mt-2 flex flex-wrap gap-1.5">
-            <Link href={`/app/a/${a.id}#interview`} className="act !min-h-[32px] !text-[12.5px]">
-              Practise questions
-            </Link>
-            {!ev?.event_at && (
-              <Link href={`/app/a/${a.id}#calendar`} className="act !min-h-[32px] !text-[12.5px] !bg-[var(--sky)]">
-                Set date and time
-              </Link>
-            )}
-          </span>
-        )}
-        {ev?.event_at && (
-          <span className="mt-2 grid gap-1.5">
-            <span className="text-[13px] font-bold">
-              {eventName(ev.event_kind, ev.event_note)} ·{" "}
-              {eventLabel(ev.event_at)}
-            </span>
-            <CalendarButtons event={buildEvent(a, ev)!} small />
-          </span>
-        )}
-        {a.deadline && days !== null && days >= -1 && (
-          <p className={`mt-1 text-[13px] font-semibold ${days <= 3 ? "text-[var(--warn)]" : "text-[var(--good)]"}`}>
-            {deadlineText(a.deadline)}
+        {due && (
+          <p className="mt-1.5 text-[14px]">
+            <b className={due.tone}>{due.text}</b>
+            <span className="text-[var(--ink2)]"> · {due.left}</span>
           </p>
         )}
+        <p className="mt-1 text-[13px] leading-snug text-[var(--mute)]">{note}</p>
+        <Link href={`/app/a/${a.id}`} className="mt-1.5 inline-block text-[13px] font-bold underline underline-offset-4">
+          Edit
+        </Link>
       </div>
-      <span className="text-[14px] text-[var(--ink2)] md:flex md:h-10 md:items-center">
-        <span className="md:hidden">Applied&nbsp;</span>
+
+      <span className="text-[14px] text-[var(--ink2)]">
+        <span className="cap mr-2 lg:hidden">Applied</span>
         {a.submitted_on ? formatDate(a.submitted_on) : "–"}
       </span>
-      <label>
-        <span className="sr-only">Status for {a.company ?? a.title}</span>
-        <select
-          value={a.status}
-          onChange={(e) => onStatus(e.target.value as Status)}
-          className="pill h-10 w-full !py-0"
-        >
+
+      <label className="block">
+        <span className="cap mb-1 block lg:hidden">Status</span>
+        <span className="sr-only">Status for {name}</span>
+        <select value={a.status} onChange={(e) => onStatus(e.target.value as Status)} className="pill h-10 w-full !py-0 !text-[14px]">
           {STATUSES.map((s) => (
             <option key={s.value} value={s.value}>
               {s.label}
@@ -333,26 +380,54 @@ function Row({
           ))}
         </select>
       </label>
-      <div className="grid gap-1.5">
-        <label>
-          <span className="sr-only">Next step for {a.company ?? a.title}</span>
-          <input
-            className="field h-10 !py-0 !text-[14px]"
-            placeholder="Next step, e.g. online test by Fri"
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            onBlur={() => next !== (a.next_step ?? "") && onSave({ next_step: next })}
-          />
-        </label>
-        <button
-          type="button"
-          className="justify-self-end text-[12.5px] text-[var(--mute)] hover:text-[var(--bad)]"
-          aria-label={`Remove ${a.company ?? a.title}`}
-          onClick={onRemove}
-        >
-          Remove
-        </button>
+
+      <div>
+        <span className="cap mb-1 block lg:hidden">Email</span>
+        <span className="flex items-center gap-2">
+          <span
+            className={`pill h-10 min-w-0 flex-1 !py-0 !text-[14px] ${state ? "" : "!text-[var(--mute)]"}`}
+            title={mail ? `From an email · ${formatDate(mail.at.slice(0, 10))}` : "No email about this role yet"}
+          >
+            {state ?? "No email yet"}
+          </span>
+          {mail?.link ? (
+            <a
+              href={mail.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Open the email from ${name}`}
+              className="grid size-10 flex-none place-items-center rounded-full border border-[var(--line2)] bg-white text-[var(--ink)] no-underline hover:border-[var(--ink)]"
+            >
+              <Arrow size={14} />
+            </a>
+          ) : (
+            <span className="size-10 flex-none" aria-hidden="true" />
+          )}
+        </span>
       </div>
+
+      <label className="block">
+        <span className="cap mb-1 block lg:hidden">Next</span>
+        <span className="sr-only">Next step for {name}</span>
+        <textarea
+          rows={1}
+          className="block w-full resize-none rounded-xl border border-transparent bg-transparent px-2 py-1.5 text-[14.5px] leading-relaxed text-[var(--ink)] [field-sizing:content] placeholder:text-[var(--mute)] hover:border-[var(--line2)] focus:border-[var(--ink)] focus:bg-white focus:outline-none"
+          placeholder="Add a next step"
+          value={next}
+          onChange={(e) => setNext(e.target.value)}
+          onBlur={() => next !== (a.next_step ?? "") && onSave({ next_step: next })}
+        />
+      </label>
+
+      <button
+        type="button"
+        aria-label={`Remove ${name}`}
+        title="Remove"
+        className="grid size-9 place-items-center justify-self-end rounded-full border border-[var(--line2)] text-[var(--mute)] hover:border-[var(--bad)] hover:text-[var(--bad)]"
+        onClick={onRemove}
+      >
+        <CloseIcon size={11} />
+      </button>
     </div>
   );
 }

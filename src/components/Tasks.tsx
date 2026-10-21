@@ -12,6 +12,10 @@ import CloseIcon from "@/components/CloseIcon";
 /** Tells the bell to fetch its list again. */
 export const refreshNotifications = () => window.dispatchEvent(new Event("rk:notify"));
 
+/** One role an email check moved to a new stage (or added), for the summary on Applications. */
+export type EmailChange = { id: string; company: string; status: string; next: string; link: string | null; account: string | null };
+export type EmailResults = { changes: EmailChange[]; review: number; accounts: number };
+
 type Progress = { title: string; detail: string; done: boolean; href?: string; link?: string } | null;
 
 type Tasks = {
@@ -22,11 +26,14 @@ type Tasks = {
   /** Checks all connected Gmail accounts (or one, by id), or helps connect one. */
   checkEmails: (account?: string) => void;
   checking: boolean;
+  /** What the last email check changed (until dismissed). */
+  emailResults: EmailResults | null;
+  clearEmailResults: () => void;
   /** Shows the waiting pop-up while a job link is read; call the returned function when it's done. */
   trackReading: (name: string) => (r: { ok: true; name: string; href: string } | { ok: false; msg: string }) => void;
 };
 
-const Ctx = createContext<Tasks>({ compare: () => {}, comparing: false, rescore: () => {}, checkEmails: () => {}, checking: false, trackReading: () => () => {} });
+const Ctx = createContext<Tasks>({ compare: () => {}, comparing: false, rescore: () => {}, checkEmails: () => {}, checking: false, emailResults: null, clearEmailResults: () => {}, trackReading: () => () => {} });
 
 export const useTasks = () => useContext(Ctx);
 export const useCompare = () => {
@@ -49,6 +56,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   const [progress, setProgress] = useState<Progress>(null);
   const [rescoring, setRescoring] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [emailResults, setEmailResults] = useState<EmailResults | null>(null);
   // Pop-ups never cover rookie: they sit just above him (or below him if he's near the top), on his side of the
   // screen, and move to the top while his chat is open. Re-measured while a pop-up is showing, as he can be dragged.
   const toastsRef = useRef<HTMLDivElement>(null);
@@ -213,6 +221,11 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
       });
       refreshNotifications();
       if (r.applied || r.added) router.refresh();
+      if (Array.isArray(r.changes) && r.changes.length) {
+        setEmailResults({ changes: r.changes, review: Math.max(0, (r.updates ?? 0) - (r.applied ?? 0)), accounts: r.accounts ?? 1 });
+        // On Applications the summary card shows it all, so no pop-up on top.
+        if (window.location.pathname === "/app/applications") setProgress(null);
+      }
     } catch (e) {
       setProgress({ title: "Couldn't check your emails", detail: e instanceof Error ? e.message : "Try again.", done: true });
     } finally {
@@ -221,7 +234,7 @@ export function TasksProvider({ children }: { children: React.ReactNode }) {
   }, [checking, router]);
 
   return (
-    <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking, trackReading }}>
+    <Ctx.Provider value={{ compare, comparing: compareToast?.state === "working", rescore, checkEmails, checking, emailResults, clearEmailResults: () => setEmailResults(null), trackReading }}>
       {children}
       <div className="rk-toasts" ref={toastsRef} style={toastPos ?? undefined}>
         {progress && (

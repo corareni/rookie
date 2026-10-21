@@ -76,6 +76,12 @@ export const isUrl = (text: string) => {
   }
 };
 
+/** Opens one email in Gmail; authuser picks the right account if several are signed in. */
+export const gmailLink = (mail: { id?: string; account?: string | null } | null | undefined) =>
+  mail?.id
+    ? `https://mail.google.com/mail/u/${mail.account ? `?authuser=${encodeURIComponent(mail.account)}` : "0/"}#all/${mail.id}`
+    : null;
+
 /** A short name for a job link while it's being read, e.g. "careers.example.com". */
 export const linkName = (url: string | null) => {
   try {
