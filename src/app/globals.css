@@ -149,6 +149,29 @@ a {
   color: var(--ink);
   font-weight: 700;
 }
+/* One pill that slides between sections instead of jumping. */
+.topnav.has-pill { position: relative; }
+.topnav.has-pill a { position: relative; z-index: 1; transition: color 0.3s ease; }
+.topnav.has-pill a[aria-current="page"] { background: transparent; }
+.topnav.has-pill a[data-on] { color: var(--ink); font-weight: 700; }
+.topnav-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  border-radius: 999px;
+  background: var(--lilac);
+  transition: opacity 0.2s ease;
+}
+.topnav-pill.is-moving {
+  transition:
+    transform 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    width 0.45s cubic-bezier(0.22, 0.8, 0.24, 1),
+    opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .topnav-pill.is-moving { transition: none; }
+}
 .pillbtn {
   display: inline-flex;
   align-items: center;
@@ -1005,57 +1028,70 @@ a {
   transition: transform 0.2s ease, bottom 0.3s ease;
 }
 .chat-fab:hover { transform: scale(1.05); }
-/* Closed: Rookie the bot on a lilac circle. Open: a black circle with a centred ×. */
-.chat-fab:not(.is-open) { background: var(--lilac); box-shadow: 0 0 0 2px var(--black), 0 14px 30px -10px rgba(0, 0, 0, 0.45); }
-.bot { overflow: visible; transform-origin: 50% 85%; animation: bot-sway 3.2s ease-in-out infinite; }
-.bot-antenna { transform-box: fill-box; transform-origin: 50% 100%; animation: bot-antenna 1.6s ease-in-out infinite; }
-.bot-eyes { transform-box: fill-box; transform-origin: center; animation: bot-blink 4.5s ease-in-out infinite; }
-.chat-fab:hover .bot,
-.chat-fab:focus-visible .bot { animation: bot-wiggle 0.6s ease-in-out infinite; }
-@keyframes bot-sway {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-2px) rotate(-6deg); }
-  50% { transform: translateY(0) rotate(0deg); }
-  75% { transform: translateY(-2px) rotate(6deg); }
+/* Closed: Rookie on a white circle. Open: a black circle with a centred ×. */
+.chat-fab:not(.is-open) {
+  background: var(--frame);
+  box-shadow: 0 0 0 1px var(--line), 0 14px 30px -12px rgba(0, 0, 0, 0.35);
 }
-@keyframes bot-wiggle {
-  0%, 100% { transform: rotate(0deg) scale(1.04); }
-  25% { transform: rotate(-10deg) scale(1.04); }
-  75% { transform: rotate(10deg) scale(1.04); }
+.bot { overflow: visible; animation: bot-float 4s ease-in-out infinite; }
+.bot-antenna { transform-box: fill-box; transform-origin: 50% 100%; animation: bot-antenna 3s ease-in-out infinite; }
+.bot-eyes { transform-box: fill-box; transform-origin: center; animation: bot-blink 5s ease-in-out infinite; }
+.chat-fab:hover .bot,
+.chat-fab:focus-visible .bot { animation: bot-nod 1.2s ease-in-out infinite; }
+.chat-fab:hover .bot-eyes { animation: bot-look 1.2s ease-in-out infinite; }
+@keyframes bot-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+@keyframes bot-nod {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-7deg); }
+  60% { transform: rotate(4deg); }
 }
 @keyframes bot-antenna {
-  0%, 100% { transform: rotate(-14deg); }
-  50% { transform: rotate(14deg); }
+  0%, 100% { transform: rotate(-6deg); }
+  50% { transform: rotate(6deg); }
 }
 @keyframes bot-blink {
-  0%, 90%, 100% { transform: scaleY(1); }
-  94% { transform: scaleY(0.1); }
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.15); }
 }
-/* A small name tag that says hello once, and again on hover. */
+@keyframes bot-look {
+  0%, 100% { transform: translateX(0); }
+  40% { transform: translateX(-1px); }
+  70% { transform: translateX(1px); }
+}
+/* A name tag that says who Rookie is: once on arrival, and again on hover. */
 .chat-name {
   position: absolute;
-  right: calc(100% + 10px);
-  top: 50%;
-  translate: 0 -50%;
-  white-space: nowrap;
-  border-radius: 999px;
+  right: calc(100% + 12px);
+  bottom: 4px;
+  display: grid;
+  gap: 2px;
+  width: 230px;
+  border-radius: 16px 16px 4px 16px;
   background: var(--black);
   color: var(--onblack);
-  padding: 6px 12px;
-  font-size: 12.5px;
-  font-weight: 700;
+  padding: 10px 13px;
+  text-align: left;
   pointer-events: none;
   opacity: 0;
-  animation: bot-hello 4s ease 1.2s 1 both;
+  box-shadow: 0 14px 30px -14px rgba(0, 0, 0, 0.5);
+  animation: bot-hello 6s ease 1.2s 1 both;
   transition: opacity 0.2s;
 }
+.chat-name b { font-size: 13px; font-weight: 700; }
+.chat-name span { font-size: 12px; font-weight: 300; line-height: 1.35; color: var(--onblack2); }
 .chat-fab:hover .chat-name { opacity: 1; animation: none; }
 @keyframes bot-hello {
   0%, 100% { opacity: 0; transform: translateX(6px); }
-  12%, 85% { opacity: 1; transform: none; }
+  8%, 88% { opacity: 1; transform: none; }
+}
+@media (max-width: 639px) {
+  .chat-name { width: 200px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .bot, .bot-antenna, .bot-eyes, .chat-fab:hover .bot, .chat-name { animation: none; }
+  .bot, .bot-antenna, .bot-eyes, .chat-fab:hover .bot, .chat-fab:hover .bot-eyes, .chat-name { animation: none; }
 }
 /* Toasts sit above the button. */
 body:has(.chat-fab) .rk-toasts { bottom: 86px; }
@@ -1098,7 +1134,7 @@ body:has(.rk-bottom-bar) .rk-toasts { bottom: 164px; }
 /* Holds still while you use it. */
 .chat-panel:hover,
 .chat-panel:focus-within { animation-play-state: paused; }
-.chat-avatar .bot { animation: bot-sway 3.2s ease-in-out infinite; }
+.chat-avatar .bot { animation: bot-float 4s ease-in-out infinite; }
 .chat-row { animation: toast-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.25) both; }
 @media (prefers-reduced-motion: reduce) {
   .chat-panel, .chat-card, .chat-avatar .bot, .chat-row { animation: none; }
@@ -1174,3 +1210,13 @@ body:has(.rk-bottom-bar) .chat-panel { bottom: 164px; height: min(560px, calc(10
   line-height: 1;
 }
 .chat-row-x:hover { background: var(--frame); color: var(--bad); }
+
+/* Landing: the step phone floats gently on the page */
+.phone-float .phone { animation: phone-float 6s ease-in-out infinite; }
+@keyframes phone-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phone-float .phone { animation: none; }
+}

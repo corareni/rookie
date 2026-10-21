@@ -180,7 +180,8 @@ export default function ChatBubble({ userId }: { userId: string }) {
         )}
         {!open && (
           <span className="chat-name" aria-hidden="true">
-            Hi, I&apos;m Rookie
+            <b>Hi, I&apos;m Rookie</b>
+            <span>Questions or doubts about a role, your CV or an interview? Ask me, I know your board.</span>
           </span>
         )}
       </button>
@@ -190,13 +191,13 @@ export default function ChatBubble({ userId }: { userId: string }) {
           <div className="chat-card">
           <header className="flex items-center justify-between gap-2 border-b border-[var(--line)] px-4 py-3">
             <span className="flex min-w-0 items-center gap-2.5">
-              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-[var(--lilac)]" aria-hidden="true">
+              <span className="chat-avatar grid size-9 flex-none place-items-center rounded-full bg-white ring-1 ring-[var(--line)]" aria-hidden="true">
                 <RookieBot size={30} />
               </span>
               <span className="min-w-0">
-                <b className="text-[16px]">Ask Rookie</b>
+                <b className="text-[16px]">Rookie</b>
                 <span className="block truncate text-[12px] text-[var(--mute)]">
-                  {showHistory ? "Your earlier chats" : "Answers from your board and profile"}
+                  {showHistory ? "Your earlier chats" : "Your application helper"}
                 </span>
               </span>
             </span>
@@ -329,28 +330,25 @@ export default function ChatBubble({ userId }: { userId: string }) {
   );
 }
 
-/** Rookie, the little helper bot: white head, sky visor, mint antenna and body, in the site's pastels. */
+/** Rookie, the helper bot: one thin line weight, a lilac visor and a mint antenna tip. Playful, not cartoonish. */
 function RookieBot({ size = 46 }: { size?: number }) {
   return (
     <svg className="bot" viewBox="0 0 48 48" width={size} height={size} aria-hidden="true">
-      <g fill="none" stroke="#0b0b0c" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <g fill="none" stroke="#0b0b0c" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <g className="bot-antenna">
-          <path d="M24 9V4.8" />
-          <circle cx="24" cy="4" r="2.6" fill="#bfeccf" />
+          <path d="M24 11V7" />
+          <circle cx="24" cy="5.4" r="1.7" fill="#bfeccf" />
         </g>
-        <rect x="15.5" y="34" width="17" height="10" rx="4.5" fill="#bfeccf" />
-        <rect x="6.5" y="19" width="5" height="10" rx="2.5" fill="#c9c0fb" />
-        <rect x="36.5" y="19" width="5" height="10" rx="2.5" fill="#c9c0fb" />
-        <rect x="10" y="9" width="28" height="26" rx="11" fill="#ffffff" />
-        <rect x="14" y="14.5" width="20" height="14" rx="6.5" fill="#b9d9f8" />
-        <path d="M20.6 24.2q3.4 3 6.8 0" />
+        <path d="M9.2 19.5v6M38.8 19.5v6" />
+        <rect x="11.5" y="11" width="25" height="21.5" rx="8.5" fill="#ffffff" />
+        <rect x="15.5" y="15.2" width="17" height="12.4" rx="5.2" fill="#dcd6fb" />
+        <path className="bot-smile" d="M21.7 24q2.3 1.5 4.6 0" />
+        <path d="M15.8 40.8c0-3 3.7-5.1 8.2-5.1s8.2 2.1 8.2 5.1" />
       </g>
       <g className="bot-eyes" fill="#0b0b0c">
-        <circle cx="19.6" cy="20.6" r="1.9" />
-        <circle cx="28.4" cy="20.6" r="1.9" />
+        <rect x="19.4" y="18.6" width="2.2" height="3.6" rx="1.1" />
+        <rect x="26.4" y="18.6" width="2.2" height="3.6" rx="1.1" />
       </g>
-      <circle cx="16.8" cy="25" r="1.3" fill="#fccab0" />
-      <circle cx="31.2" cy="25" r="1.3" fill="#fccab0" />
     </svg>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import NotificationBell from "@/components/NotificationBell";
 import { createClient } from "@/lib/supabase/client";
 
@@ -53,6 +53,26 @@ export default function Header({ email, name }: { email: string | null; name: st
     href === "/app"
       ? path === "/app" || path.startsWith("/app/a/")
       : !href.includes("#") && (path === href || path.startsWith(href + "/"));
+
+  // The purple pill slides to the section you click straight away, before the page has loaded.
+  const [pending, setPending] = useState<string | null>(null);
+  const [seenPath, setSeenPath] = useState(path);
+  if (path !== seenPath) {
+    setSeenPath(path);
+    setPending(null);
+  }
+  const selected = pending ?? nav.find((n) => active(n.href))?.href ?? null;
+  const navRef = useRef<HTMLElement>(null);
+  const [pill, setPill] = useState<{ left: number; width: number; on: boolean; moved: boolean } | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = navRef.current?.querySelector<HTMLElement>(`a[data-href="${selected}"]`);
+      setPill((p) => (el ? { left: el.offsetLeft, width: el.offsetWidth, on: true, moved: !!p?.on } : p ? { ...p, on: false } : null));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [selected, scrolled, phone]);
 
   // One bar that morphs: past the top it narrows into a centred pill; back at the top it widens again.
   useEffect(() => {
@@ -123,9 +143,23 @@ export default function Header({ email, name }: { email: string | null; name: st
           <Wordmark className="text-[22px] leading-none sm:text-[24px]" />
         </Link>
 
-        <nav aria-label="Main" className="topnav morph-part ml-auto" inert={compact}>
+        <nav ref={navRef} aria-label="Main" className="topnav has-pill morph-part ml-auto" inert={compact}>
+          {pill && (
+            <span
+              aria-hidden="true"
+              className={`topnav-pill ${pill.moved ? "is-moving" : ""}`}
+              style={{ transform: `translateX(${pill.left}px)`, width: pill.width, opacity: pill.on ? 1 : 0 }}
+            />
+          )}
           {nav.map((n) => (
-            <Link key={n.href} href={n.href} aria-current={active(n.href) ? "page" : undefined}>
+            <Link
+              key={n.href}
+              href={n.href}
+              data-href={n.href}
+              data-on={selected === n.href ? "" : undefined}
+              aria-current={active(n.href) ? "page" : undefined}
+              onClick={() => !n.href.includes("#") && setPending(n.href)}
+            >
               {n.label}
             </Link>
           ))}

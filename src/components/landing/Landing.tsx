@@ -155,8 +155,9 @@ export default function Landing({ signedIn }: { signedIn: boolean }) {
           {/* The heading is the first block, so six blocks fill a clean 2×3 (phone) or 3×2 rectangle. */}
           <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
             <li className="flex flex-col justify-between gap-3 px-1 py-4 text-[var(--ink)]">
-              <h2 id="everything-h" className="text-[20px] leading-[1.1] tracking-tight">
-                <b>Everything</b> <span className="font-light">for your next application.</span>
+              <h2 id="everything-h" className="leading-[1.1] tracking-tight">
+                <b className="block text-[clamp(30px,3vw,38px)] leading-none tracking-[-0.03em]">Everything</b>{" "}
+                <span className="mt-1 block text-[18px] font-light">for your next application.</span>
               </h2>
               <a href="#how" className="text-[12.5px] text-[var(--ink2)] no-underline hover:text-[var(--ink)]">
                 See how <Arrow />

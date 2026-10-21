@@ -95,12 +95,15 @@ export default function StepScroller() {
         })}
       </ol>
       <div className="hidden lg:block">
-        <div className="tile sticky top-[14vh] grid place-items-center !py-10">
+        {/* No box around the phone: it floats on the page, and screens glide into each other. */}
+        <div className="phone-float sticky top-[14vh] grid place-items-center py-10">
           {SCREENS.map((Screen, i) => (
             <div
               key={i}
               aria-hidden={i !== active}
-              className={`screen-fade [grid-area:1/1] transition-opacity duration-700 ${i === active ? "opacity-100" : "pointer-events-none opacity-0"}`}
+              className={`screen-fade [grid-area:1/1] transition-[opacity,transform,filter] duration-[900ms] ease-[cubic-bezier(0.22,0.8,0.24,1)] ${
+                i === active ? "translate-y-0 scale-100 opacity-100 blur-0" : "pointer-events-none translate-y-4 scale-[0.97] opacity-0 blur-[2px]"
+              }`}
             >
               <Phone label={`Example screen: ${STEPS[i].t}`}>
                 <Screen />
