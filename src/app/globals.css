@@ -1659,3 +1659,72 @@ body:has(.tour-wait) .rk-loader { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .slide-save, .slide-save-handle, .slide-save-note { transition: none; }
 }
+
+/* Waiting list: the light blue button in the full header, and its place in the compact menu. */
+.waitlist-btn {
+  flex: none;
+  margin-left: 18px;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: var(--sky);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, max-width 0.6s cubic-bezier(0.22, 0.8, 0.24, 1), opacity 0.3s ease 0.15s, margin 0.6s ease, padding 0.6s ease;
+}
+.waitlist-btn:hover { background: #c6dff8; transform: translateY(-1px); }
+.waitlist-btn:focus-visible, .menu-waitlist:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.is-compact .waitlist-btn { margin-left: 0; }
+.menu-waitlist {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: var(--sky);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.menu-waitlist:hover { background: #c6dff8; }
+.menu-waitlist b { font-size: 15px; }
+.menu-waitlist span { font-size: 12.5px; color: var(--ink2); }
+
+/* The waiting list itself, on the Profile page and in its pop-up. */
+.rk-dialog-waitlist { width: min(820px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); background: var(--mint); overflow-y: auto; }
+.waitlist-plan {
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.waitlist-plan:hover:not(:disabled) { background: #fff; transform: translateY(-2px); }
+.waitlist-plan.is-on { background: #fff; border-color: var(--ink); }
+.waitlist-plan:disabled { cursor: default; }
+.waitlist-tick {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line2);
+  color: transparent;
+}
+.waitlist-tick.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
+.waitlist-want-mark { display: inline-grid; place-items: center; width: 16px; font-weight: 700; }
+.waitlist-want[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+@media (prefers-reduced-motion: reduce) {
+  .waitlist-btn, .waitlist-plan { transition: none; }
+}

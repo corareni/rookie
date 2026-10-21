@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import NotificationBell from "@/components/NotificationBell";
+import WaitlistDialog, { openWaitlist } from "@/components/WaitlistDialog";
 import { createClient } from "@/lib/supabase/client";
 
 const APP_NAV = [
@@ -161,6 +162,11 @@ export default function Header({
           <Wordmark className="text-[22px] leading-none sm:text-[24px]" />
         </Link>
 
+        {/* In the full bar only; once it shrinks, the same button sits in the menu. */}
+        <button type="button" className="waitlist-btn morph-part max-xl:hidden" inert={compact} onClick={openWaitlist}>
+          Join the waitlist
+        </button>
+
         <nav ref={navRef} aria-label="Main" className="topnav has-pill morph-part ml-auto" inert={compact}>
           {pill && (
             <span
@@ -248,6 +254,17 @@ export default function Header({
               </Link>
             ))}
           </nav>
+          <button
+            type="button"
+            className="menu-waitlist"
+            onClick={() => {
+              setOpen(false);
+              openWaitlist();
+            }}
+          >
+            <b>Join the waitlist</b>
+            <span>Basic and Premium are coming soon</span>
+          </button>
           {!keepAuth && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-white/10 pt-3">
               {who && <span className="truncate text-[13px] text-[var(--onblack2)]">{who}</span>}
@@ -257,6 +274,8 @@ export default function Header({
           {keepAuth && who && <p className="mt-3 border-t border-white/10 px-3 pt-3 text-[13px] text-[var(--onblack2)]">{who}</p>}
         </div>
       )}
+
+      <WaitlistDialog signedIn={!!email} />
     </div>
   );
 }
