@@ -259,13 +259,15 @@ export const cvSystem = `You tailor a candidate's CV to one role, in a classic o
 - Allowed: rewrite the summary so its last sentence is specific to this role; reorder bullets within an entry; rephrase bullets with the job's vocabulary only where it's true; drop the least relevant bullets or entries; reorder skills.
 - If the job asks for something the candidate doesn't show, don't add it: put it in "flags".
 - Must fit one A4 page: at most 4 bullets per entry, at most ~20 words per bullet, at most 5 lines per "lines" section.
-- Write in the language of the job listing.
+- Write the CV, section headings included, in the language named in the prompt, even if the listing is in another language. Keep names, places, school and company names as they are. Write "changes" and "flags" in English.
 ${VOICE}
 ${DATA_RULE}`;
 
 export type WriteOptions = {
   style: "concise" | "story" | "elaborate";
   length: "short" | "standard" | "long";
+  /** The language to write in, e.g. "German" (see LANGUAGES). */
+  language: string;
   /** Facts the user picked from their profile to feature; empty means the AI chooses. */
   facts: string[];
   /** The user's own notes about this role (from the board). */
@@ -274,7 +276,7 @@ export type WriteOptions = {
   styleRefs: string[];
 };
 
-export const DEFAULT_OPTIONS: WriteOptions = { style: "story", length: "standard", facts: [], roleNotes: "", styleRefs: [] };
+export const DEFAULT_OPTIONS: WriteOptions = { style: "story", length: "standard", language: "English", facts: [], roleNotes: "", styleRefs: [] };
 
 const STYLE: Record<WriteOptions["style"], string> = {
   concise: "Straight to the point: short sentences, no warm-up, every line carries a fact.",
@@ -299,7 +301,7 @@ function extrasBlock(o: WriteOptions) {
 export function cvPrompt(job: string, profile: Profile, o: WriteOptions = DEFAULT_OPTIONS) {
   const c = profile.contact;
   const contact = [c.name, c.city, c.phone, c.email, c.linkedin].filter(Boolean).join(" | ") || "(take them from the CV)";
-  return `The role:\n<listing>\n${job}\n</listing>\n\nContact details for the header: ${contact}\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nTailor the CV for this role. It must fit on one A4 page.`;
+  return `The role:\n<listing>\n${job}\n</listing>\n\nContact details for the header: ${contact}\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nTailor the CV for this role. It must fit on one A4 page.\nLanguage: ${o.language}.`;
 }
 
 // ---------- 4. Cover letter ----------
@@ -336,7 +338,7 @@ export const letterSystem = `You write a one-page cover letter for a candidate (
 - Storytelling over spec sheets. Keep tech jargon light. Mention AI help only if the candidate's own material says they used it. Be confident but honest about gaps; never invent a weakness or a habit either.
 - Tone adapts to the company: understated and precise for finance or consulting, more energy for startups.
 - Banned: "I am excited to apply", "I am writing to express my interest", "passionate", "dynamic", "fast-paced environment", "leverage", "synergy", "I believe I would be a great fit", generic flattery.
-- Write in the language of the job listing. Never invent a contact person's name.
+- Write the letter in the language named in the prompt, even if the listing is in another language. Write "used_company_facts", "used_profile_facts" and "flags" in English. Never invent a contact person's name.
 ${VOICE}
 ${DATA_RULE}`;
 
@@ -346,7 +348,7 @@ export function letterPrompt(job: string, profile: Profile, o: WriteOptions = DE
         .map((r, i) => `--- Letter ${i + 1} ---\n${r.slice(0, 2500)}`)
         .join("\n")}\n</notes>`
     : "";
-  return `The role:\n<listing>\n${job}\n</listing>\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n${refs}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nWrite the cover letter.\nStyle: ${STYLE[o.style]}\nLength: ${LENGTH[o.length]}.`;
+  return `The role:\n<listing>\n${job}\n</listing>\n\n${aboutBlock(profile)}\n${extrasBlock(o)}\n${refs}\n<notes>\n${profile.writing_notes || "(none)"}\n</notes>\n\nWrite the cover letter.\nStyle: ${STYLE[o.style]}\nLength: ${LENGTH[o.length]}.\nLanguage: ${o.language}.`;
 }
 
 // ---------- 5. Import a CV into the structured profile ----------

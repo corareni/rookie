@@ -10,7 +10,7 @@ import {
   TextRun,
   convertMillimetersToTwip,
 } from "docx";
-import type { CvContent, LetterContent } from "@/lib/documents";
+import { language, type CvContent, type LetterContent } from "@/lib/documents";
 
 const FONT = "Times New Roman";
 // A4 width minus 20 mm margins each side, as a right tab stop for locations and dates.
@@ -69,7 +69,7 @@ export async function cvDocx(cv: CvContent): Promise<Buffer> {
     new Paragraph({ alignment: AlignmentType.CENTER, children: [run(cv.header.contact.join(" | "))] }),
   ];
   if (cv.header.note) children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [run(cv.header.note, { italics: true })] }));
-  children.push(heading("Summary"), new Paragraph({ alignment: AlignmentType.JUSTIFIED, children: [run(cv.summary)] }));
+  children.push(heading(language(cv.lang).summary), new Paragraph({ alignment: AlignmentType.JUSTIFIED, children: [run(cv.summary)] }));
 
   for (const sec of cv.sections) {
     children.push(heading(sec.heading));
@@ -93,7 +93,8 @@ export async function cvDocx(cv: CvContent): Promise<Buffer> {
 export async function letterDocx(l: LetterContent, contact: { name?: string; line: string }): Promise<Buffer> {
   const p = (runs: TextRun[], before = 0, align?: (typeof AlignmentType)[keyof typeof AlignmentType]) =>
     new Paragraph({ spacing: { before }, alignment: align, children: runs });
-  const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const lang = language(l.lang);
+  const date = new Date().toLocaleDateString(lang.locale, { day: "numeric", month: "long", year: "numeric" });
   const children = [
     p([run((contact.name ?? "").toUpperCase(), { bold: true, size: 34 })], 0, AlignmentType.CENTER),
     new Paragraph({
@@ -103,7 +104,7 @@ export async function letterDocx(l: LetterContent, contact: { name?: string; lin
     }),
     p([run(date, { size: 21 })], 280),
     ...l.addressee.map((a, i) => p([run(a, { size: 21 })], i === 0 ? 200 : 0)),
-    p([run(`Re: ${l.re}`, { bold: true, size: 21 })], 200),
+    p([run(`${lang.re}: ${l.re}`, { bold: true, size: 21 })], 200),
     p([run(l.greeting, { size: 21 })], 200),
     ...l.paragraphs.map((x) => p([run(x, { size: 21 })], 140, AlignmentType.JUSTIFIED)),
     p([run(l.closing, { size: 21 })], 200),

@@ -1,3 +1,23 @@
+/**
+ * Languages rookie writes CVs and cover letters in. Only languages the PDF font can show (Latin script).
+ * `summary` and `re` are the fixed words on the documents, `locale` formats the letter's date.
+ */
+export const LANGUAGES = [
+  { v: "en", label: "English", locale: "en-GB", summary: "Summary", re: "Re" },
+  { v: "es", label: "Spanish", locale: "es-ES", summary: "Perfil", re: "Asunto" },
+  { v: "fr", label: "French", locale: "fr-FR", summary: "Profil", re: "Objet" },
+  { v: "de", label: "German", locale: "de-DE", summary: "Profil", re: "Betreff" },
+  { v: "it", label: "Italian", locale: "it-IT", summary: "Profilo", re: "Oggetto" },
+  { v: "pt", label: "Portuguese", locale: "pt-PT", summary: "Perfil", re: "Assunto" },
+  { v: "nl", label: "Dutch", locale: "nl-NL", summary: "Profiel", re: "Betreft" },
+  { v: "sv", label: "Swedish", locale: "sv-SE", summary: "Profil", re: "Angående" },
+] as const;
+
+export type Language = (typeof LANGUAGES)[number]["v"];
+
+/** The language's details; English when unknown (and for documents written before languages existed). */
+export const language = (v?: string | null) => LANGUAGES.find((l) => l.v === v) ?? LANGUAGES[0];
+
 export type CvEntry = {
   org: string;
   org_note: string;
@@ -20,6 +40,8 @@ export type CvContent = {
   header: { name: string; contact: string[]; note: string };
   summary: string;
   sections: CvSection[];
+  /** The language it's written in (see LANGUAGES); missing means English. */
+  lang?: string;
 };
 
 export type LetterContent = {
@@ -28,6 +50,7 @@ export type LetterContent = {
   greeting: string;
   paragraphs: string[];
   closing: string;
+  lang?: string;
 };
 
 export type Doc<T> = { content: T; meta: Record<string, string[]>; edited: boolean } | null;

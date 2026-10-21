@@ -6,7 +6,7 @@ import { useState } from "react";
 import ProfileGate from "@/components/ProfileGate";
 import WritingAnimation from "@/components/WritingAnimation";
 import { generateDocs, type GenerateOptions } from "@/lib/ai-client";
-import { cvAsText, letterAsText, type CvContent, type Doc, type LetterContent } from "@/lib/documents";
+import { LANGUAGES, cvAsText, letterAsText, type CvContent, type Doc, type LetterContent } from "@/lib/documents";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -49,6 +49,8 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
   const [length, setLength] = useState<GenerateOptions["length"]>("standard");
   const [picked, setPicked] = useState<string[]>([]);
   const [which, setWhich] = useState<GenerateOptions["which"]>("both");
+  // English unless the documents were already written in another language.
+  const [lang, setLang] = useState<string>(cvDoc?.content.lang ?? letterDoc?.content.lang ?? "en");
   const has = !!(cvDoc && letterDoc);
 
   async function generate() {
@@ -56,7 +58,7 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
     setError(null);
     setConfirmRegen(false);
     try {
-      await generateDocs(applicationId, { style, length, facts: picked, which });
+      await generateDocs(applicationId, { style, length, facts: picked, which, language: lang });
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't write your documents.");
@@ -95,6 +97,16 @@ export default function Documents({ applicationId, cv: cvDoc, letter: letterDoc,
           <div className="mt-1 inline-grid grid-cols-3 gap-1 rounded-[14px] bg-white p-1 max-sm:grid-cols-1">
             {WHICH.map((o) => (
               <button key={o.v} type="button" className="act !bg-transparent aria-pressed:!bg-[var(--lilac)]" aria-pressed={which === o.v} onClick={() => setWhich(o.v)}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend className="label">Language</legend>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {LANGUAGES.map((o) => (
+              <button key={o.v} type="button" className="act" aria-pressed={lang === o.v} onClick={() => setLang(o.v)}>
                 {o.label}
               </button>
             ))}

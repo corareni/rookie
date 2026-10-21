@@ -23,6 +23,8 @@ export type GenerateOptions = {
   length: "short" | "standard" | "long";
   facts: string[];
   which: "both" | "cv" | "letter";
+  /** Language code from LANGUAGES; English by default. */
+  language: string;
 };
 
 export const generateDocs = (id: string, options?: GenerateOptions) => post<{ ok: true }>("/api/generate", { id, ...options });

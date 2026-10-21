@@ -1,3 +1,4 @@
+import { language } from "@/lib/documents";
 import { hasProfileContent } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
 import { AiError, MODEL_WRITE, generateJson } from "@/server/ai/gemini";
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
       length?: WriteOptions["length"];
       facts?: string[];
       which?: "both" | "cv" | "letter";
+      language?: string;
     };
     const id = body.id;
     const which = body.which === "cv" || body.which === "letter" ? body.which : "both";
@@ -60,7 +62,9 @@ export async function POST(request: Request) {
       .eq("kind", "cover_letter")
       .order("created_at", { ascending: false })
       .limit(2);
+    const lang = language(body.language);
     const options: WriteOptions = {
+      language: lang.label,
       style: ["concise", "story", "elaborate"].includes(body.style ?? "") ? body.style! : "story",
       length: ["short", "standard", "long"].includes(body.length ?? "") ? body.length! : "standard",
       facts: (body.facts ?? []).filter((f) => typeof f === "string").slice(0, 25).map((f) => f.slice(0, 300)),
@@ -82,11 +86,11 @@ export async function POST(request: Request) {
     const rows = [];
     if (cv) {
       const { changes, flags, ...content } = noLongDashes(cv.data);
-      rows.push({ application_id: id, kind: "cv", content, meta: { changes, flags }, edited: false });
+      rows.push({ application_id: id, kind: "cv", content: { ...content, lang: lang.v }, meta: { changes, flags }, edited: false });
     }
     if (letter) {
       const { used_company_facts, used_profile_facts, flags, ...content } = noLongDashes(letter.data);
-      rows.push({ application_id: id, kind: "cover_letter", content, meta: { used_company_facts, used_profile_facts, flags }, edited: false });
+      rows.push({ application_id: id, kind: "cover_letter", content: { ...content, lang: lang.v }, meta: { used_company_facts, used_profile_facts, flags }, edited: false });
     }
     const { error } = await supabase.from("documents").upsert(rows, { onConflict: "application_id,kind" });
     if (error) throw new AiError(`Couldn't save your documents: ${error.message}`);

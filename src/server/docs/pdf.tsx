@@ -3,7 +3,7 @@ import { Document, Font, Page, Text, View, renderToBuffer, StyleSheet } from "@r
 
 // CVs never hyphenate words across lines.
 Font.registerHyphenationCallback((word) => [word]);
-import type { CvContent, LetterContent } from "@/lib/documents";
+import { language, type CvContent, type LetterContent } from "@/lib/documents";
 
 // The built-in PDF Times font only covers Western European characters; swap anything else.
 const safe = (s: string) =>
@@ -52,7 +52,7 @@ function CvDoc({ cv, scale }: { cv: CvContent; scale: number }) {
         <Text style={s.contact}>{safe(cv.header.contact.join(" | "))}</Text>
         {cv.header.note ? <Text style={s.note}>{safe(cv.header.note)}</Text> : null}
 
-        <Text style={s.heading}>Summary</Text>
+        <Text style={s.heading}>{language(cv.lang).summary}</Text>
         <Text style={s.summary}>{safe(cv.summary)}</Text>
 
         {cv.sections.map((sec, i) => (
@@ -144,7 +144,8 @@ const ls = StyleSheet.create({
 });
 
 export async function letterPdf(l: LetterContent, contact: { name?: string; line: string }): Promise<Buffer> {
-  const date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const lang = language(l.lang);
+  const date = new Date().toLocaleDateString(lang.locale, { day: "numeric", month: "long", year: "numeric" });
   for (const size of [10.6, 10.2, 9.8]) {
     const pdf = await renderToBuffer(
       <Document title={`${safe(contact.name ?? "")} - Cover letter`}>
@@ -158,7 +159,7 @@ export async function letterPdf(l: LetterContent, contact: { name?: string; line
               <Text key={i}>{safe(a)}</Text>
             ))}
           </View>
-          <Text style={ls.re}>Re: {safe(l.re)}</Text>
+          <Text style={ls.re}>{safe(lang.re)}: {safe(l.re)}</Text>
           <Text style={ls.gap}>{safe(l.greeting)}</Text>
           {l.paragraphs.map((p, i) => (
             <Text key={i} style={ls.para}>
